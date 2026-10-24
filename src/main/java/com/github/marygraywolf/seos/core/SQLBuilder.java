@@ -124,7 +124,17 @@ public class SQLBuilder {
          * <p>
          * Os nomes recebidos devem ser os nomes dos campos do DTO. O builder
          * converte cada campo para a coluna fisica configurada em
-         * {@link ColumnDB#localName()}.
+         * {@link ColumnDB#localName()}. Nomes inexistentes ou sem
+         * {@link ColumnDB} sao ignorados (se nenhum campo valido restar,
+         * {@link #build()} lancara {@link IllegalStateException}).
+         * </p>
+         * <p>
+         * Quando projetar apenas um subconjunto dos campos do DTO, execute o
+         * resultado com {@link SQLResult#executeQueryAsMap(java.sql.Connection)},
+         * {@link SQLResult#executeScalar(java.sql.Connection, Class)} ou
+         * {@link SQLResult#executeAsDictionary(java.sql.Connection)}, pois
+         * {@link SQLResult#executeQuery(java.sql.Connection, Class)} espera todas
+         * as colunas anotadas do DTO no {@link java.sql.ResultSet}.
          * </p>
          *
          * <pre>{@code
@@ -219,9 +229,11 @@ public class SQLBuilder {
 	 * Monta um {@code INSERT INTO} a partir dos campos anotados do DTO.
 	 * <p>
 	 * Campos com valor nao nulo sao adicionados como placeholders {@code ?} e seus
-	 * valores entram na lista de parametros do {@link SQLResult}. Campos nulos sao
-	 * ignorados, exceto quando a anotacao {@link ColumnDB} define uma sequence;
-	 * nesse caso, a sequence e inserida diretamente no trecho {@code VALUES}.
+	 * valores entram na lista de parametros do {@link SQLResult} (atributos do tipo
+	 * {@link Enum} sao convertidos automaticamente para {@link String} via
+	 * {@link Enum#name()}). Campos nulos sao ignorados, exceto quando a anotacao
+	 * {@link ColumnDB} define uma sequence; nesse caso, a sequence e inserida
+	 * diretamente no trecho {@code VALUES}.
 	 * </p>
      *
      * <pre>{@code
@@ -291,9 +303,10 @@ public class SQLBuilder {
 	 * Monta um {@code UPDATE} parcial a partir dos campos nao nulos do DTO.
 	 * <p>
 	 * O trecho {@code SET} e gerado automaticamente com base nos atributos anotados
-	 * e preenchidos. A clausula {@code WHERE} permanece explicita para permitir
-	 * filtros complexos do dominio Sankhya/Oracle, mas seus valores devem ser
-	 * enviados por {@code whereParams}.
+	 * e preenchidos (atributos do tipo {@link Enum} sao convertidos para
+	 * {@link String} via {@link Enum#name()}). A clausula {@code WHERE} permanece
+	 * explicita para permitir filtros complexos do dominio Sankhya/Oracle, mas seus
+	 * valores devem ser enviados por {@code whereParams}.
 	 * </p>
 	 *
 	 * <pre>{@code
@@ -313,14 +326,16 @@ public class SQLBuilder {
 	 *
 	 * @param dto           DTO parcial contendo somente os campos que devem ser
 	 *                      alterados
-	 * @param whereClausula clausula SQL do filtro, preferencialmente constante e
-	 *                      com placeholders {@code ?}
+	 * @param whereClausula clausula SQL obrigatoria do filtro, sem a palavra
+	 *                      {@code WHERE}, preferencialmente com placeholders
+	 *                      {@code ?}
 	 * @param whereParams   valores que preencherao os placeholders do
 	 *                      {@code WHERE}, na ordem exata
 	 * @return SQL e parametros prontos para execucao via
 	 *         {@link java.sql.PreparedStatement}
 	 * @throws IllegalArgumentException se a classe do DTO nao possuir
-	 *                                  {@link TableDB}
+	 *                                  {@link TableDB} ou se {@code whereClausula}
+	 *                                  for nula ou vazia
 	 * @throws IllegalStateException    se nenhum campo nao nulo existir para o
 	 *                                  {@code SET}
 	 * @throws RuntimeException         se ocorrer falha ao acessar atributos por
@@ -442,11 +457,14 @@ public class SQLBuilder {
     /**
 	 * Monta um {@code INSERT} em lote para uma lista de DTOs do mesmo tipo.
 	 * <p>
-	 * A SQL e definida uma unica vez a partir da classe do primeiro item da lista.
-	 * Para campos anotados com {@link ColumnDB#sequence()}, o metodo usa a sequence
-	 * diretamente quando o valor do primeiro DTO estiver nulo. Os demais campos sao
-	 * mapeados como placeholders {@code ?} e geram uma lista de parametros por
-	 * linha.
+	 * Diferentemente de {@link #buildInsert(Object)}, todas as colunas anotadas com
+	 * {@link ColumnDB} entram no comando SQL, que e definido uma unica vez a partir
+	 * do primeiro item da lista ({@code dtos.get(0)}). Quando um campo possui
+	 * {@link ColumnDB#sequence()} e seu valor no primeiro DTO e {@code null}, a
+	 * sequence e inserida diretamente no SQL para todas as linhas do lote (eventuais
+	 * valores preenchidos nesse mesmo campo nos demais itens sao ignorados). Os
+	 * demais campos sao mapeados como placeholders {@code ?} (incluindo valores
+	 * {@code null} e atributos {@link Enum} convertidos via {@link Enum#name()}).
 	 * </p>
 	 * <p>
 	 * O retorno e um {@link SQLResult.Batch}, que executa internamente

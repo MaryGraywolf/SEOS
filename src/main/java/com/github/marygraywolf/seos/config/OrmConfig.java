@@ -12,6 +12,12 @@ import lombok.Getter;
  */
 public class OrmConfig {
 
+    /**
+     * Logger global utilizado pelo SEOS para registrar eventos e erros de
+     * execucao.
+     *
+     * @return instancia ativa de {@link OrmLogger}
+     */
     @Getter
     private static OrmLogger logger = new DefaultConsoleLogger();
 
