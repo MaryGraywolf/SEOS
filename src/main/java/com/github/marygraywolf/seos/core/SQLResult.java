@@ -132,6 +132,8 @@ public class SQLResult {
 	 * @throws IllegalStateException    se o DTO nao possuir atributo anotado com
 	 *                                  {@code @ColumnDB(isPrimaryKey = true)}
 	 * @throws SQLException             se o banco nao devolver o ID gerado
+	 * @throws NumberFormatException    se o ID retornado como texto nao representar
+	 *                                  um numero valido
 	 * @throws Exception                se houver falha ao preparar, parametrizar ou
 	 *                                  executar a SQL
 	 */
@@ -232,20 +234,18 @@ public class SQLResult {
     }
 
     /**
-	 * Executa a instrução SQL de leitura (SELECT) e mapeia o resultado
+	 * Executa a instrucao SQL de leitura ({@code SELECT}) e mapeia o resultado
 	 * dinamicamente para uma lista de mapas, eliminando a necessidade de uma classe
-	 * DTO específica. *
+	 * DTO especifica.
 	 * <p>
-	 * Esta abordagem é ideal para consultas genéricas, relatórios dinâmicos ou
-	 * extrações de colunas avulsas onde a criação de um DTO seria excessiva.
+	 * Esta abordagem e ideal para consultas genericas, relatorios dinamicos ou
+	 * extracoes de colunas avulsas onde a criacao de um DTO seria excessiva.
 	 * </p>
-	 * *
 	 * <p>
-	 * <b>Atenção:</b> As chaves do mapa (nomes das colunas) são sempre convertidas
-	 * para letras maiúsculas para manter a compatibilidade e previsibilidade com o
+	 * <b>Atencao:</b> As chaves do mapa (nomes das colunas) sao sempre convertidas
+	 * para letras maiusculas para manter a compatibilidade e previsibilidade com o
 	 * Oracle.
 	 * </p>
-	 *
      *
      * <pre>{@code
      * SQLResult sql = new SQLResult(
@@ -256,13 +256,12 @@ public class SQLResult {
      * Object descricao = linhas.get(0).get("DESCRPROD");
      * }</pre>
 	 *
-	 * @param conn A conexão ativa com o banco de dados (fornecida pelo DAO).
-	 * @return Uma lista onde cada {@code Map<String, Object>} representa uma linha
-	 *         retornada pelo banco. A chave do mapa é o nome da coluna (em
-	 *         UPPERCASE) e o valor é o dado bruto retornado pelo JDBC. Retorna uma
-	 *         lista vazia se a consulta não encontrar nenhum registro.
-	 * @throws Exception Caso ocorra algum erro na preparação do statement, injeção
-	 *                   de parâmetros ou execução da query.
+	 * @param conn conexao JDBC aberta pelo chamador
+	 * @return lista onde cada {@code Map<String, Object>} representa uma linha
+	 *         retornada pelo banco, com chave em UPPERCASE e valor bruto do JDBC,
+	 *         ou lista vazia quando nao houver registros
+	 * @throws Exception se houver falha ao preparar, parametrizar ou executar a
+	 *                   consulta
 	 */
     public List<Map<String, Object>> executeQueryAsMap(Connection conn) throws Exception {
         long tempoInicio = System.currentTimeMillis();
@@ -315,8 +314,10 @@ public class SQLResult {
     /**
      * Executa a consulta e retorna o valor da primeira coluna da primeira linha.
      * <p>
-     * Quando o valor retornado pelo banco for numerico, aplica conversoes basicas
-     * para o tipo esperado usando {@link #converterParaTipoCorreto(Object, Class)}.
+     * Quando o valor retornado pelo banco for numerico ou texto, aplica conversoes
+     * automaticas para os tipos {@link Long}, {@link Integer}, {@link Short},
+     * {@link Double}, {@link Float}, {@link BigDecimal} e {@link String} (alem dos
+     * tipos primitivos equivalentes).
      * </p>
      *
      * <pre>{@code
@@ -332,8 +333,10 @@ public class SQLResult {
      * @param tipoEsperado classe do tipo esperado pelo chamador
      * @return valor convertido, ou {@code null} quando a consulta nao retornar
      *         linhas ou a coluna estiver nula
-     * @throws Exception se houver falha ao preparar, parametrizar ou executar a
-     *                   consulta
+     * @throws NumberFormatException se o valor retornado como texto nao representar
+     *                               um numero valido para o tipo solicitado
+     * @throws Exception             se houver falha ao preparar, parametrizar ou
+     *                               executar a consulta
      */
     @SuppressWarnings("unchecked")
     public <T> T executeScalar(Connection conn, Class<T> tipoEsperado) throws Exception {
@@ -364,7 +367,12 @@ public class SQLResult {
      * Executa a consulta e transforma as duas primeiras colunas em um dicionario.
      * <p>
      * A primeira coluna e usada como chave e a segunda como valor. Linhas com chave
-     * nula sao ignoradas.
+     * nula sao ignoradas e chaves repetidas sobrescrevem o valor anterior.
+     * </p>
+     * <p>
+     * Os valores sao obtidos diretamente via {@link ResultSet#getObject(int)} sem
+     * conversao automatica de tipos (em bancos como Oracle, colunas numericas
+     * costumam retornar {@link BigDecimal}).
      * </p>
      *
      * <pre>{@code
@@ -372,11 +380,13 @@ public class SQLResult {
      *         "SELECT CODTIPOPER, DESCROPER FROM TGFTOP WHERE ATIVO = ?",
      *         Arrays.asList("S"));
      *
-     * Map<Long, String> tiposOperacao = sql.executeAsDictionary(conn);
+     * Map<BigDecimal, String> tiposOperacao = sql.executeAsDictionary(conn);
      * }</pre>
      *
-     * @param <K>  tipo esperado para as chaves
-     * @param <V>  tipo esperado para os valores
+     * @param <K>  tipo esperado para as chaves (compativel com o retorno bruto do
+     *             driver JDBC)
+     * @param <V>  tipo esperado para os valores (compativel com o retorno bruto do
+     *             driver JDBC)
      * @param conn conexao JDBC aberta pelo chamador
      * @return mapa preenchido com os pares chave/valor retornados pela consulta
      * @throws Exception se houver falha ao preparar, parametrizar ou executar a
@@ -454,12 +464,24 @@ public class SQLResult {
 	 * Le o {@link ResultSet} e transforma cada linha em uma instancia do DTO
 	 * informado.
 	 * <p>
-	 * Sao considerados apenas atributos anotados com {@link ColumnDB}. O metodo
-	 * tambem normaliza tipos comuns do Oracle/JDBC: valores numericos para
-	 * {@link Long}, {@link Integer}, {@link Double} e {@link Float}; CLOB para
-	 * {@link String}; e datas/timestamps para {@link String},
-	 * {@link java.util.Date} ou tipos JDBC compativeis.
+	 * Sao considerados todos os atributos anotados com {@link ColumnDB} (as colunas
+	 * correspondentes devem estar presentes no {@link ResultSet}). O metodo tambem
+	 * normaliza tipos comuns do Oracle/JDBC:
 	 * </p>
+	 * <ul>
+	 * <li>Valores numericos ({@link Number}) para {@link Long}, {@link Integer},
+	 * {@link Double} e {@link Float};</li>
+	 * <li>{@link Enum} a partir do texto retornado pelo banco via
+	 * {@link Enum#valueOf(Class, String)} (definindo {@code null} quando o valor
+	 * nao corresponder a nenhuma constante);</li>
+	 * <li>{@link java.sql.Clob} convertido integralmente para {@link String};</li>
+	 * <li>{@link java.sql.Timestamp} formatado como {@code "dd/MM/yyyy HH:mm:ss"}
+	 * quando o atributo for {@link String}, ou convertido para
+	 * {@link java.util.Date} / tipos compativeis;</li>
+	 * <li>{@link java.util.Date} formatado como {@code "dd/MM/yyyy"} quando o
+	 * atributo for {@link String}, ou convertido para {@link java.util.Date} /
+	 * tipos compativeis.</li>
+	 * </ul>
      *
      * <pre>{@code
      * SQLResult sqlResult = SQLBuilder.buildSelect(ClienteDTO.class, null);
@@ -475,8 +497,10 @@ public class SQLResult {
 	 * @param rs        resultado vindo de {@code executeQuery()}
 	 * @param classeDTO classe concreta do DTO, com construtor sem argumentos
 	 * @return lista de DTOs preenchidos com os dados retornados
-	 * @throws Exception se houver falha de instanciacao, reflexao ou leitura de
-	 *                   tipos nao tratados
+	 * @throws RuntimeException se alguma coluna mapeada nao existir no
+	 *                          {@link ResultSet} ou ocorrer erro JDBC na leitura
+	 * @throws Exception        se houver falha de instanciacao, reflexao ou leitura
+	 *                          de tipos nao tratados
 	 */
     public <T> List<T> mapearResultSet(ResultSet rs, Class<T> classeDTO) throws Exception {
         List<T> resultado = new ArrayList<>();
