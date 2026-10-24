@@ -73,7 +73,8 @@ public class SQLCall {
      * }</pre>
      *
      * @param alias   nome usado para recuperar o valor no {@link Result}
-     * @param sqlType tipo JDBC registrado em {@link CallableStatement#registerOutParameter(int, int)}
+     * @param sqlType tipo JDBC registrado em
+     *                {@link CallableStatement#registerOutParameter(int, int)}
      * @return a propria chamada para encadeamento fluente
      */
     public SQLCall out(String alias, int sqlType) {
@@ -239,9 +240,12 @@ public class SQLCall {
          */
         public Long getLong(String alias) {
             Object val = outputs.get(alias);
-            if (val == null) return null;
-            if (val instanceof BigDecimal) return ((BigDecimal) val).longValue();
-            if (val instanceof Number) return ((Number) val).longValue();
+            if (val == null)
+                return null;
+            if (val instanceof BigDecimal)
+                return ((BigDecimal) val).longValue();
+            if (val instanceof Number)
+                return ((Number) val).longValue();
             return Long.parseLong(val.toString());
         }
 
@@ -257,8 +261,10 @@ public class SQLCall {
          */
         public BigDecimal getBigDecimal(String alias) {
             Object val = outputs.get(alias);
-            if (val == null) return null;
-            if (val instanceof BigDecimal) return (BigDecimal) val;
+            if (val == null)
+                return null;
+            if (val instanceof BigDecimal)
+                return (BigDecimal) val;
             return new BigDecimal(val.toString());
         }
     }
@@ -329,17 +335,19 @@ public class SQLCall {
     private void auditarPerformance(long tempoInicio, Exception excecao) {
         long tempoExecucaoMs = System.currentTimeMillis() - tempoInicio;
         String origem = obterOrigemDaChamada();
-        int paramCount = parameters == null ? 0 : parameters.size();
+        int paramCount = parameters.size();
 
         if (excecao != null) {
-            String msg = String.format("[Mini-ORM PL/SQL ERRO] Falha ao executar Procedure. Origem: [%s] | Tempo: %d ms | Procedure: %s | Params: %d",
+            String msg = String.format(
+                    "[Mini-ORM PL/SQL ERRO] Falha ao executar Procedure. Origem: [%s] | Tempo: %d ms | Procedure: %s | Params: %d",
                     origem, tempoExecucaoMs, procedureName, paramCount);
             OrmConfig.getLogger().error(SQLCall.class.getSimpleName(), "PLSQL-ERR-001", msg, excecao);
             return;
         }
 
         if (tempoExecucaoMs > 3000) {
-            String msg = String.format("[Mini-ORM LENTIDAO] Procedure Lenta! Origem: [%s] | Tempo: %d ms | Procedure: %s | Params: %d",
+            String msg = String.format(
+                    "[Mini-ORM LENTIDAO] Procedure Lenta! Origem: [%s] | Tempo: %d ms | Procedure: %s | Params: %d",
                     origem, tempoExecucaoMs, procedureName, paramCount);
             OrmConfig.getLogger().warn(SQLCall.class.getSimpleName(), "PLSQL-WARN-001", msg);
         }
