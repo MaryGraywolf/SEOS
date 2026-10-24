@@ -1,0 +1,96 @@
+name: CD - Entrega Contínua
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  publish_package:
+    name: Publicar Release no GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Configurar JDK 11 e Autenticação do Maven
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          java-version: "11"
+          distribution: "temurin"
+          server-id: github
+          server-password: GITHUB_TOKEN
+
+      - name: Publicar Pacote (Deploy)
+        run: mvn versions:set -DnewVersion="${GITHUB_REF_NAME#v}" -DgenerateBackupPoms=false && mvn deploy -s .github/settings-security.xml -DskipTests
+        env:
+          GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+          GITHUB_ACTOR: ${{github.actor}}
+
+  notify_failure_cd:
+    needs: [publish_package]
+    runs-on: ubuntu-latest
+    if: failure()
+
+    steps:
+      - name: Set error message variables
+        id: error_info
+        run: |
+          echo "job_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
+
+      - name: Enviar alerta para o Microsoft Teams
+        env:
+          WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "type": "message",
+            "attachments": [
+              {
+                "contentType": "application/vnd.microsoft.card.adaptive",
+                "content": {
+                  "$schema": "https://adaptivecards.io/schemas/adaptive-card.json",
+                  "type": "AdaptiveCard",
+                  "version": "1.4",
+                  "body": [
+                    {
+                      "type": "TextBlock",
+                      "text": "📦 Falha na Publicação do Pacote (CD)!",
+                      "weight": "Bolder",
+                      "size": "Large",
+                      "color": "Attention"
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "Ocorreu um erro ao tentar publicar a nova versão do SEOS no GitHub Packages.",
+                      "wrap": true
+                    },
+                    {
+                      "type": "FactSet",
+                      "facts": [
+                        {
+                          "title": "Repositório:",
+                          "value": "${{ github.repository }}"
+                        },
+                        {
+                          "title": "Versão (Tag):",
+                          "value": "${{ github.ref_name }}"
+                        }
+                      ]
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "Action.OpenUrl",
+                      "title": "Acessar Logs do Deploy",
+                      "url": "${{ steps.error_info.outputs.job_url }}"
+                    }
+                  ]
+                }
+              }
+            ]
+          }' \
+          "$WEBHOOK_URL"
