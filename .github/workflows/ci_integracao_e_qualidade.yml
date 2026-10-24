@@ -1,0 +1,119 @@
+name: CI - Integração e Qualidade
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build_and_test:
+    name: Build, Testes e Qualidade (Sonar)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Configurar JDK 11
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          java-version: "11"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build, Testes e SonarCloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=MaryGraywolf_mini-orm -Dsonar.organization=marygraywolf2403 -Dsonar.host.url=https://sonarcloud.io
+
+  security_sast:
+    name: Segurança e Cadeia de Suprimentos (Semgrep)
+    needs: [build_and_test]
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Instalar e Executar Semgrep Nativo
+        run: |
+          python -m pip install --only-binary :all: semgrep==1.90.0
+          semgrep scan --config="p/java" --sarif --output=semgrep.sarif
+
+      - name: Upload do relatório para o GitHub Security
+        uses: github/codeql-action/upload-sarif@f6e388ebf0efc915c6c5b165b019ee61a6746a38
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
+  notify_failure_ci:
+    name: ChatOps - Alerta no Teams
+    needs: [build_and_test, security_sast]
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Set error message variables
+        id: error_info
+        run: |
+          echo "error_message=A pipeline de CI falhou no branch ${{ github.ref_name }}." >> $GITHUB_OUTPUT
+          echo "job_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
+
+      - name: Enviar alerta para o Microsoft Teams
+        env:
+          WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "type": "message",
+            "attachments": [
+              {
+                "contentType": "application/vnd.microsoft.card.adaptive",
+                "content": {
+                  "$schema": "https://adaptivecards.io/schemas/adaptive-card.json",
+                  "type": "AdaptiveCard",
+                  "version": "1.4",
+                  "body": [
+                    {
+                      "type": "TextBlock",
+                      "text": "🚨 Falha na Integração Contínua (CI)!",
+                      "weight": "Bolder",
+                      "size": "Large",
+                      "color": "Attention"
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "Ocorreu um erro durante a validação do código na esteira principal (Build, Testes, SonarCloud ou Semgrep). O merge deve ser bloqueado.",
+                      "wrap": true
+                    },
+                    {
+                      "type": "FactSet",
+                      "facts": [
+                        {
+                          "title": "Repositório:",
+                          "value": "${{ github.repository }}"
+                        },
+                        {
+                          "title": "Branch / Ref:",
+                          "value": "${{ github.ref_name }}"
+                        }
+                      ]
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "Action.OpenUrl",
+                      "title": "Acessar Logs da Pipeline",
+                      "url": "${{ steps.error_info.outputs.job_url }}"
+                    }
+                  ]
+                }
+              }
+            ]
+          }' \
+          "$WEBHOOK_URL"
