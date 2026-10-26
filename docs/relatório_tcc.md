@@ -24,8 +24,8 @@ Evoluir o microframework SEOS com base em práticas consolidadas de mercado e es
 
 ### Objetivos específicos
 
-- Implementar um mecanismo automatizado de geração de instruções DML/DQL (`SQLBuilder`) e de mapeamento objeto-relacional de `ResultSet` baseado em *annotations* e *reflection*;
-- Mitigar riscos de *SQL Injection* na camada de persistência por meio da parametrização obrigatória de consultas no `PreparedStatement` e validação estrutural das operações;
+- Implementar um mecanismo automatizado de geração de instruções DML/DQL (`SQLBuilder`) e de mapeamento objeto-relacional de `ResultSet` baseado em _annotations_ e _reflection_;
+- Mitigar riscos de _SQL Injection_ na camada de persistência por meio da parametrização obrigatória de consultas no `PreparedStatement` e validação estrutural das operações;
 - Incorporar recursos de auditoria e observabilidade para rastreamento de erros, parâmetros e tempo de execução das consultas ao banco de dados;
 - Estruturar uma pipeline de Integração Contínua e DevSecOps com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança (SAST com Semgrep), notificações via ChatOps e Entrega Contínua configurando o GitHub Package com versionamento semântico da biblioteca;
 - Avaliar a aderência arquitetural do SEOS frente ao cenário corporativo estudado e em comparação com soluções consolidadas de mercado, como Hibernate/JPA;
@@ -33,24 +33,22 @@ Evoluir o microframework SEOS com base em práticas consolidadas de mercado e es
 
 ## 1.2 Justificativa
 
-Ao criar uma implementação para atender a uma demanda e perceber que não poderia reutilizar o mesmo método de persistência no banco de dados, a primeira coisa que pensei foi: “Poxa, vou criar mais uma versão de um `UPDATE` com as mesmas condições?”. Foi nesse momento que percebi que a falta de padronização, a baixa qualidade do código e os problemas de segurança nas consultas eram fatores que precisavam ser tratados.
+Ao criar uma implementação para atender a uma demanda e perceber que não poderia reutilizar o mesmo método de persistência no banco de dados, a primeira coisa que pensei foi: “Por que criar mais uma versão de um `UPDATE` com as mesmas condições?”. Foi nesse momento que percebi que a falta de padronização, a baixa qualidade do código e os problemas de segurança nas consultas eram fatores que precisavam ser tratados.
 
-A criação do SEOS foi motivada pela necessidade de reduzir o trabalho manual envolvido no acesso ao banco de dados sem retirar da equipe o controle sobre as consultas, as conexões e as transações. A solução também busca diminuir a duplicação de operações e facilitar a manutenção dos projetos.
+Por meio dessa necessidade nasceu o SEOS, criado para ser uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de SQL Injection, sem retirar da equipe o controle sobre as consultas, conexões e transações de persistência.
 
 ## 1.3 Problema
-
-O problema analisado neste projeto é a existência de uma camada de persistência com consultas manuais, excesso de código repetitivo, baixa padronização e possíveis vulnerabilidades de SQL Injection.
-
-Um exemplo que reforça a necessidade do SEOS é o arquivo de _Repository_ `ProjectDAO` (nome meramente ilustrativo), que apresenta os seguintes números:
 
 - 21.381 linhas de código;
 - 409 métodos, dos quais 402 acessam o banco de dados;
 - 19,6% de linhas idênticas;
 - 54,4% de linhas repetidas;
-- entre 416 chamadas a `PreparedStatement`, apenas 156 utilizam métodos `setXxx()`;
-- aproximadamente 43% dos métodos são potencialmente vulneráveis a SQL Injection.
+- Entre 416 chamadas a `PreparedStatement`, apenas 156 utilizam métodos `setXxx()`;
+- Aproximadamente 43% dos métodos são potencialmente vulneráveis a SQL Injection.
 
-Ainda devem ser avaliados e documentados os impactos financeiros de uma eventual indisponibilidade, o tempo de recuperação da empresa após um ataque, os prejuízos indiretos e a meta percentual de redução das vulnerabilidades.
+Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de um único arquivo _Repository_ de um único projeto utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de SQL Injection, já haviam sido repassados; contudo, devido ao tamanho da equipe — atualmente composta por 30 pessoas — e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
+
+Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico — não sendo uma aplicação final em si —, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente 43% de métodos suscetíveis a SQL Injection representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de `[INFORMAR_DEPOIS]` para conter e restaurar o ambiente. Nesse intervalo, estima-se um prejuízo direto de aproximadamente `[R$ X]` devido à paralisação do faturamento e das vendas, além de prejuízos indiretos severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira DevSecOps e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
 
 ## 2. Referencial Teórico
 
@@ -246,21 +244,27 @@ O projeto será estruturado com base nas seguintes práticas:
 
 1. **Integração Contínua (Continuous Integration):** o workflow [`devsecops.yml`](.github/workflows/devsecops.yml) é executado em _push_ na branch `main` ou quando uma _pull request_ é aberta para essa branch. O GitHub Actions configura o JDK 11, executa `mvn clean verify`, compila a aplicação e executa os testes automatizados com JUnit 5 e Mockito. O JaCoCo coleta os dados dos testes e gera o relatório de cobertura.
 
-![alt text](/docs/image/image.png)
+![alt text](/docs/image/imagePipelineCI.png)
 
-![alt text](/docs/image/image-1.png)
+![alt text](/docs/image/imagePipelineTestes.png)
 
 2. **Qualidade Contínua (Continuous Quality):** a pipeline envia os resultados dos testes e da cobertura para o SonarCloud. A ferramenta analisa cobertura, duplicação, _bugs_, vulnerabilidades e _code smells_. O _Quality Gate_ verifica os critérios definidos e pode reprovar a alteração antes da integração da _pull request_.
 
-![alt text](/docs/image/image-3.png)
+![Imagem da plataforma do SonarQube Cloud](/docs/image/imageSonarQube.png)
 
 3. **Segurança Antecipada (Shift-Left Security):** após a compilação, os testes e a análise de qualidade, o Semgrep realiza uma análise estática de segurança (SAST) no código Java do SEOS. O resultado é gerado em formato SARIF e enviado ao GitHub Security. As versões das dependências utilizadas na etapa são fixadas por _hash_ e a instalação de pacotes binários desconhecidos é restringida por `--only-binary :all:`.
 
-![alt text](/docs/image/image-4.png)
+![alt text](/docs/image/imagePipelineSAST.png)
 
 4. **Observabilidade e ChatOps:** a pipeline possui um mecanismo de notificação assíncrona que aciona um alerta via _Webhook_ integrado ao Microsoft Teams quando uma etapa anterior falha. A mensagem informa a etapa, o projeto, o motivo e um link para os logs da execução.
 
+![alt text](/docs/image/imageMensagemTeams.png)
+
 5. **Entrega Contínua (Continuous Delivery):** esta etapa deverá ser detalhada com o fluxo de publicação, implantação e validação adotado pelo projeto.
+
+![alt text](/docs/image/imagePipelineCD.png)
+
+![alt text](/docs/image/imagePackageMaven.png)
 
 ### 3.10 Dados do Projeto
 

@@ -305,7 +305,7 @@ public class SQLBuilder {
 	 * O trecho {@code SET} e gerado automaticamente com base nos atributos anotados
 	 * e preenchidos (atributos do tipo {@link Enum} sao convertidos para
 	 * {@link String} via {@link Enum#name()}). A clausula {@code WHERE} permanece
-	 * explicita para permitir filtros complexos do dominio Sankhya/Oracle, mas seus
+	 * explicita para permitir filtros complexos em SQL/Oracle, mas seus
 	 * valores devem ser enviados por {@code whereParams}.
 	 * </p>
 	 *

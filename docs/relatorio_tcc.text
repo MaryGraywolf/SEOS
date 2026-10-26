@@ -1,0 +1,49 @@
+\section{Introdução}
+\label{sec:introducao}
+
+Atualmente, na empresa onde trabalho, os métodos de consulta utilizados em nossos projetos são muito verbosos. Para realizar uma consulta, é necessário escrevê-la manualmente, armazená-la em uma variável, mapear os parâmetros do \texttt{PreparedStatement} e, logo em seguida, mapear o \texttt{ResultSet}, campo a campo.
+
+Em alguns casos, as consultas não possuem parâmetros. Em outros, os valores são concatenados diretamente na instrução SQL, o que cria uma brecha significativa para \textit{SQL Injection}. Além disso, existem diversas versões de operações como \texttt{INSERT}, \texttt{UPDATE} e consultas para uma mesma tabela. Isso ocorre porque determinadas implementações precisam de estruturas específicas que não podem ser modificadas, resultando na duplicação de operações semelhantes.
+
+Nesse contexto, foi desenvolvido o SEOS (\textit{Software Endurance Orchestration System}), um microframework ORM criado para atender às necessidades específicas da empresa. O framework mapeia tabelas, campos e \textit{sequences} por meio de \textit{annotations} e constrói estruturas DML e DQL com base nesses mapeamentos. Dessa forma, busca tornar o acesso ao banco de dados mais padronizado e seguro, além de retornar as classes com os valores já mapeados e prontos para serem utilizados pelas implementações.
+
+\subsection{Objetivo}
+\label{subsec:objetivo}
+
+\subsubsection{Objetivo geral}
+
+Evoluir o microframework SEOS com base em práticas consolidadas de mercado e estruturar seu processo de desenvolvimento sob a cultura DevSecOps, a fim de demonstrar os ganhos de otimização, padronização, auditoria e segurança na camada de persistência.
+
+\subsubsection{Objetivos específicos}
+
+\begin{itemize}
+    \item Implementar um mecanismo automatizado de geração de instruções DML/DQL (\texttt{SQLBuilder}) e de mapeamento objeto-relacional de \texttt{ResultSet} baseado em \textit{annotations} e \textit{reflection};
+    \item Mitigar riscos de \textit{SQL Injection} na camada de persistência por meio da parametrização obrigatória de consultas no \texttt{PreparedStatement} e validação estrutural das operações;
+    \item Incorporar recursos de auditoria e observabilidade para rastreamento de erros, parâmetros e tempo de execução das consultas ao banco de dados;
+    \item Estruturar uma pipeline de Integração Contínua e DevSecOps com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança (SAST com Semgrep), notificações via ChatOps e Entrega Contínua configurando o GitHub Package com versionamento semântico da biblioteca;
+    \item Avaliar a aderência arquitetural do SEOS frente ao cenário corporativo estudado e em comparação com soluções consolidadas de mercado, como Hibernate/JPA;
+    \item Mensurar os ganhos quantitativos e qualitativos da adoção do SEOS em relação à abordagem tradicional (JDBC manual), considerando redução de linhas de código, taxa de duplicação e exposição a vulnerabilidades baseadas no OWASP Top 10.
+\end{itemize}
+
+\subsection{Justificativa}
+\label{subsec:justificativa}
+
+Ao criar uma implementação para atender a uma demanda e perceber que não poderia reutilizar o mesmo método de persistência no banco de dados, a primeira coisa que pensei foi: ``Por que criar mais uma versão de um \texttt{UPDATE} com as mesmas condições?''. Foi nesse momento que percebi que a falta de padronização, a baixa qualidade do código e os problemas de segurança nas consultas eram fatores que precisavam ser tratados.
+
+Por meio dessa necessidade nasceu o SEOS, criado para ser uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de \textit{SQL Injection}, sem retirar da equipe o controle sobre as consultas, conexões e transações de persistência.
+
+\subsection{Problema}
+\label{subsec:problema}
+
+\begin{itemize}
+    \item 21.381 linhas de código;
+    \item 409 métodos, dos quais 402 acessam o banco de dados;
+    \item 19,6\% de linhas idênticas;
+    \item 54,4\% de linhas repetidas;
+    \item Entre 416 chamadas a \texttt{PreparedStatement}, apenas 156 utilizam métodos \texttt{setXxx()};
+    \item Aproximadamente 43\% dos métodos são potencialmente vulneráveis a \textit{SQL Injection}.
+\end{itemize}
+
+Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de um único arquivo \textit{Repository} de um único projeto utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de \textit{SQL Injection}, já haviam sido repassados; contudo, devido ao tamanho da equipe --- atualmente composta por 30 pessoas --- e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
+
+Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico --- não sendo uma aplicação final em si ---, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente 43\% de métodos suscetíveis a \textit{SQL Injection} representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de \texttt{[INFORMAR\_DEPOIS]} para conter e restaurar o ambiente. Nesse intervalo, estima-se um prejuízo direto de aproximadamente \texttt{[R\$ X]} devido à paralisação do faturamento e das vendas, além de prejuízos indiretos severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira DevSecOps e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
