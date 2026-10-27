@@ -69,17 +69,11 @@ Esta seção deverá ser complementada com a fundamentação dos conceitos e com
 
 ### 3.1 Contexto do Trabalho
 
-O SEOS foi desenvolvido a partir de uma necessidade identificada em projetos reais da empresa onde trabalho. O cenário utiliza aplicações Java e operações de persistência baseadas em JDBC. A solução foi criada para atender ao contexto existente, no qual as consultas, as conexões e as transações precisam permanecer sob controle da aplicação.
+O cenário utilizado como inspiração e base para o desenvolvimento e a aplicabilidade do SEOS é o de uma empresa têxtil que possui dois projetos legados principais. Esses dois sistemas foram desenvolvidos utilizando o ecossistema Java (nas versões 8 e 11), realizando o acesso direto ao banco de dados Oracle 19c via JDBC e comunicando-se via API com o ERP responsável pelo gerenciamento dos processos empresariais. Por razões de confidencialidade e políticas internas de segurança da informação, a identidade da organização e os indicadores corporativos globais são preservados neste relatório, concentrando-se a caracterização no ambiente técnico de engenharia de software.
 
-O projeto deverá complementar este contexto com as seguintes informações:
+Esses dois sistemas sustentam rotinas operacionais críticas de diferentes fluxos de negócio da empresa — um responsável por automações produtivas, logísticas e contábeis, e o outro responsável pelo _e-commerce_ —, concentrando um elevado volume de consultas e persistências desenvolvidas ao longo dos anos. Pela forma como os sistemas foram estruturados junto ao ERP, as consultas, as conexões e as transações precisam continuar sob o controle direto da aplicação, o que impedia o uso de um ORM tradicional que gerenciasse tudo de forma automática.
 
-- segmento e porte da empresa;
-- quantidade aproximada de funcionários;
-- banco de dados e plataforma utilizados;
-- quantidade de projetos, módulos e consultas existentes;
-- setores analisados, como o setor financeiro;
-- quantidade de pessoas envolvidas;
-- volume e período de desenvolvimento.
+Além disso, como a equipe conta atualmente com 30 pessoas atuando na manutenção e na criação de novas demandas dentro desses dois sistemas, manter um padrão seguro de escrita SQL tornou-se um desafio diário. Por conta disso, o SEOS precisou ser pensado como uma biblioteca leve, compatível tanto com o Java 8 quanto com o Java 11, para se encaixar diretamente nos projetos já existentes sem exigir mudanças na arquitetura da empresa.
 
 ### 3.2 Situação Atual
 
