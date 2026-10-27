@@ -77,9 +77,37 @@ Além disso, como a equipe conta atualmente com 30 pessoas atuando na manutenç�
 
 ### 3.2 Situação Atual
 
-Na situação anterior ao SEOS, as consultas eram construídas manualmente. O desenvolvedor precisava criar a instrução SQL, concatenar ou mapear os parâmetros, executar o `PreparedStatement`, percorrer o `ResultSet` e atribuir cada valor ao objeto correspondente.
+Com base nos cálculos realizados pela equipe de Arquitetura no projeto responsável pelas automações corporativas, os resultados foram organizados da seguinte forma:
 
-De forma mais ilustrativa:
+#### Resultados das automações
+
+| # | Indicador | Qtde | % dos 1.641 |
+|---|-----------|------|--------------|
+| 1 | Métodos que realizam funções no banco | 1.641 | 100% |
+| 2 | Usam conexão JDBC (PreparedStatement, CallableStatement, getPreparedStatement) | 1.321 | 80,5% |
+| 3 | Não usam JDBC direto | 320 | 19,5% |
+| 4 | Com alguma má prática de consulta | 395 | 24,1% |
+| 5 | Vulneráveis (concatenam String ou tipo não resolvido) | 283 | 17,2% |
+| 6 | Sem nenhuma chamada de log | 573 | 34,9% |
+
+#### Os 573 sem log
+
+| Situação | Quantidade |
+|----------|------------|
+| Têm `catch` e não registram nada | 254 |
+| Só usam `System.out` ou `printStackTrace`, que não é auditoria | 58 |
+| Também são vulneráveis | 28 |
+
+#### Resultados do e-commerce
+
+| Pergunta | Quantidade | % dos 1.249 |
+|----------|------------|-------------|
+| Métodos que fazem operações no banco | 1.249 | 100% |
+| Usam JDBC (prepareStatement, prepareCall, ResultSet) | 1.229 | 98,4% |
+| Não usam JDBC (JPA/Hibernate via EntityManager) | 20 | 1,6% |
+| Fora das boas práticas (concatenam variáveis na SQL) | 468 | 37,5% |
+| Vulneráveis a SQL Injection | 299 | 23,9% |
+| Sem auditoria de logs | 1.179 | 94,4% |
 
 ```java
 public List<Usuario> consultarUsuarios(String status, Integer idadeMinima) {
