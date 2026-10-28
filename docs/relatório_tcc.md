@@ -69,7 +69,7 @@ Esta seção deverá ser complementada com a fundamentação dos conceitos e com
 
 ### 3.1 Contexto do Trabalho
 
-O cenário utilizado como inspiração e base para o desenvolvimento e a aplicabilidade do SEOS é o de uma empresa têxtil que possui **dois projetos legados principais**. Esses dois sistemas foram desenvolvidos utilizando o ecossistema Java (nas versões 8 e 11), realizando o acesso direto ao banco de dados Oracle 19c via JDBC e comunicando-se via _Application Programming Interface_ (API) com o sistema de _Enterprise Resource Planning_ (ERP) responsável pelo gerenciamento dos processos empresariais. Por razões de confidencialidade e políticas internas de segurança da informação, a identidade da organização e os indicadores corporativos globais são preservados neste relatório, concentrando-se a caracterização no ambiente técnico de engenharia de software.
+O cenário utilizado como inspiração, base para o desenvolvimento e a aplicabilidade do SEOS é o de uma empresa têxtil que possui **dois projetos legados principais**. Esses dois sistemas foram desenvolvidos utilizando o ecossistema Java (nas versões 8 e 11), realizando o acesso direto ao banco de dados Oracle 19c via JDBC e comunicando-se via _Application Programming Interface_ (API) com o sistema de _Enterprise Resource Planning_ (ERP) responsável pelo gerenciamento dos processos empresariais. Por razões de confidencialidade e políticas internas de segurança da informação, a identidade da organização e os indicadores corporativos globais são preservados neste relatório, concentrando-se a caracterização no ambiente técnico de engenharia de software.
 
 Esses dois sistemas sustentam rotinas operacionais críticas de diferentes fluxos de negócio da empresa — um responsável por **automações produtivas, logísticas e contábeis**, e o outro responsável pelo **_e-commerce_** —, concentrando um elevado volume de consultas e persistências desenvolvidas ao longo dos anos. Pela forma como os sistemas foram estruturados junto ao ERP, as consultas, as conexões e as transações precisam continuar <u>sob o controle direto da aplicação</u>, o que impedia o uso de um ORM tradicional que gerenciasse tudo de forma automática.
 
@@ -154,72 +154,27 @@ Analisando os dados acima e levando em conta o exemplo que os alimenta, reflete-
 
 ### 3.3 Solução Proposta
 
-A partir do conhecimento sobre ORM e Spring Boot, foi desenvolvido o SEOS para atender ao contexto da empresa. O framework utiliza _annotations_ para mapear tabelas, campos e _sequences_, constrói estruturas DML e DQL e retorna as classes com os valores já mapeados.
-
-Com o SEOS, a consulta pode ser representada de forma mais objetiva:
+Para resolver os problemas contextualizados nesse relatório foi pensado na existência de um mini framework de ORM dentro do ecossistema Java e que pudesse manter as particularidades da empresa, como o gerenciamento de conexões, sem ser complexo permitindo assim aceleridade no desenvolvimento. O SEOS mapeia campos e tabelas baseado no mapeamento de banco do Spring Boot, por meio das annotations TableDB e ColumnDB. Table mapeia o nome das tabelas, view:
 
 ```java
-SQLResult sql = SQLBuilder.select(UserTestDTO.class)
-        .where("STATUS = ? AND USER_AGE >= ?", status, idadeMinima)
-        .build();
-List<UserTestDTO> usuarios = sql.executeQuery(conn, UserTestDTO.class);
-```
+@TableDB(name = "TB_USER")
+public class UserDTO {
 
-### 3.4 Exemplo de uso end-to-end
+    @ColumnDB(localName = "ID", sequence = "SEQ_TB_USER.NEXTVAL")
+    private Long id;
 
-```java
-public class UserRepository implements AutoCloseable {
+    @ColumnDB(localName = "USER_NAME")
+    private String name;
 
-    private final Connection connection;
+    @ColumnDB(localName = "STATUS")
+    private String status;
 
-    public UserRepository() throws Exception {
-        this.connection = ConnectionPool.getInstance()
-            .getConnection(UserRepository.class);
-    }
-
-    public void insert(UserDTO user) throws Exception {
-        SQLBuilder.buildInsert(user).executeUpdate(connection);
-    }
-
-    public UserDTO findById(Integer id) throws Exception {
-        return SQLBuilder
-            .buildSelect(UserDTO.class, "ID = ?", id)
-            .executeQuerySingle(connection, UserDTO.class);
-    }
-
-    public boolean updateStatus(Integer id, String status) throws Exception {
-        UserDTO patch = UserDTO.builder()
-            .status(status)
-            .build();
-
-        return SQLBuilder
-            .buildUpdate(patch, "ID = ?", id)
-            .executeUpdate(connection) == 1;
-    }
-
-    @Override
-    public void close() throws Exception {
-        if (connection != null && !connection.isClosed()) {
-            connection.close();
-        }
-    }
-}
-
-try (UserRepository userRepository = new UserRepository()) {
-    UserDTO newUser = UserDTO.builder()
-        .name("Maria")
-        .age(30)
-        .status("ACTIVE")
-        .build();
-
-    userRepository.insert(newUser);
-    UserDTO existingUser = userRepository.findById(1);
-
-    if (existingUser != null) {
-        userRepository.updateStatus(existingUser.getId(), "INACTIVE");
-    }
+    @ColumnDB(localName = "USER_AGE")
+    private Integer age;
 }
 ```
+
+
 
 ### 3.5 Vantagens e desvantagens
 
