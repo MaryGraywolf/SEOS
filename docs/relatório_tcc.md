@@ -12,43 +12,43 @@
 
 Atualmente, na empresa onde trabalho, os métodos de consulta utilizados em nossos projetos são muito verbosos. Para realizar uma consulta, é necessário escrevê-la manualmente, armazená-la em uma variável, mapear os parâmetros do `PreparedStatement` e, logo em seguida, mapear o `ResultSet`, campo a campo.
 
-Em alguns casos, as consultas não possuem parâmetros. Em outros, os valores são concatenados diretamente na instrução SQL, o que cria uma brecha significativa para SQL Injection. Além disso, existem diversas versões de operações como `INSERT`, `UPDATE` e consultas para uma mesma tabela. Isso ocorre porque determinadas implementações precisam de estruturas específicas que não podem ser modificadas, resultando na duplicação de operações semelhantes.
+Em alguns casos, as consultas não possuem parâmetros. Em outros, os valores são concatenados diretamente na instrução _Structured Query Language_ (SQL), o que cria uma brecha significativa para _SQL Injection_. Além disso, existem diversas versões de operações como `INSERT`, `UPDATE` e consultas para uma mesma tabela. Isso ocorre porque determinadas implementações precisam de estruturas específicas que não podem ser modificadas, resultando na duplicação de operações semelhantes.
 
-Nesse contexto, foi desenvolvido o SEOS (Software Endurance Orchestration System), um microframework ORM criado para atender às necessidades específicas da empresa. O framework mapeia tabelas, campos e _sequences_ por meio de _annotations_ e constrói estruturas DML e DQL com base nesses mapeamentos. Dessa forma, busca tornar o acesso ao banco de dados mais padronizado e seguro, além de retornar as classes com os valores já mapeados e prontos para serem utilizados pelas implementações.
+Nesse contexto, foi desenvolvido o **SEOS** (_Software Endurance Orchestration System_), um _microframework_ de Mapeamento Objeto-Relacional (ORM, do inglês _Object-Relational Mapping_) criado para atender às necessidades específicas da empresa. O _framework_ mapeia tabelas, campos e _sequences_ por meio de _annotations_ e constrói estruturas _Data Manipulation Language_ (DML) e _Data Query Language_ (DQL) com base nesses mapeamentos. Dessa forma, busca tornar o acesso ao banco de dados mais padronizado e seguro, além de retornar as classes com os valores já mapeados e prontos para serem utilizados pelas implementações.
 
 ## 1.1 Objetivo
 
 ### Objetivo geral
 
-Evoluir o microframework SEOS com base em práticas consolidadas de mercado e estruturar seu processo de desenvolvimento sob a cultura DevSecOps, a fim de demonstrar os ganhos de otimização, padronização, auditoria e segurança na camada de persistência.
+Evoluir o _microframework_ SEOS com base em práticas consolidadas de mercado e estruturar seu processo de desenvolvimento sob a cultura _DevSecOps_, a fim de demonstrar os ganhos de otimização, padronização, auditoria e segurança na camada de persistência.
 
 ### Objetivos específicos
 
-- Implementar um mecanismo automatizado de geração de instruções DML/DQL (`SQLBuilder`) e de mapeamento objeto-relacional de `ResultSet` baseado em _annotations_ e _reflection_;
-- Mitigar riscos de _SQL Injection_ na camada de persistência por meio da parametrização obrigatória de consultas no `PreparedStatement` e validação estrutural das operações;
-- Incorporar recursos de auditoria e observabilidade para rastreamento de erros, parâmetros e tempo de execução das consultas ao banco de dados;
-- Estruturar uma pipeline de Integração Contínua e DevSecOps com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança (SAST com Semgrep), notificações via ChatOps e Entrega Contínua configurando o GitHub Package com versionamento semântico da biblioteca;
-- Avaliar a aderência arquitetural do SEOS frente ao cenário corporativo estudado e em comparação com soluções consolidadas de mercado, como Hibernate/JPA;
-- Mensurar os ganhos quantitativos e qualitativos da adoção do SEOS em relação à abordagem tradicional (JDBC manual), considerando redução de linhas de código, taxa de duplicação e exposição a vulnerabilidades baseadas no OWASP Top 10.
+- **Automatização de persistência:** implementar um mecanismo automatizado de geração de instruções DML/DQL (`SQLBuilder`) e de mapeamento objeto-relacional de `ResultSet` baseado em _annotations_ e _reflection_;
+- **Segurança contra injeções:** mitigar riscos de _SQL Injection_ na camada de persistência por meio da parametrização obrigatória de consultas no `PreparedStatement` e validação estrutural das operações;
+- **Auditoria e observabilidade:** incorporar recursos para rastreamento de erros, parâmetros e tempo de execução das consultas ao banco de dados;
+- **Esteira _DevSecOps_ (CI/CD):** estruturar uma _pipeline_ de Integração Contínua com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança — _Static Application Security Testing_ (SAST) com Semgrep —, notificações via _ChatOps_ e Entrega Contínua configurando o GitHub Packages com versionamento semântico da biblioteca;
+- **Avaliação arquitetural:** avaliar a aderência arquitetural do SEOS frente ao cenário corporativo estudado e em comparação com soluções consolidadas de mercado, como Hibernate/_Java Persistence API_ (JPA);
+- **Mensuração de resultados:** mensurar os ganhos quantitativos e qualitativos da adoção do SEOS em relação à abordagem tradicional — _Java Database Connectivity_ (JDBC) manual —, considerando redução de linhas de código, taxa de duplicação e exposição a vulnerabilidades baseadas no _Open Worldwide Application Security Project_ (OWASP) _Top_ 10.
 
 ## 1.2 Justificativa
 
-Ao criar uma implementação para atender a uma demanda e perceber que não poderia reutilizar o mesmo método de persistência no banco de dados, a primeira coisa que pensei foi: “Por que criar mais uma versão de um `UPDATE` com as mesmas condições?”. Foi nesse momento que percebi que a falta de padronização, a baixa qualidade do código e os problemas de segurança nas consultas eram fatores que precisavam ser tratados.
+Ao criar uma implementação para atender a uma demanda e perceber que não poderia reutilizar o mesmo método de persistência no banco de dados, a primeira coisa que pensei foi: _“Por que criar mais uma versão de um `UPDATE` com as mesmas condições?”_. Foi nesse momento que percebi que a **falta de padronização**, a **baixa qualidade do código** e os **problemas de segurança nas consultas** eram fatores que precisavam ser tratados.
 
-Por meio dessa necessidade nasceu o SEOS, criado para ser uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de SQL Injection, sem retirar da equipe o controle sobre as consultas, conexões e transações de persistência.
+Por meio dessa necessidade nasceu o **SEOS**, criado para ser uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de _SQL Injection_, <u>sem retirar da equipe o controle</u> sobre as consultas, conexões e transações de persistência.
 
 ## 1.3 Problema
 
-- 21.381 linhas de código;
-- 409 métodos, dos quais 402 acessam o banco de dados;
-- 19,6% de linhas idênticas;
-- 54,4% de linhas repetidas;
-- Entre 416 chamadas a `PreparedStatement`, apenas 156 utilizam métodos `setXxx()`;
-- Aproximadamente 43% dos métodos são potencialmente vulneráveis a SQL Injection.
+- **21.381** linhas de código;
+- **409** métodos, dos quais **402** acessam o banco de dados;
+- **19,6%** de linhas idênticas;
+- **54,4%** de linhas repetidas;
+- Entre **416** chamadas a `PreparedStatement`, apenas **156** utilizam métodos `setXxx()`;
+- Aproximadamente **43%** dos métodos são potencialmente vulneráveis a _SQL Injection_.
 
-Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de um único arquivo _Repository_ de um único projeto utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de SQL Injection, já haviam sido repassados; contudo, devido ao tamanho da equipe — atualmente composta por 30 pessoas — e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
+Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de <u>um único arquivo _Repository_ de um único projeto</u> utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de _SQL Injection_, já haviam sido repassados; contudo, devido ao tamanho da equipe — atualmente composta por **30 pessoas** — e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
 
-Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico — não sendo uma aplicação final em si —, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente 43% de métodos suscetíveis a SQL Injection representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de `[INFORMAR_DEPOIS]` para conter e restaurar o ambiente. Nesse intervalo, estima-se um prejuízo direto de aproximadamente `[R$ X]` devido à paralisação do faturamento e das vendas, além de prejuízos indiretos severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira DevSecOps e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
+Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico — não sendo uma aplicação final em si —, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente **43% de métodos suscetíveis a _SQL Injection_** representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de `[INFORMAR_DEPOIS]` para conter e restaurar o ambiente. Nesse intervalo, estima-se um **prejuízo direto** de aproximadamente `[R$ X]` devido à paralisação do faturamento e das vendas, além de **prejuízos indiretos** severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira _DevSecOps_ e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
 
 ## 2. Referencial Teórico
 
@@ -56,58 +56,60 @@ O projeto utiliza conceitos relacionados a:
 
 - JDBC e acesso a bancos de dados relacionais;
 - Mapeamento objeto-relacional (ORM);
-- SQL Injection e consultas parametrizadas;
-- OWASP Top 10;
-- DevSecOps;
+- _SQL Injection_ e consultas parametrizadas;
+- OWASP _Top_ 10;
+- _DevSecOps_;
 - Integração e entrega contínuas;
-- SAST (Static Application Security Testing);
+- SAST (_Static Application Security Testing_);
 - auditoria e observabilidade de aplicações.
 
-Esta seção deverá ser complementada com a fundamentação dos conceitos e com pelo menos cinco artigos atuais sobre ataques cibernéticos, segurança de aplicações e práticas DevSecOps.
+Esta seção deverá ser complementada com a fundamentação dos conceitos e com pelo menos cinco artigos atuais sobre ataques cibernéticos, segurança de aplicações e práticas _DevSecOps_.
 
 ## 3. Caso de Uso
 
 ### 3.1 Contexto do Trabalho
 
-O cenário utilizado como inspiração e base para o desenvolvimento e a aplicabilidade do SEOS é o de uma empresa têxtil que possui dois projetos legados principais. Esses dois sistemas foram desenvolvidos utilizando o ecossistema Java (nas versões 8 e 11), realizando o acesso direto ao banco de dados Oracle 19c via JDBC e comunicando-se via API com o ERP responsável pelo gerenciamento dos processos empresariais. Por razões de confidencialidade e políticas internas de segurança da informação, a identidade da organização e os indicadores corporativos globais são preservados neste relatório, concentrando-se a caracterização no ambiente técnico de engenharia de software.
+O cenário utilizado como inspiração e base para o desenvolvimento e a aplicabilidade do SEOS é o de uma empresa têxtil que possui **dois projetos legados principais**. Esses dois sistemas foram desenvolvidos utilizando o ecossistema Java (nas versões 8 e 11), realizando o acesso direto ao banco de dados Oracle 19c via JDBC e comunicando-se via _Application Programming Interface_ (API) com o sistema de _Enterprise Resource Planning_ (ERP) responsável pelo gerenciamento dos processos empresariais. Por razões de confidencialidade e políticas internas de segurança da informação, a identidade da organização e os indicadores corporativos globais são preservados neste relatório, concentrando-se a caracterização no ambiente técnico de engenharia de software.
 
-Esses dois sistemas sustentam rotinas operacionais críticas de diferentes fluxos de negócio da empresa — um responsável por automações produtivas, logísticas e contábeis, e o outro responsável pelo _e-commerce_ —, concentrando um elevado volume de consultas e persistências desenvolvidas ao longo dos anos. Pela forma como os sistemas foram estruturados junto ao ERP, as consultas, as conexões e as transações precisam continuar sob o controle direto da aplicação, o que impedia o uso de um ORM tradicional que gerenciasse tudo de forma automática.
+Esses dois sistemas sustentam rotinas operacionais críticas de diferentes fluxos de negócio da empresa — um responsável por **automações produtivas, logísticas e contábeis**, e o outro responsável pelo **_e-commerce_** —, concentrando um elevado volume de consultas e persistências desenvolvidas ao longo dos anos. Pela forma como os sistemas foram estruturados junto ao ERP, as consultas, as conexões e as transações precisam continuar <u>sob o controle direto da aplicação</u>, o que impedia o uso de um ORM tradicional que gerenciasse tudo de forma automática.
 
-Além disso, como a equipe conta atualmente com 30 pessoas atuando na manutenção e na criação de novas demandas dentro desses dois sistemas, manter um padrão seguro de escrita SQL tornou-se um desafio diário. Por conta disso, o SEOS precisou ser pensado como uma biblioteca leve, compatível tanto com o Java 8 quanto com o Java 11, para se encaixar diretamente nos projetos já existentes sem exigir mudanças na arquitetura da empresa.
+Além disso, como a equipe conta atualmente com **30 pessoas** atuando na manutenção e na criação de novas demandas dentro desses dois sistemas, manter um padrão seguro de escrita SQL tornou-se um desafio diário. Por conta disso, o SEOS precisou ser pensado como uma biblioteca leve, compatível tanto com o Java 8 quanto com o Java 11, para se encaixar diretamente nos projetos já existentes sem exigir mudanças na arquitetura da empresa.
 
 ### 3.2 Situação Atual
 
-Com base nos cálculos realizados pela equipe de Arquitetura no projeto responsável pelas automações corporativas, os resultados foram organizados da seguinte forma:
+Na nossa situação anterior ao SEOS, não havia uma padronização para a camada de persistência nos dois sistemas. O desenvolvedor precisava construir cada instrução SQL manualmente, mapear os parâmetros seja via `PreparedStatement` ou concatenando, percorrer o `ResultSet` campo a campo e tratar possíveis erros por conta própria. Às vezes, eram reaproveitados métodos parecidos para aceleração da demanda, mas, em grande parte dos casos, esses métodos estavam desenvolvidos erroneamente. Para dimensionar o impacto real dessas práticas nos dois projetos legados, foi realizado um levantamento junto à equipe de Arquitetura analisando todos os métodos que interagem com o banco de dados (totalizando **2.890 métodos** somados entre as duas aplicações).
 
-#### Resultados das automações
+No primeiro sistema, responsável pelas automações corporativas (produtivas, logísticas e contábeis), foram analisados **1.641 métodos** de acesso ao banco, cujos resultados foram organizados conforme apresentado na Tabela 1:
 
-| # | Indicador | Qtde | % dos 1.641 |
-|---|-----------|------|--------------|
+#### Tabela 1 — Levantamento de métodos de persistência no sistema de automações corporativas
+
+| # | Indicador | Quantidade | % dos 1.641 |
+|---|-----------|------------|-------------|
 | 1 | Métodos que realizam funções no banco | 1.641 | 100% |
-| 2 | Usam conexão JDBC (PreparedStatement, CallableStatement, getPreparedStatement) | 1.321 | 80,5% |
+| 2 | Usam conexão JDBC (`PreparedStatement`, `CallableStatement`, `getPreparedStatement`) | 1.321 | 80,5% |
 | 3 | Não usam JDBC direto | 320 | 19,5% |
-| 4 | Com alguma má prática de consulta | 395 | 24,1% |
-| 5 | Vulneráveis (concatenam String ou tipo não resolvido) | 283 | 17,2% |
-| 6 | Sem nenhuma chamada de log | 573 | 34,9% |
+| 4 | Com alguma má prática de consulta | **395** | **24,1%** |
+| 5 | Vulneráveis (concatenam `String` ou tipo não resolvido) | **283** | **17,2%** |
+| 6 | Sem nenhuma chamada de _log_ | **573** | **34,9%** |
 
-#### Os 573 sem log
+**Fonte:** Elaborada pela autora (2025).
 
-| Situação | Quantidade |
-|----------|------------|
-| Têm `catch` e não registram nada | 254 |
-| Só usam `System.out` ou `printStackTrace`, que não é auditoria | 58 |
-| Também são vulneráveis | 28 |
+Dos **573 métodos sem _logs_**, **254** possuem `try/catch` mas não registram _logs_ de erro ou de sucesso, **58** só aplicam `System.out` ou `printStackTrace` e **28** possuem vulnerabilidades. Já no segundo sistema, responsável pelo _e-commerce_, o cenário mostrou-se ainda mais crítico quanto à exposição a _SQL Injection_ e à falta de rastreabilidade, conforme demonstrado na Tabela 2:
 
-#### Resultados do e-commerce
+#### Tabela 2 — Levantamento de métodos de persistência no sistema de _e-commerce_
 
-| Pergunta | Quantidade | % dos 1.249 |
-|----------|------------|-------------|
-| Métodos que fazem operações no banco | 1.249 | 100% |
-| Usam JDBC (prepareStatement, prepareCall, ResultSet) | 1.229 | 98,4% |
-| Não usam JDBC (JPA/Hibernate via EntityManager) | 20 | 1,6% |
-| Fora das boas práticas (concatenam variáveis na SQL) | 468 | 37,5% |
-| Vulneráveis a SQL Injection | 299 | 23,9% |
-| Sem auditoria de logs | 1.179 | 94,4% |
+| # | Indicador | Quantidade | % dos 1.249 |
+|---|-----------|------------|-------------|
+| 1 | Métodos que fazem operações no banco | 1.249 | 100% |
+| 2 | Usam JDBC (`prepareStatement`, `prepareCall`, `ResultSet`) | 1.229 | 98,4% |
+| 3 | Não usam JDBC (JPA/Hibernate via `EntityManager`) | 20 | 1,6% |
+| 4 | Fora das boas práticas (concatenam variáveis na SQL) | **468** | **37,5%** |
+| 5 | Vulneráveis a _SQL Injection_ | **299** | **23,9%** |
+| 6 | Sem auditoria de _logs_ | **1.179** | **94,4%** |
+
+**Fonte:** Elaborada pela autora (2025).
+
+Abaixo informo um exemplo claro do que alimentou os dados desses levantamentos:
 
 ```java
 public List<Usuario> consultarUsuarios(String status, Integer idadeMinima) {
@@ -148,7 +150,7 @@ public List<Usuario> consultarUsuarios(String status, Integer idadeMinima) {
 }
 ```
 
-Além do volume de código, a concatenação direta de valores na consulta dificulta a padronização e pode permitir SQL Injection. A existência de várias implementações semelhantes também aumenta o custo de manutenção.
+Analisando os dados acima e levando em conta o exemplo que os alimenta, reflete-se o quão verboso e vulnerável é o padrão de desenvolvimento aplicado ao longo dos anos de construção desses sistemas, pois, além do volume de código, a concatenação direta de valores na consulta dificulta a padronização e pode permitir _SQL Injection_. A existência de várias implementações semelhantes e a falta de _logs_ de auditoria também aumentam o custo de manutenção.
 
 ### 3.3 Solução Proposta
 

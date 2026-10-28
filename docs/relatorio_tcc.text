@@ -3,47 +3,172 @@
 
 Atualmente, na empresa onde trabalho, os métodos de consulta utilizados em nossos projetos são muito verbosos. Para realizar uma consulta, é necessário escrevê-la manualmente, armazená-la em uma variável, mapear os parâmetros do \texttt{PreparedStatement} e, logo em seguida, mapear o \texttt{ResultSet}, campo a campo.
 
-Em alguns casos, as consultas não possuem parâmetros. Em outros, os valores são concatenados diretamente na instrução SQL, o que cria uma brecha significativa para \textit{SQL Injection}. Além disso, existem diversas versões de operações como \texttt{INSERT}, \texttt{UPDATE} e consultas para uma mesma tabela. Isso ocorre porque determinadas implementações precisam de estruturas específicas que não podem ser modificadas, resultando na duplicação de operações semelhantes.
+Em alguns casos, as consultas não possuem parâmetros. Em outros, os valores são concatenados diretamente na instrução \textit{Structured Query Language} (SQL), o que cria uma brecha significativa para \textit{SQL Injection}. Além disso, existem diversas versões de operações como \texttt{INSERT}, \texttt{UPDATE} e consultas para uma mesma tabela. Isso ocorre porque determinadas implementações precisam de estruturas específicas que não podem ser modificadas, resultando na duplicação de operações semelhantes.
 
-Nesse contexto, foi desenvolvido o SEOS (\textit{Software Endurance Orchestration System}), um microframework ORM criado para atender às necessidades específicas da empresa. O framework mapeia tabelas, campos e \textit{sequences} por meio de \textit{annotations} e constrói estruturas DML e DQL com base nesses mapeamentos. Dessa forma, busca tornar o acesso ao banco de dados mais padronizado e seguro, além de retornar as classes com os valores já mapeados e prontos para serem utilizados pelas implementações.
+Nesse contexto, foi desenvolvido o \textbf{SEOS} (\textit{Software Endurance Orchestration System}), um \textit{microframework} de Mapeamento Objeto-Relacional (ORM, do inglês \textit{Object-Relational Mapping}) criado para atender às necessidades específicas da empresa. O \textit{framework} mapeia tabelas, campos e \textit{sequences} por meio de \textit{annotations} e constrói estruturas \textit{Data Manipulation Language} (DML) e \textit{Data Query Language} (DQL) com base nesses mapeamentos. Dessa forma, busca tornar o acesso ao banco de dados mais padronizado e seguro, além de retornar as classes com os valores já mapeados e prontos para serem utilizados pelas implementações.
 
 \subsection{Objetivo}
 \label{subsec:objetivo}
 
 \subsubsection{Objetivo geral}
 
-Evoluir o microframework SEOS com base em práticas consolidadas de mercado e estruturar seu processo de desenvolvimento sob a cultura DevSecOps, a fim de demonstrar os ganhos de otimização, padronização, auditoria e segurança na camada de persistência.
+Evoluir o \textit{microframework} SEOS com base em práticas consolidadas de mercado e estruturar seu processo de desenvolvimento sob a cultura \textit{DevSecOps}, a fim de demonstrar os ganhos de otimização, padronização, auditoria e segurança na camada de persistência.
 
 \subsubsection{Objetivos específicos}
 
 \begin{itemize}
-    \item Implementar um mecanismo automatizado de geração de instruções DML/DQL (\texttt{SQLBuilder}) e de mapeamento objeto-relacional de \texttt{ResultSet} baseado em \textit{annotations} e \textit{reflection};
-    \item Mitigar riscos de \textit{SQL Injection} na camada de persistência por meio da parametrização obrigatória de consultas no \texttt{PreparedStatement} e validação estrutural das operações;
-    \item Incorporar recursos de auditoria e observabilidade para rastreamento de erros, parâmetros e tempo de execução das consultas ao banco de dados;
-    \item Estruturar uma pipeline de Integração Contínua e DevSecOps com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança (SAST com Semgrep), notificações via ChatOps e Entrega Contínua configurando o GitHub Package com versionamento semântico da biblioteca;
-    \item Avaliar a aderência arquitetural do SEOS frente ao cenário corporativo estudado e em comparação com soluções consolidadas de mercado, como Hibernate/JPA;
-    \item Mensurar os ganhos quantitativos e qualitativos da adoção do SEOS em relação à abordagem tradicional (JDBC manual), considerando redução de linhas de código, taxa de duplicação e exposição a vulnerabilidades baseadas no OWASP Top 10.
+    \item \textbf{Automatização de persistência:} implementar um mecanismo automatizado de geração de instruções DML/DQL (\texttt{SQLBuilder}) e de mapeamento objeto-relacional de \texttt{ResultSet} baseado em \textit{annotations} e \textit{reflection};
+    \item \textbf{Segurança contra injeções:} mitigar riscos de \textit{SQL Injection} na camada de persistência por meio da parametrização obrigatória de consultas no \texttt{PreparedStatement} e validação estrutural das operações;
+    \item \textbf{Auditoria e observabilidade:} incorporar recursos para rastreamento de erros, parâmetros e tempo de execução das consultas ao banco de dados;
+    \item \textbf{Esteira \textit{DevSecOps} (CI/CD):} estruturar uma \textit{pipeline} de Integração Contínua com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança --- \textit{Static Application Security Testing} (SAST) com Semgrep ---, notificações via \textit{ChatOps} e Entrega Contínua configurando o GitHub Packages com versionamento semântico da biblioteca;
+    \item \textbf{Avaliação arquitetural:} avaliar a aderência arquitetural do SEOS frente ao cenário corporativo estudado e em comparação com soluções consolidadas de mercado, como Hibernate/\textit{Java Persistence API} (JPA);
+    \item \textbf{Mensuração de resultados:} mensurar os ganhos quantitativos e qualitativos da adoção do SEOS em relação à abordagem tradicional --- \textit{Java Database Connectivity} (JDBC) manual ---, considerando redução de linhas de código, taxa de duplicação e exposição a vulnerabilidades baseadas no \textit{Open Worldwide Application Security Project} (OWASP) \textit{Top} 10.
 \end{itemize}
 
 \subsection{Justificativa}
 \label{subsec:justificativa}
 
-Ao criar uma implementação para atender a uma demanda e perceber que não poderia reutilizar o mesmo método de persistência no banco de dados, a primeira coisa que pensei foi: ``Por que criar mais uma versão de um \texttt{UPDATE} com as mesmas condições?''. Foi nesse momento que percebi que a falta de padronização, a baixa qualidade do código e os problemas de segurança nas consultas eram fatores que precisavam ser tratados.
+Ao criar uma implementação para atender a uma demanda e perceber que não poderia reutilizar o mesmo método de persistência no banco de dados, a primeira coisa que pensei foi: \textit{``Por que criar mais uma versão de um \texttt{UPDATE} com as mesmas condições?''}. Foi nesse momento que percebi que a \textbf{falta de padronização}, a \textbf{baixa qualidade do código} e os \textbf{problemas de segurança nas consultas} eram fatores que precisavam ser tratados.
 
-Por meio dessa necessidade nasceu o SEOS, criado para ser uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de \textit{SQL Injection}, sem retirar da equipe o controle sobre as consultas, conexões e transações de persistência.
+Por meio dessa necessidade nasceu o \textbf{SEOS}, criado para ser uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de \textit{SQL Injection}, \underline{sem retirar da equipe o controle} sobre as consultas, conexões e transações de persistência.
 
 \subsection{Problema}
 \label{subsec:problema}
 
 \begin{itemize}
-    \item 21.381 linhas de código;
-    \item 409 métodos, dos quais 402 acessam o banco de dados;
-    \item 19,6\% de linhas idênticas;
-    \item 54,4\% de linhas repetidas;
-    \item Entre 416 chamadas a \texttt{PreparedStatement}, apenas 156 utilizam métodos \texttt{setXxx()};
-    \item Aproximadamente 43\% dos métodos são potencialmente vulneráveis a \textit{SQL Injection}.
+    \item \textbf{21.381} linhas de código;
+    \item \textbf{409} métodos, dos quais \textbf{402} acessam o banco de dados;
+    \item \textbf{19,6\%} de linhas idênticas;
+    \item \textbf{54,4\%} de linhas repetidas;
+    \item Entre \textbf{416} chamadas a \texttt{PreparedStatement}, apenas \textbf{156} utilizam métodos \texttt{setXxx()};
+    \item Aproximadamente \textbf{43\%} dos métodos são potencialmente vulneráveis a \textit{SQL Injection}.
 \end{itemize}
 
-Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de um único arquivo \textit{Repository} de um único projeto utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de \textit{SQL Injection}, já haviam sido repassados; contudo, devido ao tamanho da equipe --- atualmente composta por 30 pessoas --- e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
+Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de \underline{um único arquivo \textit{Repository} de um único projeto} utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de \textit{SQL Injection}, já haviam sido repassados; contudo, devido ao tamanho da equipe --- atualmente composta por \textbf{30 pessoas} --- e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
 
-Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico --- não sendo uma aplicação final em si ---, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente 43\% de métodos suscetíveis a \textit{SQL Injection} representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de \texttt{[INFORMAR\_DEPOIS]} para conter e restaurar o ambiente. Nesse intervalo, estima-se um prejuízo direto de aproximadamente \texttt{[R\$ X]} devido à paralisação do faturamento e das vendas, além de prejuízos indiretos severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira DevSecOps e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
+Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico --- não sendo uma aplicação final em si ---, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente \textbf{43\% de métodos suscetíveis a \textit{SQL Injection}} representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de \texttt{[INFORMAR\_DEPOIS]} para conter e restaurar o ambiente. Nesse intervalo, estima-se um \textbf{prejuízo direto} de aproximadamente \texttt{[R\$ X]} devido à paralisação do faturamento e das vendas, além de \textbf{prejuízos indiretos} severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira \textit{DevSecOps} e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
+
+\section{Referencial Teórico}
+\label{sec:referencial_teorico}
+
+% TODO: Complementar com a fundamentação teórica e os 5 artigos sobre segurança e DevSecOps.
+
+\section{Caso de Uso}
+\label{sec:caso_de_uso}
+
+\subsection{Contexto do Trabalho}
+\label{subsec:contexto_trabalho}
+
+O cenário utilizado como inspiração e base para o desenvolvimento e a aplicabilidade do SEOS é o de uma empresa têxtil que possui \textbf{dois projetos legados principais}. Esses dois sistemas foram desenvolvidos utilizando o ecossistema Java (nas versões 8 e 11), realizando o acesso direto ao banco de dados Oracle 19c via JDBC e comunicando-se via \textit{Application Programming Interface} (API) com o sistema de \textit{Enterprise Resource Planning} (ERP) responsável pelo gerenciamento dos processos empresariais. Por razões de confidencialidade e políticas internas de segurança da informação, a identidade da organização e os indicadores corporativos globais são preservados neste relatório, concentrando-se a caracterização no ambiente técnico de engenharia de software.
+
+Esses dois sistemas sustentam rotinas operacionais críticas de diferentes fluxos de negócio da empresa --- um responsável por \textbf{automações produtivas, logísticas e contábeis}, e o outro responsável pelo \textbf{\textit{e-commerce}} ---, concentrando um elevado volume de consultas e persistências desenvolvidas ao longo dos anos. Pela forma como os sistemas foram estruturados junto ao ERP, as consultas, as conexões e as transações precisam continuar \underline{sob o controle direto da aplicação}, o que impedia o uso de um ORM tradicional que gerenciasse tudo de forma automática.
+
+Além disso, como a equipe conta atualmente com \textbf{30 pessoas} atuando na manutenção e na criação de novas demandas dentro desses dois sistemas, manter um padrão seguro de escrita SQL tornou-se um desafio diário. Por conta disso, o SEOS precisou ser pensado como uma biblioteca leve, compatível tanto com o Java 8 quanto com o Java 11, para se encaixar diretamente nos projetos já existentes sem exigir mudanças na arquitetura da empresa.
+
+\subsection{Situação Atual}
+\label{subsec:situacao_atual}
+
+Na nossa situação anterior ao SEOS, não havia uma padronização para a camada de persistência nos dois sistemas. O desenvolvedor precisava construir cada instrução SQL manualmente, mapear os parâmetros seja via \texttt{PreparedStatement} ou concatenando, percorrer o \texttt{ResultSet} campo a campo e tratar possíveis erros por conta própria. Às vezes, eram reaproveitados métodos parecidos para aceleração da demanda, mas, em grande parte dos casos, esses métodos estavam desenvolvidos erroneamente. Para dimensionar o impacto real dessas práticas nos dois projetos legados, foi realizado um levantamento junto à equipe de Arquitetura analisando todos os métodos que interagem com o banco de dados (totalizando \textbf{2.890 métodos} somados entre as duas aplicações).
+
+No primeiro sistema, responsável pelas automações corporativas (produtivas, logísticas e contábeis), foram analisados \textbf{1.641 métodos} de acesso ao banco, cujos resultados foram organizados conforme apresentado na Tabela~\ref{tab:resultados_automacoes}:
+
+\subsubsection{Resultados das automações}
+
+\begin{table}[htbp]
+\centering
+\caption{Levantamento de métodos de persistência no sistema de automações corporativas}
+\label{tab:resultados_automacoes}
+\begin{tabular}{c p{8.5cm} r r}
+\hline
+\textbf{\#} & \textbf{Indicador} & \textbf{Quantidade} & \textbf{\% dos 1.641} \\ \hline
+1 & Métodos que realizam funções no banco & 1.641 & 100\% \\
+2 & Usam conexão JDBC (\texttt{PreparedStatement}, \texttt{CallableStatement}, \texttt{getPreparedStatement}) & 1.321 & 80,5\% \\
+3 & Não usam JDBC direto & 320 & 19,5\% \\
+4 & Com alguma má prática de consulta & \textbf{395} & \textbf{24,1\%} \\
+5 & Vulneráveis (concatenam \texttt{String} ou tipo não resolvido) & \textbf{283} & \textbf{17,2\%} \\
+6 & Sem nenhuma chamada de \textit{log} & \textbf{573} & \textbf{34,9\%} \\ \hline
+\end{tabular}
+\vspace{0.2cm}
+\\ {\footnotesize \textbf{Fonte:} Elaborada pela autora (2025).}
+\end{table}
+
+Dos \textbf{573 métodos sem \textit{logs}}, \textbf{254} possuem \texttt{try/catch} mas não registram \textit{logs} de erro ou de sucesso, \textbf{58} só aplicam \texttt{System.out} ou \texttt{printStackTrace} e \textbf{28} possuem vulnerabilidades. Já no segundo sistema, responsável pelo \textit{e-commerce}, o cenário mostrou-se ainda mais crítico quanto à exposição a \textit{SQL Injection} e à falta de rastreabilidade, conforme demonstrado na Tabela~\ref{tab:resultados_ecommerce}:
+
+\subsubsection{Resultados do \textit{e-commerce}}
+
+\begin{table}[htbp]
+\centering
+\caption{Levantamento de métodos de persistência no sistema de \textit{e-commerce}}
+\label{tab:resultados_ecommerce}
+\begin{tabular}{c p{8.5cm} r r}
+\hline
+\textbf{\#} & \textbf{Indicador} & \textbf{Quantidade} & \textbf{\% dos 1.249} \\ \hline
+1 & Métodos que fazem operações no banco & 1.249 & 100\% \\
+2 & Usam JDBC (\texttt{prepareStatement}, \texttt{prepareCall}, \texttt{ResultSet}) & 1.229 & 98,4\% \\
+3 & Não usam JDBC (JPA/Hibernate via \texttt{EntityManager}) & 20 & 1,6\% \\
+4 & Fora das boas práticas (concatenam variáveis na SQL) & \textbf{468} & \textbf{37,5\%} \\
+5 & Vulneráveis a \textit{SQL Injection} & \textbf{299} & \textbf{23,9\%} \\
+6 & Sem auditoria de \textit{logs} & \textbf{1.179} & \textbf{94,4\%} \\ \hline
+\end{tabular}
+\vspace{0.2cm}
+\\ {\footnotesize \textbf{Fonte:} Elaborada pela autora (2025).}
+\end{table}
+
+No Quadro~1, apresenta-se um exemplo claro do padrão de código que alimentou os dados desses levantamentos:
+
+\vspace{0.3cm}
+\noindent
+\begin{minipage}{\linewidth}
+\centering
+\textbf{Quadro 1 --- Exemplo de consulta construída manualmente antes do SEOS}
+\vspace{0.15cm}
+\hrule
+\vspace{0.1cm}
+{\small\linespread{1.0}\selectfont
+\begin{verbatim}
+01  public List<Usuario> consultarUsuarios(String status, Integer idadeMinima) {
+02      List<Usuario> listaResultado = new ArrayList<>();
+03
+04      String dql = "SELECT USER_ID, USER_NAME, USER_AGE, STATUS "
+05              + "FROM TB_USER WHERE 1=1 ";
+06
+07      if (status != null && !status.isEmpty()) {
+08          dql += " AND STATUS = '" + status + "'";
+09      }
+10      if (idadeMinima != null) {
+11          dql += " AND USER_AGE >= " + idadeMinima;
+12      }
+13
+14      try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+15           PreparedStatement ps = conn.prepareStatement(dql);
+16           ResultSet rs = ps.executeQuery()) {
+17
+18          while (rs.next()) {
+19              Long id = rs.getLong("USER_ID");
+20              String nome = rs.getString("USER_NAME");
+21              Integer idade = rs.getInt("USER_AGE");
+22              String statusRetornado = rs.getString("STATUS");
+23
+24              Usuario usuario = new Usuario();
+25              usuario.setId(id);
+26              usuario.setNome(nome);
+27              usuario.setIdade(idade);
+28              usuario.setStatus(statusRetornado);
+29              listaResultado.add(usuario);
+30          }
+31      } catch (SQLException e) {
+32          System.err.println("Erro ao executar consulta: " + e.getMessage());
+33          e.printStackTrace();
+34      }
+35      return listaResultado;
+36  }
+\end{verbatim}
+}
+\hrule
+\vspace{0.15cm}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
+\end{minipage}
+\vspace{0.3cm}
+
+Analisando os dados acima e levando em conta o exemplo apresentado no Quadro~1, reflete-se o quão verboso e vulnerável é o padrão de desenvolvimento aplicado ao longo dos anos de construção desses sistemas. Além do elevado volume de código para o mapeamento manual do \texttt{ResultSet} (linhas 18 a 30), a concatenação direta de parâmetros na instrução SQL (linhas 07 a 12) dificulta a padronização e expõe a aplicação a ataques de \textit{SQL Injection}. Adicionalmente, a existência de várias implementações semelhantes e a ausência de \textit{logs} estruturados de auditoria --- restrita ao uso de \texttt{System.err.println} e \texttt{printStackTrace} no bloco \texttt{catch} (linhas 31 a 34) --- aumentam significativamente o custo de manutenção e diagnóstico.
+
