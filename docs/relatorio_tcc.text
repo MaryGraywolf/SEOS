@@ -44,7 +44,7 @@ Por meio dessa necessidade nasceu o \textbf{SEOS}, criado para ser uma solução
     \item Aproximadamente \textbf{43\%} dos métodos são potencialmente vulneráveis a \textit{SQL Injection}.
 \end{itemize}
 
-Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de \underline{um único arquivo \textit{Repository} de um único projeto} utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de \textit{SQL Injection}, já haviam sido repassados; contudo, devido ao tamanho da equipe --- atualmente composta por \textbf{30 pessoas} --- e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
+Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de \underline{um único arquivo \textit{Repository} de um único projeto} utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de \textit{SQL Injection}, já haviam sido repassados; contudo, devido à ausência histórica de uma abstração padronizada, à pressão por entregas rápidas e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
 
 Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico --- não sendo uma aplicação final em si ---, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente \textbf{43\% de métodos suscetíveis a \textit{SQL Injection}} representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de \texttt{[INFORMAR\_DEPOIS]} para conter e restaurar o ambiente. Nesse intervalo, estima-se um \textbf{prejuízo direto} de aproximadamente \texttt{[R\$ X]} devido à paralisação do faturamento e das vendas, além de \textbf{prejuízos indiretos} severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira \textit{DevSecOps} e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
 
@@ -63,14 +63,14 @@ O cenário utilizado como inspiração e base para o desenvolvimento e a aplicab
 
 Esses dois sistemas sustentam rotinas operacionais críticas de diferentes fluxos de negócio da empresa --- um responsável por \textbf{automações produtivas, logísticas e contábeis}, e o outro responsável pelo \textbf{\textit{e-commerce}} ---, concentrando um elevado volume de consultas e persistências desenvolvidas ao longo dos anos. Pela forma como os sistemas foram estruturados junto ao ERP, as consultas, as conexões e as transações precisam continuar \underline{sob o controle direto da aplicação}, o que impedia o uso de um ORM tradicional que gerenciasse tudo de forma automática.
 
-Além disso, como a equipe conta atualmente com \textbf{30 pessoas} atuando na manutenção e na criação de novas demandas dentro desses dois sistemas, manter um padrão seguro de escrita SQL tornou-se um desafio diário. Por conta disso, o SEOS precisou ser pensado como uma biblioteca leve, compatível tanto com o Java 8 quanto com o Java 11, para se encaixar diretamente nos projetos já existentes sem exigir mudanças na arquitetura da empresa.
+Além disso, como esses dois sistemas evoluíram ao longo de vários anos passando por diferentes desenvolvedores e demandas urgentes de negócio, manter a escrita SQL manual segura e uniforme sem uma ferramenta centralizadora tornou-se um desafio diário. Por conta disso, o SEOS precisou ser pensado como uma biblioteca leve, compatível tanto com o Java 8 quanto com o Java 11, para se encaixar diretamente nos projetos já existentes sem exigir mudanças na arquitetura da empresa.
 
 \subsection{Situação Atual}
 \label{subsec:situacao_atual}
 
-Na nossa situação anterior ao SEOS, não havia uma padronização para a camada de persistência nos dois sistemas. O desenvolvedor precisava construir cada instrução SQL manualmente, mapear os parâmetros seja via \texttt{PreparedStatement} ou concatenando, percorrer o \texttt{ResultSet} campo a campo e tratar possíveis erros por conta própria. Às vezes, eram reaproveitados métodos parecidos para aceleração da demanda, mas, em grande parte dos casos, esses métodos estavam desenvolvidos erroneamente. Para dimensionar o impacto real dessas práticas nos dois projetos legados, foi realizado um levantamento junto à equipe de Arquitetura analisando todos os métodos que interagem com o banco de dados (totalizando \textbf{2.890 métodos} somados entre as duas aplicações).
+Na situação anterior ao SEOS, não havia uma padronização para a camada de persistência nos dois sistemas. O desenvolvedor precisava construir cada instrução SQL manualmente, mapear os parâmetros seja via \texttt{PreparedStatement} ou concatenando, percorrer o \texttt{ResultSet} campo a campo e tratar possíveis erros por conta própria. Às vezes, eram reaproveitados métodos parecidos para aceleração da demanda, mas, em grande parte dos casos, esses métodos estavam desenvolvidos erroneamente. Para dimensionar o impacto real dessas práticas na totalidade dos dois projetos legados --- ampliando a análise inicial daquele arquivo isolado apresentado na Seção~1.3 ---, foi realizado um levantamento junto à equipe de Arquitetura analisando todos os métodos que interagem com o banco de dados (totalizando \textbf{2.890 métodos} somados entre as duas aplicações).
 
-No primeiro sistema, responsável pelas automações corporativas (produtivas, logísticas e contábeis), foram analisados \textbf{1.641 métodos} de acesso ao banco, cujos resultados foram organizados conforme apresentado na Tabela~\ref{tab:resultados_automacoes}:
+No primeiro sistema, responsável pelas automações corporativas (produtivas, logísticas e contábeis), foram analisados \textbf{1.641 métodos} de acesso ao banco, cujos resultados foram organizados conforme apresentado na Tabela~1:
 
 \subsubsection{Resultados das automações}
 
@@ -92,7 +92,7 @@ No primeiro sistema, responsável pelas automações corporativas (produtivas, l
 \\ {\footnotesize \textbf{Fonte:} Elaborada pela autora (2025).}
 \end{table}
 
-Dos \textbf{573 métodos sem \textit{logs}}, \textbf{254} possuem \texttt{try/catch} mas não registram \textit{logs} de erro ou de sucesso, \textbf{58} só aplicam \texttt{System.out} ou \texttt{printStackTrace} e \textbf{28} possuem vulnerabilidades. Já no segundo sistema, responsável pelo \textit{e-commerce}, o cenário mostrou-se ainda mais crítico quanto à exposição a \textit{SQL Injection} e à falta de rastreabilidade, conforme demonstrado na Tabela~\ref{tab:resultados_ecommerce}:
+Dos \textbf{573 métodos sem \textit{logs}}, \textbf{254} possuem \texttt{try/catch} mas não registram \textit{logs} de erro ou de sucesso, \textbf{58} só aplicam \texttt{System.out} ou \texttt{printStackTrace} e \textbf{28} possuem vulnerabilidades. Já no segundo sistema, responsável pelo \textit{e-commerce}, o cenário mostrou-se ainda mais crítico quanto à exposição a \textit{SQL Injection} e à falta de rastreabilidade, conforme demonstrado na Tabela~2:
 
 \subsubsection{Resultados do \textit{e-commerce}}
 
@@ -171,4 +171,52 @@ No Quadro~1, apresenta-se um exemplo claro do padrão de código que alimentou o
 \vspace{0.3cm}
 
 Analisando os dados acima e levando em conta o exemplo apresentado no Quadro~1, reflete-se o quão verboso e vulnerável é o padrão de desenvolvimento aplicado ao longo dos anos de construção desses sistemas. Além do elevado volume de código para o mapeamento manual do \texttt{ResultSet} (linhas 18 a 30), a concatenação direta de parâmetros na instrução SQL (linhas 07 a 12) dificulta a padronização e expõe a aplicação a ataques de \textit{SQL Injection}. Adicionalmente, a existência de várias implementações semelhantes e a ausência de \textit{logs} estruturados de auditoria --- restrita ao uso de \texttt{System.err.println} e \texttt{printStackTrace} no bloco \texttt{catch} (linhas 31 a 34) --- aumentam significativamente o custo de manutenção e diagnóstico.
+
+\subsection{Solução Proposta}
+
+Diante dos números levantados na seção anterior --- que evidenciaram o excesso de código manual, o risco de \textit{SQL Injection} e a ausência de \textit{logs} nos dois sistemas da empresa ---, foi idealizado o \textbf{SEOS}: um \textit{microframework} de ORM dentro do ecossistema Java capaz de resolver essas falhas respeitando a arquitetura existente, sem adicionar complexidade e garantindo maior celeridade no desenvolvimento.
+
+A proposta central do SEOS é automatizar justamente a parte mecânica e propensa a erros do uso do JDBC. Em vez de o desenvolvedor repetir manualmente todo o ciclo de preparação e leitura de dados em cada método, a biblioteca assume a construção segura das instruções, a validação dos parâmetros e a auditoria das execuções, devolvendo os objetos já preenchidos \underline{sem retirar da aplicação o controle explícito sobre a conexão e a transação}.
+
+Para que essa automação funcione na prática, o ponto de partida do SEOS é o mapeamento das tabelas e dos campos diretamente nas classes de Objeto de Transferência de Dados --- \textit{Data Transfer Object} (DTO) --- por meio de \textit{annotations}, inspirado no modelo de mapeamento do JPA/Spring Boot, porém aplicado diretamente aos DTOs por meio das interfaces próprias \texttt{@TableDB} e \texttt{@ColumnDB}.
+
+Pela \texttt{@TableDB}, é sinalizado e identificado o nome da tabela ou da \textit{view} criada no banco de dados; já pela \texttt{@ColumnDB}, é possível informar o nome do campo correspondente naquele objeto de banco e declarar se ele é uma \textit{primary key} e se possui \textit{sequences}. Um detalhe importante a ser ressaltado é que as \textit{sequences} informadas entram automaticamente nos construtores de \texttt{INSERT}, enquanto atributos da classe que não possuem \texttt{@ColumnDB} são ignorados pelas demais funcionalidades do SEOS, conforme demonstrado no Quadro~2:
+
+\vspace{0.3cm}
+\noindent
+\begin{minipage}{\linewidth}
+\centering
+\textbf{Quadro 2 --- Exemplo de mapeamento de DTO com as anotações do SEOS}
+\vspace{0.15cm}
+\hrule
+\vspace{0.1cm}
+{\small\linespread{1.0}\selectfont
+\begin{verbatim}
+01  @TableDB(name = "TB_USER")
+02  public class UserDTO {
+03
+04      @ColumnDB(
+05          localName = "USER_ID",
+06          sequence = "SEQ_TB_USER.NEXTVAL",
+07          isPrimaryKey = true
+08      )
+09      private Long id;
+10
+11      @ColumnDB(localName = "USER_NAME")
+12      private String name;
+13
+14      @ColumnDB(localName = "STATUS")
+15      private String status;
+16
+17      @ColumnDB(localName = "USER_AGE")
+18      private Integer age;
+19  }
+\end{verbatim}
+}
+\hrule
+\vspace{0.15cm}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
+\end{minipage}
+\vspace{0.3cm}
+
 
