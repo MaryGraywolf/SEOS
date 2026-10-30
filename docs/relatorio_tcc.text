@@ -51,7 +51,32 @@ Embora ele atue como uma biblioteca Java distribuída sob versionamento semânti
 \section{Referencial Teórico}
 \label{sec:referencial_teorico}
 
-% TODO: Complementar com a fundamentação teórica e os 5 artigos sobre segurança e DevSecOps.
+O projeto utiliza conceitos relacionados a:
+
+\begin{itemize}
+    \item JDBC e acesso a bancos de dados relacionais;
+    \item Mapeamento objeto-relacional (ORM);
+    \item \textit{SQL Injection} e consultas parametrizadas;
+    \item OWASP \textit{Top} 10;
+    \item \textit{DevSecOps};
+    \item Integração e entrega contínuas;
+    \item SAST (\textit{Static Application Security Testing});
+    \item Auditoria e observabilidade de aplicações.
+\end{itemize}
+
+\subsection{JDBC e Acesso a Bancos de Dados Relacionais}
+
+\subsection{Mapeamento Objeto-Relacional (ORM)}
+
+\subsection{\textit{SQL Injection} e Consultas Parametrizadas}
+
+\subsection{OWASP \textit{Top} 10}
+
+\subsection{Cultura \textit{DevSecOps} e Integração/Entrega Contínuas (CI/CD)}
+
+\subsection{Análise Estática de Segurança (SAST)}
+
+\subsection{Auditoria e Observabilidade de Aplicações}
 
 \section{Caso de Uso}
 \label{sec:caso_de_uso}
@@ -218,5 +243,99 @@ Pela \texttt{@TableDB}, é sinalizado e identificado o nome da tabela ou da \tex
 {\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
 \end{minipage}
 \vspace{0.3cm}
+
+Com as classes configuradas, é possível utilizar a segunda função da ferramenta, o \texttt{SQLBuilder}, que lê as \textit{annotations} via \textit{reflection} e monta automaticamente os comandos SQL de DQL e DML. A geração do \texttt{SELECT} pode montar uma consulta com todos os campos mapeados da classe de forma direta (\texttt{buildSelect}) ou retornar campos específicos de forma fluente (\texttt{select}) por meio do método \texttt{.campos()}, no qual se informam os nomes dos atributos Java da classe, funcionando da mesma maneira para a cláusula de filtro com \texttt{.where()}, conforme demonstrado no Quadro~3:
+
+\vspace{0.3cm}
+\noindent
+\begin{minipage}{\linewidth}
+\centering
+\textbf{Quadro 3 --- Exemplos de construção de consultas \texttt{SELECT} com o \texttt{SQLBuilder}}
+\vspace{0.15cm}
+\hrule
+\vspace{0.1cm}
+{\small\linespread{1.0}\selectfont
+\begin{verbatim}
+01  // Exemplo direto sem .campos() e sem .where() encadeado:
+02  SQLBuilder.buildSelect(UserDTO.class, "STATUS = ?", status);
+03
+04  // Exemplo fluente com as funcionalidades mencionadas:
+05  SQLBuilder.select(UserDTO.class)
+06            .campos("id", "name")
+07            .where("STATUS = ?", status)
+08            .build();
+\end{verbatim}
+}
+\hrule
+\vspace{0.15cm}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
+\end{minipage}
+\vspace{0.3cm}
+
+Para as operações DML (\texttt{INSERT} e \texttt{UPDATE}), o \texttt{SQLBuilder} aplica o conceito de \textit{Anti-Null}: apenas os atributos que estiverem preenchidos serão persistidos no banco. Dessa forma, não é mais preciso desenvolver métodos diferentes para a mesma tabela, sendo necessário apenas informar a classe com as informações preenchidas.
+
+Quando é utilizado o \textit{builder} de \texttt{INSERT} (\texttt{buildInsert}) sem preencher os dados da \textit{primary key}, automaticamente é utilizada a \textit{sequence} configurada anteriormente no \texttt{@ColumnDB}. Também é possível realizar inserções em lote por meio do método \texttt{buildInsertBatch()}. No Quadro~4, apresenta-se o exemplo de uso do \texttt{buildInsert} e a respectiva instrução SQL gerada:
+
+\vspace{0.3cm}
+\noindent
+\begin{minipage}{\linewidth}
+\centering
+\textbf{Quadro 4 --- Exemplo de operação \texttt{INSERT} e SQL conceitual gerado pelo \texttt{SQLBuilder}}
+\vspace{0.15cm}
+\hrule
+\vspace{0.1cm}
+{\small\linespread{1.0}\selectfont
+\begin{verbatim}
+01  // Exemplo de INSERT em Java:
+02  UserDTO newUser = UserDTO.builder()
+03                           .name("Maria")
+04                           .status("ATIVO")
+05                           .build();
+06
+07  SQLBuilder.buildInsert(newUser);
+08
+09  -- SQL conceitual gerado:
+10  INSERT INTO TB_USER (USER_ID, USER_NAME, STATUS)
+11  VALUES (SEQ_TB_USER.NEXTVAL, ?, ?)
+\end{verbatim}
+}
+\hrule
+\vspace{0.15cm}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
+\end{minipage}
+\vspace{0.3cm}
+
+Já no \textit{builder} de \texttt{UPDATE} (\texttt{buildUpdate}), a ferramenta só dá continuidade à função se, e somente se, forem informadas as condições de filtro (\texttt{WHERE}). Sem essa parametrização, é lançada uma exceção ao desenvolvedor, impedindo modificações acidentais sem filtro no banco de dados, conforme ilustrado no Quadro~5:
+
+\vspace{0.3cm}
+\noindent
+\begin{minipage}{\linewidth}
+\centering
+\textbf{Quadro 5 --- Exemplo de operação \texttt{UPDATE} parcial e SQL conceitual gerado pelo \texttt{SQLBuilder}}
+\vspace{0.15cm}
+\hrule
+\vspace{0.1cm}
+{\small\linespread{1.0}\selectfont
+\begin{verbatim}
+01  // Exemplo de UPDATE em Java:
+02  UserDTO updateUser = UserDTO.builder()
+03                           .name("Maria Antônia")
+04                           .age(26)
+05                           .build();
+06
+07  SQLBuilder.buildUpdate(updateUser, "USER_ID = ?", idUser);
+08
+09  -- SQL conceitual gerado:
+10  UPDATE TB_USER
+11  SET USER_NAME = ?, USER_AGE = ?
+12  WHERE USER_ID = ?
+\end{verbatim}
+}
+\hrule
+\vspace{0.15cm}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
+\end{minipage}
+\vspace{0.3cm}
+
 
 

@@ -83,14 +83,14 @@ No primeiro sistema, responsável pelas automações corporativas (produtivas, l
 
 #### Tabela 1 — Levantamento de métodos de persistência no sistema de automações corporativas
 
-| # | Indicador | Quantidade | % dos 1.641 |
-|---|-----------|------------|-------------|
-| 1 | Métodos que realizam funções no banco | 1.641 | 100% |
-| 2 | Usam conexão JDBC (`PreparedStatement`, `CallableStatement`, `getPreparedStatement`) | 1.321 | 80,5% |
-| 3 | Não usam JDBC direto | 320 | 19,5% |
-| 4 | Com alguma má prática de consulta | **395** | **24,1%** |
-| 5 | Vulneráveis (concatenam `String` ou tipo não resolvido) | **283** | **17,2%** |
-| 6 | Sem nenhuma chamada de _log_ | **573** | **34,9%** |
+| #   | Indicador                                                                            | Quantidade | % dos 1.641 |
+| --- | ------------------------------------------------------------------------------------ | ---------- | ----------- |
+| 1   | Métodos que realizam funções no banco                                                | 1.641      | 100%        |
+| 2   | Usam conexão JDBC (`PreparedStatement`, `CallableStatement`, `getPreparedStatement`) | 1.321      | 80,5%       |
+| 3   | Não usam JDBC direto                                                                 | 320        | 19,5%       |
+| 4   | Com alguma má prática de consulta                                                    | **395**    | **24,1%**   |
+| 5   | Vulneráveis (concatenam `String` ou tipo não resolvido)                              | **283**    | **17,2%**   |
+| 6   | Sem nenhuma chamada de _log_                                                         | **573**    | **34,9%**   |
 
 **Fonte:** Elaborada pela autora (2025).
 
@@ -98,14 +98,14 @@ Dos **573 métodos sem _logs_**, **254** possuem `try/catch` mas não registram 
 
 #### Tabela 2 — Levantamento de métodos de persistência no sistema de _e-commerce_
 
-| # | Indicador | Quantidade | % dos 1.249 |
-|---|-----------|------------|-------------|
-| 1 | Métodos que fazem operações no banco | 1.249 | 100% |
-| 2 | Usam JDBC (`prepareStatement`, `prepareCall`, `ResultSet`) | 1.229 | 98,4% |
-| 3 | Não usam JDBC (JPA/Hibernate via `EntityManager`) | 20 | 1,6% |
-| 4 | Fora das boas práticas (concatenam variáveis na SQL) | **468** | **37,5%** |
-| 5 | Vulneráveis a _SQL Injection_ | **299** | **23,9%** |
-| 6 | Sem auditoria de _logs_ | **1.179** | **94,4%** |
+| #   | Indicador                                                  | Quantidade | % dos 1.249 |
+| --- | ---------------------------------------------------------- | ---------- | ----------- |
+| 1   | Métodos que fazem operações no banco                       | 1.249      | 100%        |
+| 2   | Usam JDBC (`prepareStatement`, `prepareCall`, `ResultSet`) | 1.229      | 98,4%       |
+| 3   | Não usam JDBC (JPA/Hibernate via `EntityManager`)          | 20         | 1,6%        |
+| 4   | Fora das boas práticas (concatenam variáveis na SQL)       | **468**    | **37,5%**   |
+| 5   | Vulneráveis a _SQL Injection_                              | **299**    | **23,9%**   |
+| 6   | Sem auditoria de _logs_                                    | **1.179**  | **94,4%**   |
 
 **Fonte:** Elaborada pela autora (2025).
 
@@ -184,7 +184,65 @@ public class UserDTO {
 }
 ```
 
+Com as classes configuradas, é possível utilizar a segunda função da ferramenta, o `SQLBuilder`, que lê as _annotations_ via _reflection_ e monta automaticamente os comandos SQL de DQL e DML. A geração do `SELECT` pode montar uma consulta com todos os campos mapeados da classe de forma direta (`buildSelect`) ou retornar campos específicos de forma fluente (`select`) por meio do método `.campos()`, no qual se informam os nomes dos atributos Java da classe, funcionando da mesma maneira para a cláusula de filtro com `.where()`.
 
+Exemplo direto sem `.campos()` e sem `.where()` encadeado:
+
+```java
+SQLBuilder.buildSelect(UserDTO.class, "STATUS = ?", status);
+```
+
+Exemplo fluente com as funcionalidades mencionadas:
+
+```java
+SQLBuilder.select(UserDTO.class)
+          .campos("id", "name")
+          .where("STATUS = ?", status)
+          .build();
+```
+
+Para as operações DML (`INSERT` e `UPDATE`), o `SQLBuilder` aplica o conceito de _Anti-Null_: apenas os atributos que estiverem preenchidos serão persistidos no banco. Dessa forma, não é mais preciso desenvolver métodos diferentes para a mesma tabela, sendo necessário apenas informar a classe com as informações preenchidas.
+
+Quando é utilizado o _builder_ de `INSERT` (`buildInsert`) sem preencher os dados da _primary key_, automaticamente é utilizada a _sequence_ configurada anteriormente no `@ColumnDB`. Também é possível realizar inserções em lote por meio do método `buildInsertBatch()`.
+
+Exemplo de `INSERT`:
+
+```java
+UserDTO newUser = UserDTO.builder()
+                         .name("Maria")
+                         .status("ATIVO")
+                         .build();
+
+SQLBuilder.buildInsert(newUser);
+```
+
+SQL conceitual:
+
+```sql
+INSERT INTO TB_USER (USER_ID, USER_NAME, STATUS)
+VALUES (SEQ_TB_USER.NEXTVAL, ?, ?)
+```
+
+Já no _builder_ de `UPDATE` (`buildUpdate`), a ferramenta só dá continuidade à função se, e somente se, forem informadas as condições de filtro (`WHERE`). Sem essa parametrização, é lançada uma exceção ao desenvolvedor, impedindo modificações acidentais sem filtro no banco de dados.
+
+Exemplo de `UPDATE`:
+
+```java
+UserDTO updateUser = UserDTO.builder()
+                         .name("Maria Antônia")
+                         .age(26)
+                         .build();
+
+SQLBuilder.buildUpdate(updateUser, "USER_ID = ?", idUser);
+```
+
+SQL conceitual:
+
+```sql
+UPDATE TB_USER
+SET USER_NAME = ?, USER_AGE = ?
+WHERE USER_ID = ?
+```
 
 ### 3.5 Vantagens e desvantagens
 
