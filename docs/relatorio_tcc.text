@@ -97,7 +97,7 @@ Na situação anterior ao SEOS, não havia uma padronização para a camada de p
 
 No primeiro sistema, responsável pelas automações corporativas (produtivas, logísticas e contábeis), foram analisados \textbf{1.641 métodos} de acesso ao banco, cujos resultados foram organizados conforme apresentado na Tabela~1:
 
-\subsubsection{Resultados das automações}
+
 
 \begin{table}[htbp]
 \centering
@@ -114,12 +114,12 @@ No primeiro sistema, responsável pelas automações corporativas (produtivas, l
 6 & Sem nenhuma chamada de \textit{log} & \textbf{573} & \textbf{34,9\%} \\ \hline
 \end{tabular}
 \vspace{0.2cm}
-\\ {\footnotesize \textbf{Fonte:} Elaborada pela autora (2025).}
+\\ {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
 \end{table}
 
 Dos \textbf{573 métodos sem \textit{logs}}, \textbf{254} possuem \texttt{try/catch} mas não registram \textit{logs} de erro ou de sucesso, \textbf{58} só aplicam \texttt{System.out} ou \texttt{printStackTrace} e \textbf{28} possuem vulnerabilidades. Já no segundo sistema, responsável pelo \textit{e-commerce}, o cenário mostrou-se ainda mais crítico quanto à exposição a \textit{SQL Injection} e à falta de rastreabilidade, conforme demonstrado na Tabela~2:
 
-\subsubsection{Resultados do \textit{e-commerce}}
+
 
 \begin{table}[htbp]
 \centering
@@ -136,7 +136,7 @@ Dos \textbf{573 métodos sem \textit{logs}}, \textbf{254} possuem \texttt{try/ca
 6 & Sem auditoria de \textit{logs} & \textbf{1.179} & \textbf{94,4\%} \\ \hline
 \end{tabular}
 \vspace{0.2cm}
-\\ {\footnotesize \textbf{Fonte:} Elaborada pela autora (2025).}
+\\ {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
 \end{table}
 
 No Quadro~1, apresenta-se um exemplo claro do padrão de código que alimentou os dados desses levantamentos:
@@ -191,7 +191,7 @@ No Quadro~1, apresenta-se um exemplo claro do padrão de código que alimentou o
 }
 \hrule
 \vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
 \end{minipage}
 \vspace{0.3cm}
 
@@ -240,7 +240,7 @@ Pela \texttt{@TableDB}, é sinalizado e identificado o nome da tabela ou da \tex
 }
 \hrule
 \vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
 \end{minipage}
 \vspace{0.3cm}
 
@@ -256,10 +256,10 @@ Com as classes configuradas, é possível utilizar a segunda função da ferrame
 \vspace{0.1cm}
 {\small\linespread{1.0}\selectfont
 \begin{verbatim}
-01  // Exemplo direto sem .campos() e sem .where() encadeado:
+01  // 1. Geração direta com todos os campos mapeados da classe:
 02  SQLBuilder.buildSelect(UserDTO.class, "STATUS = ?", status);
 03
-04  // Exemplo fluente com as funcionalidades mencionadas:
+04  // 2. Geração fluente selecionando campos específicos da classe:
 05  SQLBuilder.select(UserDTO.class)
 06            .campos("id", "name")
 07            .where("STATUS = ?", status)
@@ -268,7 +268,7 @@ Com as classes configuradas, é possível utilizar a segunda função da ferrame
 }
 \hrule
 \vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
 \end{minipage}
 \vspace{0.3cm}
 
@@ -301,7 +301,7 @@ Quando é utilizado o \textit{builder} de \texttt{INSERT} (\texttt{buildInsert})
 }
 \hrule
 \vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
 \end{minipage}
 \vspace{0.3cm}
 
@@ -333,7 +333,205 @@ Já no \textit{builder} de \texttt{UPDATE} (\texttt{buildUpdate}), a ferramenta 
 }
 \hrule
 \vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborado pela autora (2025).}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
+\end{minipage}
+\vspace{0.3cm}
+
+Os comandos DQL e DML construídos, juntamente com a lista ordenada de parâmetros, são encapsulados na classe \texttt{SQLResult}. Nela são centralizados o preenchimento seguro dos valores no \texttt{PreparedStatement} e o mapeamento dos dados retornados pelo \texttt{ResultSet} para as classes configuradas com \texttt{@ColumnDB}, além de ser validado previamente se a quantidade de parâmetros informados corresponde à quantidade de \textit{placeholders} (\texttt{?}) existentes nos comandos SQL.
+
+Nas operações de escrita (\texttt{INSERT} e \texttt{UPDATE}), a execução ocorre principalmente por meio do método \texttt{executeUpdate}, que aplica os parâmetros no banco e retorna a quantidade de registros afetados. Contudo, em inserções nas quais a aplicação precisa utilizar imediatamente o identificador recém-gerado pela \textit{sequence} do Oracle, o método \texttt{executeAndReturnId} aproveita a marcação \texttt{isPrimaryKey = true} da classe para recuperar a chave primária gerada no banco e preenchê-la diretamente no próprio objeto enviado. Já para cenários de alto volume de dados, o método \texttt{executeBatch} processa coleções inteiras de objetos em uma única comunicação em lote com o banco, permitindo que o chamador controle explicitamente o escopo transacional (\texttt{commit} e \texttt{rollback}) sobre os objetos \texttt{newUser} e \texttt{updateUser} exemplificados anteriormente, conforme demonstrado no Quadro~6:
+
+\vspace{0.3cm}
+\noindent
+\begin{minipage}{\linewidth}
+\centering
+\textbf{Quadro 6 --- Exemplos de execução de operações de escrita com o \texttt{SQLResult}}
+\vspace{0.15cm}
+\hrule
+\vspace{0.1cm}
+{\small\linespread{1.0}\selectfont
+\begin{verbatim}
+01  // 1. Atualização retornando a quantidade de linhas afetadas:
+02  int linhasAtualizadas = SQLBuilder
+03      .buildUpdate(updateUser, "USER_ID = ?", idUser)
+04      .executeUpdate(conn);
+05
+06  // 2. Inserção retornando o ID gerado pela sequence (e em newUser.id):
+07  Long idGerado = SQLBuilder
+08      .buildInsert(newUser)
+09      .executeAndReturnId(conn, newUser);
+10
+11  // 3. Inserção em lote com controle transacional explícito:
+12  boolean autoCommitOriginal = conn.getAutoCommit();
+13  try {
+14      conn.setAutoCommit(false);
+15      int[] resultados = SQLBuilder
+16          .buildInsertBatch(newUsers)
+17          .executeBatch(conn);
+18      conn.commit();
+19  } catch (Exception e) {
+20      conn.rollback();
+21      throw e;
+22  } finally {
+23      conn.setAutoCommit(autoCommitOriginal);
+24  }
+\end{verbatim}
+}
+\hrule
+\vspace{0.15cm}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
+\end{minipage}
+\vspace{0.3cm}
+
+Como já mencionado, a conexão JDBC necessária para a execução dessas funcionalidades parte sempre do chamador; não é responsabilidade do SEOS fechar, confirmar ou reverter a \texttt{Connection}, sendo encerrados internamente apenas o \texttt{PreparedStatement} e o \texttt{ResultSet}.
+
+Nas operações de leitura (\texttt{SELECT}), um dos principais gargalos observados nos sistemas legados da empresa era a repetição de laços \texttt{while (rs.next())} para extrair manualmente cada coluna do \texttt{ResultSet}, independentemente de a consulta retornar uma lista completa de entidades, um único registro, um agrupamento para relatórios ou apenas um contador numérico. Para eliminar essa repetição sem obrigar a equipe a criar classes DTO para todo tipo de consulta, o \texttt{SQLResult} foi estruturado em diferentes modalidades de leitura.
+
+Quando a consulta envolve entidades mapeadas da aplicação, a leitura pode ser feita diretamente para objetos tipados por meio dos métodos \texttt{executeQuery} e \texttt{executeQuerySingle}. Enquanto o primeiro percorre todo o \texttt{ResultSet} e instancia automaticamente uma lista da classe informada com base nas anotações \texttt{@ColumnDB}, o segundo é voltado a buscas pontuais (como consultas por chave primária), retornando apenas o primeiro registro encontrado ou \texttt{null} quando não há correspondência no banco. Além disso, para facilitar a adoção gradual da biblioteca em métodos legados que ainda manipulam o \texttt{PreparedStatement} manualmente, o método \texttt{mapearResultSet} foi exposto publicamente, permitindo aproveitar o mapeamento automático a partir de um \texttt{ResultSet} já aberto, conforme apresentado no Quadro~7:
+
+\vspace{0.3cm}
+\noindent
+\begin{minipage}{\linewidth}
+\centering
+\textbf{Quadro 7 --- Exemplos de leitura tipada de entidades com o \texttt{SQLResult}}
+\vspace{0.15cm}
+\hrule
+\vspace{0.1cm}
+{\small\linespread{1.0}\selectfont
+\begin{verbatim}
+01  // 1. Retorno de lista de objetos mapeados:
+02  List<UserDTO> users = SQLBuilder
+03      .buildSelect(UserDTO.class, "STATUS = ?", status)
+04      .executeQuery(conn, UserDTO.class);
+05
+06  // 2. Retorno de um único objeto (ou null se não encontrado):
+07  UserDTO user = SQLBuilder
+08      .buildSelect(UserDTO.class,
+09                   "USER_ID = ? AND STATUS = ?", idUser, status)
+10      .executeQuerySingle(conn, UserDTO.class);
+11
+12  // 3. Aproveitamento do mapeamento em consultas com ResultSet aberto:
+13  try (PreparedStatement ps = conn.prepareStatement(sql);
+14       ResultSet rs = ps.executeQuery()) {
+15      return new SQLResult(sql, Collections.emptyList())
+16          .mapearResultSet(rs, UserDTO.class);
+17  }
+\end{verbatim}
+}
+\hrule
+\vspace{0.15cm}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
+\end{minipage}
+\vspace{0.3cm}
+
+Por outro lado, em rotinas de relatórios, totalizadores ou consultas parciais nas quais a criação de um DTO específico seria desnecessária, o \texttt{SQLResult} permite extrair os dados em estruturas dinâmicas do próprio Java. Nesses cenários, os métodos \texttt{executeQueryAsMap} e \texttt{executeQueryAsSingleMap} convertem as linhas retornadas em mapas (\texttt{Map<String, Object>}) indexados pelo nome da coluna em letras maiúsculas. De modo complementar, o método \texttt{executeAsDictionary} transforma consultas de duas colunas diretamente em um dicionário de chave e valor (\texttt{Map<K, V>}), facilitando o carregamento de pares como identificador e nome em memória, enquanto o \texttt{executeScalar} extrai e converte automaticamente o valor da primeira coluna da primeira linha (tratando, inclusive, o retorno \texttt{BigDecimal} padrão do Oracle para tipos como \texttt{Integer} ou \texttt{Long}), conforme ilustrado no Quadro~8:
+
+\vspace{0.3cm}
+\noindent
+\begin{minipage}{\linewidth}
+\centering
+\textbf{Quadro 8 --- Exemplos de leitura dinâmica em mapas, dicionários e valores escalares}
+\vspace{0.15cm}
+\hrule
+\vspace{0.1cm}
+{\small\linespread{1.0}\selectfont
+\begin{verbatim}
+01  // 1. Consulta agregada retornando lista de mapas (sem DTO):
+02  List<Map<String, Object>> totaisPorStatus = new SQLResult(
+03      "SELECT STATUS, COUNT(1) TOTAL FROM TB_USER GROUP BY STATUS",
+04      Collections.emptyList()
+05  ).executeQueryAsMap(conn);
+06
+07  // 2. Projeção parcial de uma única linha em mapa:
+08  Map<String, Object> dadosParciais = new SQLResult(
+09      "SELECT USER_NAME, STATUS FROM TB_USER WHERE USER_ID = ?",
+10      Arrays.asList(idUser)
+11  ).executeQueryAsSingleMap(conn);
+12
+13  // 3. Mapeamento direto de duas colunas em dicionário (chave -> valor):
+14  Map<Long, String> nomesPorId = new SQLResult(
+15      "SELECT USER_ID, USER_NAME FROM TB_USER WHERE STATUS = ?",
+16      Arrays.asList("ATIVO")
+17  ).executeAsDictionary(conn);
+18
+19  // 4. Retorno de valor escalar único com conversão automática de tipo:
+20  Integer totalAtivos = new SQLResult(
+21      "SELECT COUNT(1) FROM TB_USER WHERE STATUS = ?",
+22      Arrays.asList("ATIVO")
+23  ).executeScalar(conn, Integer.class);
+\end{verbatim}
+}
+\hrule
+\vspace{0.15cm}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
+\end{minipage}
+\vspace{0.3cm}
+
+Além das instruções DQL e DML tradicionais, o ambiente Oracle 19c integrado ao ERP concentra diversas regras de negócio dentro do próprio banco por meio de \textit{procedures} e \textit{packages} escritas em \textit{Procedural Language/Structured Query Language} (PL/SQL). Na abordagem manual com \texttt{CallableStatement}, a invocação dessas rotinas exigia a montagem da sintaxe \texttt{\{call ...\}}, o controle manual da posição numérica de cada parâmetro e a leitura dos valores de saída também por índice, aumentando a incidência de erros de manutenção. Para padronizar esse fluxo, foi desenvolvida a classe \texttt{SQLCall}, que oferece uma interface fluente para declarar o nome da \textit{procedure} (\texttt{.name()}) e registrar parâmetros de entrada (\texttt{.in()}), de saída (\texttt{.out()}) ou mistos (\texttt{.inOut()}), associando os retornos a apelidos legíveis (\textit{aliases}) que podem ser recuperados de forma tipada após a execução, conforme demonstrado no Quadro~9:
+
+\vspace{0.3cm}
+\noindent
+\begin{minipage}{\linewidth}
+\centering
+\textbf{Quadro 9 --- Exemplo de execução fluente de \textit{procedure} PL/SQL com o \texttt{SQLCall}}
+\vspace{0.15cm}
+\hrule
+\vspace{0.1cm}
+{\small\linespread{1.0}\selectfont
+\begin{verbatim}
+01  SQLCall.Result resultado = SQLCall
+02      .name("PKG_USER.PROCESSAR_CADASTRO")
+03      .in(newUser.getName())
+04      .inOut("STATUS_ATUAL", newUser.getStatus(), Types.VARCHAR)
+05      .out("ID_GERADO", Types.NUMERIC)
+06      .execute(conn);
+07
+08  Long idGerado = resultado.getLong("ID_GERADO");
+09  String statusFinal = resultado.getString("STATUS_ATUAL");
+\end{verbatim}
+}
+\hrule
+\vspace{0.15cm}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
+\end{minipage}
+\vspace{0.3cm}
+
+Por fim, para solucionar a grave ausência de rastreabilidade apontada na Seção~3.2 --- na qual \textbf{34,9\%} dos métodos do sistema de automações e \textbf{94,4\%} dos métodos do \textit{e-commerce} não possuíam nenhum registro de \textit{log} ---, o SEOS incorporou uma camada transversal de auditoria e observabilidade baseada na interface \textit{Service Provider Interface} (SPI) \texttt{OrmLogger}, gerenciada globalmente pela classe \texttt{OrmConfig}. Por meio dessa estrutura, todas as execuções realizadas pelo \texttt{SQLResult} e pelo \texttt{SQLCall} têm seu tempo de resposta cronometrado automaticamente e inspecionam a pilha de execução da \textit{thread} (\texttt{StackTraceElement}) para identificar exatamente a classe e o método da aplicação que originaram a chamada ao banco. Quando ocorre qualquer exceção SQL ou quando uma operação ultrapassa o limite de tempo configurado --- \textbf{10 segundos} para consultas no \texttt{SQLResult} e \textbf{3 segundos} para chamadas PL/SQL no \texttt{SQLCall} ---, a biblioteca registra automaticamente o alerta com a origem da chamada, o tempo decorrido e a quantidade de parâmetros enviados, permitindo que os sistemas legados conectem seu próprio mecanismo de \textit{logs} na inicialização da aplicação, conforme exemplificado no Quadro~10:
+
+\vspace{0.3cm}
+\noindent
+\begin{minipage}{\linewidth}
+\centering
+\textbf{Quadro 10 --- Integração do \textit{logger} da aplicação com a auditoria do SEOS}
+\vspace{0.15cm}
+\hrule
+\vspace{0.1cm}
+{\small\linespread{1.0}\selectfont
+\begin{verbatim}
+01  OrmConfig.setLogger(new OrmLogger() {
+02      @Override
+03      public void info(String origin, String code, String msg,
+04                       Object... params) {
+05          appLogger.info("{} [{}] {}", origin, code, msg);
+06      }
+07
+08      @Override
+09      public void warn(String origin, String code, String msg,
+10                       Object... params) {
+11          appLogger.warn("{} [{}] {}", origin, code, msg);
+12      }
+13
+14      @Override
+15      public void error(String origin, String code, String msg,
+16                        Exception e, Object... params) {
+17          appLogger.error("{} [{}] {}", origin, code, msg, e);
+18      }
+19  });
+\end{verbatim}
+}
+\hrule
+\vspace{0.15cm}
+{\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
 \end{minipage}
 \vspace{0.3cm}
 

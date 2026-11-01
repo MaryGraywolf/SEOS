@@ -6,7 +6,7 @@
 **Instituição:** Fundação Edson Queiroz — Universidade de Fortaleza (UNIFOR)  
 **Curso:** Pós-Graduação em Engenharia de Software com foco em DevOps  
 **Local:** Fortaleza-CE  
-**Ano:** 2025
+**Ano:** 2026
 
 ## 1. Introdução
 
@@ -92,7 +92,7 @@ No primeiro sistema, responsável pelas automações corporativas (produtivas, l
 | 5   | Vulneráveis (concatenam `String` ou tipo não resolvido)                              | **283**    | **17,2%**   |
 | 6   | Sem nenhuma chamada de _log_                                                         | **573**    | **34,9%**   |
 
-**Fonte:** Elaborada pela autora (2025).
+**Fonte:** Elaborada pela autora (2026).
 
 Dos **573 métodos sem _logs_**, **254** possuem `try/catch` mas não registram _logs_ de erro ou de sucesso, **58** só aplicam `System.out` ou `printStackTrace` e **28** possuem vulnerabilidades. Já no segundo sistema, responsável pelo _e-commerce_, o cenário mostrou-se ainda mais crítico quanto à exposição a _SQL Injection_ e à falta de rastreabilidade, conforme demonstrado na Tabela 2:
 
@@ -107,7 +107,7 @@ Dos **573 métodos sem _logs_**, **254** possuem `try/catch` mas não registram 
 | 5   | Vulneráveis a _SQL Injection_                              | **299**    | **23,9%**   |
 | 6   | Sem auditoria de _logs_                                    | **1.179**  | **94,4%**   |
 
-**Fonte:** Elaborada pela autora (2025).
+**Fonte:** Elaborada pela autora (2026).
 
 Abaixo apresenta-se um exemplo claro do que alimentou os dados desses levantamentos:
 
@@ -184,17 +184,13 @@ public class UserDTO {
 }
 ```
 
-Com as classes configuradas, é possível utilizar a segunda função da ferramenta, o `SQLBuilder`, que lê as _annotations_ via _reflection_ e monta automaticamente os comandos SQL de DQL e DML. A geração do `SELECT` pode montar uma consulta com todos os campos mapeados da classe de forma direta (`buildSelect`) ou retornar campos específicos de forma fluente (`select`) por meio do método `.campos()`, no qual se informam os nomes dos atributos Java da classe, funcionando da mesma maneira para a cláusula de filtro com `.where()`.
-
-Exemplo direto sem `.campos()` e sem `.where()` encadeado:
+Com as classes configuradas, é possível utilizar a segunda função da ferramenta, o `SQLBuilder`, que lê as _annotations_ via _reflection_ e monta automaticamente os comandos SQL de DQL e DML. A geração do `SELECT` pode montar uma consulta com todos os campos mapeados da classe de forma direta (`buildSelect`) ou retornar campos específicos de forma fluente (`select`) por meio do método `.campos()`, no qual se informam os nomes dos atributos Java da classe, funcionando da mesma maneira para a cláusula de filtro com `.where()`:
 
 ```java
+// 1. Geração direta com todos os campos mapeados da classe:
 SQLBuilder.buildSelect(UserDTO.class, "STATUS = ?", status);
-```
 
-Exemplo fluente com as funcionalidades mencionadas:
-
-```java
+// 2. Geração fluente selecionando campos específicos da classe:
 SQLBuilder.select(UserDTO.class)
           .campos("id", "name")
           .where("STATUS = ?", status)
@@ -203,9 +199,7 @@ SQLBuilder.select(UserDTO.class)
 
 Para as operações DML (`INSERT` e `UPDATE`), o `SQLBuilder` aplica o conceito de _Anti-Null_: apenas os atributos que estiverem preenchidos serão persistidos no banco. Dessa forma, não é mais preciso desenvolver métodos diferentes para a mesma tabela, sendo necessário apenas informar a classe com as informações preenchidas.
 
-Quando é utilizado o _builder_ de `INSERT` (`buildInsert`) sem preencher os dados da _primary key_, automaticamente é utilizada a _sequence_ configurada anteriormente no `@ColumnDB`. Também é possível realizar inserções em lote por meio do método `buildInsertBatch()`.
-
-Exemplo de `INSERT`:
+Quando é utilizado o _builder_ de `INSERT` (`buildInsert`) sem preencher os dados da _primary key_, automaticamente é utilizada a _sequence_ configurada anteriormente no `@ColumnDB`, sendo também possível realizar inserções em lote por meio do método `buildInsertBatch()`:
 
 ```java
 UserDTO newUser = UserDTO.builder()
@@ -214,18 +208,12 @@ UserDTO newUser = UserDTO.builder()
                          .build();
 
 SQLBuilder.buildInsert(newUser);
+
+// Instrução SQL conceitual gerada internamente:
+// INSERT INTO TB_USER (USER_ID, USER_NAME, STATUS) VALUES (SEQ_TB_USER.NEXTVAL, ?, ?)
 ```
 
-SQL conceitual:
-
-```sql
-INSERT INTO TB_USER (USER_ID, USER_NAME, STATUS)
-VALUES (SEQ_TB_USER.NEXTVAL, ?, ?)
-```
-
-Já no _builder_ de `UPDATE` (`buildUpdate`), a ferramenta só dá continuidade à função se, e somente se, forem informadas as condições de filtro (`WHERE`). Sem essa parametrização, é lançada uma exceção ao desenvolvedor, impedindo modificações acidentais sem filtro no banco de dados.
-
-Exemplo de `UPDATE`:
+Já no _builder_ de `UPDATE` (`buildUpdate`), a ferramenta só dá continuidade à função se, e somente se, forem informadas as condições de filtro (`WHERE`). Sem essa parametrização, é lançada uma exceção ao desenvolvedor, impedindo modificações acidentais sem filtro no banco de dados:
 
 ```java
 UserDTO updateUser = UserDTO.builder()
@@ -234,23 +222,135 @@ UserDTO updateUser = UserDTO.builder()
                          .build();
 
 SQLBuilder.buildUpdate(updateUser, "USER_ID = ?", idUser);
+
+// Instrução SQL conceitual gerada internamente:
+// UPDATE TB_USER SET USER_NAME = ?, USER_AGE = ? WHERE USER_ID = ?
 ```
 
-SQL conceitual:
+Os comandos DQL e DML construídos, juntamente com a lista ordenada de parâmetros, são encapsulados na classe `SQLResult`. Nela são centralizados o preenchimento seguro dos valores no `PreparedStatement` e o mapeamento dos dados retornados pelo `ResultSet` para as classes configuradas com `@ColumnDB`, além de ser validado previamente se a quantidade de parâmetros informados corresponde à quantidade de _placeholders_ (`?`) existentes nos comandos SQL.
 
-```sql
-UPDATE TB_USER
-SET USER_NAME = ?, USER_AGE = ?
-WHERE USER_ID = ?
+Nas operações de escrita (`INSERT` e `UPDATE`), a execução ocorre principalmente por meio do método `executeUpdate`, que aplica os parâmetros no banco e retorna a quantidade de registros afetados. Contudo, em inserções nas quais a aplicação precisa utilizar imediatamente o identificador recém-gerado pela _sequence_ do Oracle, o método `executeAndReturnId` aproveita a marcação `isPrimaryKey = true` da classe para recuperar a chave primária gerada no banco e preenchê-la diretamente no próprio objeto enviado. Já para cenários de alto volume de dados, o método `executeBatch` processa coleções inteiras de objetos em uma única comunicação em lote com o banco, permitindo que o chamador controle explicitamente o escopo transacional (`commit` e `rollback`) sobre os objetos `newUser` e `updateUser` exemplificados anteriormente:
+
+```java
+// 1. Atualização retornando a quantidade de linhas afetadas:
+int linhasAtualizadas = SQLBuilder
+    .buildUpdate(updateUser, "USER_ID = ?", idUser)
+    .executeUpdate(conn);
+
+// 2. Inserção retornando o ID gerado pela sequence (e preenchendo newUser.id):
+Long idGerado = SQLBuilder
+    .buildInsert(newUser)
+    .executeAndReturnId(conn, newUser);
+
+// 3. Inserção em lote com controle transacional explícito pelo chamador:
+boolean autoCommitOriginal = conn.getAutoCommit();
+try {
+    conn.setAutoCommit(false);
+    int[] resultados = SQLBuilder.buildInsertBatch(newUsers).executeBatch(conn);
+    conn.commit();
+} catch (Exception e) {
+    conn.rollback();
+    throw e;
+} finally {
+    conn.setAutoCommit(autoCommitOriginal);
+}
 ```
 
-### 3.5 Vantagens e desvantagens
+Como já mencionado, a conexão JDBC necessária para a execução dessas funcionalidades parte sempre do chamador; não é responsabilidade do SEOS fechar, confirmar ou reverter a `Connection`, sendo encerrados internamente apenas o `PreparedStatement` e o `ResultSet`.
+
+Nas operações de leitura (`SELECT`), um dos principais gargalos observados nos sistemas legados da empresa era a repetição de laços `while (rs.next())` para extrair manualmente cada coluna do `ResultSet`, independentemente de a consulta retornar uma lista completa de entidades, um único registro, um agrupamento para relatórios ou apenas um contador numérico. Para eliminar essa repetição sem obrigar a equipe a criar classes DTO para todo tipo de consulta, o `SQLResult` foi estruturado em diferentes modalidades de leitura.
+
+Quando a consulta envolve entidades mapeadas da aplicação, a leitura pode ser feita diretamente para objetos tipados por meio dos métodos `executeQuery` e `executeQuerySingle`. Enquanto o primeiro percorre todo o `ResultSet` e instancia automaticamente uma lista da classe informada com base nas anotações `@ColumnDB`, o segundo é voltado a buscas pontuais (como consultas por chave primária), retornando apenas o primeiro registro encontrado ou `null` quando não há correspondência no banco. Além disso, para facilitar a adoção gradual da biblioteca em métodos legados que ainda manipulam o `PreparedStatement` manualmente, o método `mapearResultSet` foi exposto publicamente, permitindo aproveitar o mapeamento automático a partir de um `ResultSet` já aberto:
+
+```java
+// 1. Retorno de lista de objetos mapeados:
+List<UserDTO> users = SQLBuilder
+    .buildSelect(UserDTO.class, "STATUS = ?", status)
+    .executeQuery(conn, UserDTO.class);
+
+// 2. Retorno de um único objeto (ou null se não encontrado):
+UserDTO user = SQLBuilder
+    .buildSelect(UserDTO.class, "USER_ID = ? AND STATUS = ?", idUser, status)
+    .executeQuerySingle(conn, UserDTO.class);
+
+// 3. Aproveitamento do mapeamento em consultas legadas com ResultSet aberto:
+try (PreparedStatement ps = conn.prepareStatement(sql);
+     ResultSet rs = ps.executeQuery()) {
+    return new SQLResult(sql, Collections.emptyList()).mapearResultSet(rs, UserDTO.class);
+}
+```
+
+Por outro lado, em rotinas de relatórios, totalizadores ou consultas parciais nas quais a criação de um DTO específico seria desnecessária, o `SQLResult` permite extrair os dados em estruturas dinâmicas do próprio Java. Nesses cenários, os métodos `executeQueryAsMap` e `executeQueryAsSingleMap` convertem as linhas retornadas em mapas (`Map<String, Object>`) indexados pelo nome da coluna em letras maiúsculas. De modo complementar, o método `executeAsDictionary` transforma consultas de duas colunas diretamente em um dicionário de chave e valor (`Map<K, V>`), facilitando o carregamento de pares como identificador e nome em memória, enquanto o `executeScalar` extrai e converte automaticamente o valor da primeira coluna da primeira linha (tratando, inclusive, o retorno `BigDecimal` padrão do Oracle para tipos como `Integer` ou `Long`):
+
+```java
+// 1. Consulta agregada retornando lista de mapas (sem necessidade de DTO):
+List<Map<String, Object>> totaisPorStatus = new SQLResult(
+    "SELECT STATUS, COUNT(1) TOTAL FROM TB_USER GROUP BY STATUS",
+    Collections.emptyList()
+).executeQueryAsMap(conn);
+
+// 2. Projeção parcial de uma única linha em mapa:
+Map<String, Object> dadosParciais = new SQLResult(
+    "SELECT USER_NAME, STATUS FROM TB_USER WHERE USER_ID = ?",
+    Arrays.asList(idUser)
+).executeQueryAsSingleMap(conn);
+
+// 3. Mapeamento direto de duas colunas em dicionário (chave -> valor):
+Map<Long, String> nomesPorId = new SQLResult(
+    "SELECT USER_ID, USER_NAME FROM TB_USER WHERE STATUS = ?",
+    Arrays.asList("ATIVO")
+).executeAsDictionary(conn);
+
+// 4. Retorno de valor escalar único com conversão automática de tipo:
+Integer totalAtivos = new SQLResult(
+    "SELECT COUNT(1) FROM TB_USER WHERE STATUS = ?",
+    Arrays.asList("ATIVO")
+).executeScalar(conn, Integer.class);
+```
+
+Além das instruções DQL e DML tradicionais, o ambiente Oracle 19c integrado ao ERP concentra diversas regras de negócio dentro do próprio banco por meio de _procedures_ e _packages_ escritas em _Procedural Language/Structured Query Language_ (PL/SQL). Na abordagem manual com `CallableStatement`, a invocação dessas rotinas exigia a montagem da sintaxe `{call ...}`, o controle manual da posição numérica de cada parâmetro e a leitura dos valores de saída também por índice, aumentando a incidência de erros de manutenção. Para padronizar esse fluxo, foi desenvolvida a classe `SQLCall`, que oferece uma interface fluente para declarar o nome da _procedure_ (`.name()`) e registrar parâmetros de entrada (`.in()`), de saída (`.out()`) ou mistos (`.inOut()`), associando os retornos a apelidos legíveis (_aliases_) que podem ser recuperados de forma tipada após a execução:
+
+```java
+SQLCall.Result resultado = SQLCall
+    .name("PKG_USER.PROCESSAR_CADASTRO")
+    .in(newUser.getName())
+    .inOut("STATUS_ATUAL", newUser.getStatus(), Types.VARCHAR)
+    .out("ID_GERADO", Types.NUMERIC)
+    .execute(conn);
+
+Long idGerado = resultado.getLong("ID_GERADO");
+String statusFinal = resultado.getString("STATUS_ATUAL");
+```
+
+Por fim, para solucionar a grave ausência de rastreabilidade apontada na Seção 3.2 — na qual **34,9%** dos métodos do sistema de automações e **94,4%** dos métodos do _e-commerce_ não possuíam nenhum registro de _log_ —, o SEOS incorporou uma camada transversal de auditoria e observabilidade baseada na interface _Service Provider Interface_ (SPI) `OrmLogger`, gerenciada globalmente pela classe `OrmConfig`. Por meio dessa estrutura, todas as execuções realizadas pelo `SQLResult` e pelo `SQLCall` têm seu tempo de resposta cronometrado automaticamente e inspecionam a pilha de execução da _thread_ (`StackTraceElement`) para identificar exatamente a classe e o método da aplicação que originaram a chamada ao banco. Quando ocorre qualquer exceção SQL ou quando uma operação ultrapassa o limite de tempo configurado — **10 segundos** para consultas no `SQLResult` e **3 segundos** para chamadas PL/SQL no `SQLCall` —, a biblioteca registra automaticamente o alerta com a origem da chamada, o tempo decorrido e a quantidade de parâmetros enviados, permitindo que os sistemas legados conectem seu próprio mecanismo de _logs_ na inicialização da aplicação:
+
+```java
+// Integração opcional do logger da aplicação com a auditoria automática do SEOS:
+OrmConfig.setLogger(new OrmLogger() {
+    @Override
+    public void info(String origin, String code, String msg, Object... params) {
+        appLogger.info("{} [{}] {}", origin, code, msg);
+    }
+
+    @Override
+    public void warn(String origin, String code, String msg, Object... params) {
+        appLogger.warn("{} [{}] {}", origin, code, msg);
+    }
+
+    @Override
+    public void error(String origin, String code, String msg, Exception e, Object... params) {
+        appLogger.error("{} [{}] {}", origin, code, msg, e);
+    }
+});
+```
+
+### 3.4 Vantagens e desvantagens
 
 Entre os benefícios esperados estão a redução de boilerplate, a padronização das operações de persistência, a reutilização de código, o mapeamento automático dos resultados e a redução da exposição a SQL Injection.
 
 Como limitações, o SEOS mantém parte do controle explícito no código da aplicação. Relacionamentos, _joins_, conexões e transações não são gerenciados automaticamente pelo framework. Essas características devem ser avaliadas em conjunto com as necessidades do ambiente empresarial.
 
-### 3.6 Comparação com Hibernate/JPA
+### 3.5 Comparação com Hibernate/JPA
 
 Antes de começar a implementar o SEOS no ambiente da empresa, foi realizada uma comparação com o Hibernate, uma das soluções ORM mais utilizadas no ecossistema Java.
 
@@ -267,7 +367,7 @@ Antes de começar a implementar o SEOS no ambiente da empresa, foi realizada uma
 | Dependências e inicialização | Requer o _runtime_ e a configuração do provedor ORM.                                    | Utiliza JDBC e poucas classes utilitárias já incorporadas ao projeto.              | O SEOS acrescenta baixo _overhead_ à implantação.                |
 | Diagnóstico                  | Possui ecossistema de logs e métricas, sujeito à configuração adotada.                  | Concentra SQL e parâmetros e audita erros, origem e consultas lentas.              | A observabilidade atende ao diagnóstico necessário.              |
 
-### 3.7 Quadro de respostas — antes e depois
+### 3.6 Quadro de respostas — antes e depois
 
 Este quadro deverá ser preenchido após a execução das avaliações:
 
@@ -281,11 +381,11 @@ Este quadro deverá ser preenchido após a execução das avaliações:
 | Mapeamento do `ResultSet`                     | Manual, campo a campo.                   | Realizado pelo SEOS.           |
 | Construção das consultas                      | Manual e distribuída nos métodos.        | Padronizada pelo `SQLBuilder`. |
 
-### 3.8 Resultado
+### 3.7 Resultado
 
 Até o momento, foram identificadas a necessidade de padronização da camada de persistência, a redução de código repetitivo e a necessidade de ampliar os mecanismos de segurança. Os resultados quantitativos da aplicação do SEOS ainda deverão ser registrados nesta seção.
 
-### 3.9 Recomendações — plano de aplicação DevSecOps
+### 3.8 Recomendações — plano de aplicação DevSecOps
 
 O projeto será estruturado com base nas seguintes práticas:
 
@@ -313,7 +413,7 @@ O projeto será estruturado com base nas seguintes práticas:
 
 ![alt text](/docs/image/imagePackageMaven.png)
 
-### 3.10 Dados do Projeto
+### 3.9 Dados do Projeto
 
 Os dados já levantados são:
 
@@ -339,4 +439,4 @@ As referências bibliográficas deverão ser incluídas após a seleção das fo
 
 ### Anexo A — Questionário baseado no OWASP Top 10
 
-O questionário deverá ser incluído nesta seção e suas respostas deverão ser relacionadas ao quadro de respostas apresentado na seção 3.7.
+O questionário deverá ser incluído nesta seção e suas respostas deverão ser relacionadas ao quadro de respostas apresentado na seção 3.6.
