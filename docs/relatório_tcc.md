@@ -346,7 +346,7 @@ OrmConfig.setLogger(new OrmLogger() {
 
 ### 3.4 Vantagens e desvantagens
 
-Entre os benefícios esperados estão a redução de boilerplate, a padronização das operações de persistência, a reutilização de código, o mapeamento automático dos resultados e a redução da exposição a SQL Injection.
+As vantagens de adotar o SEOS é a garantia de um processo mais simplificado e seguro para realizar operações transacionais em banco de dados sem afetar o controle interno de conexões JDBC e a performance da aplicação, graças aos seus métodos que mapeiam parametros e resultados via reflections os riscos de expor o produto a um SQL Injection são mitigados. Em suma, a arquitetura do framework consolida-se em quatro pilares fundamentais: Padronização, Simplificação, Proteção e Reutilização.
 
 Como limitações, o SEOS mantém parte do controle explícito no código da aplicação. Relacionamentos, _joins_, conexões e transações não são gerenciados automaticamente pelo framework. Essas características devem ser avaliadas em conjunto com as necessidades do ambiente empresarial.
 
