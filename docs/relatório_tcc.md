@@ -52,18 +52,14 @@ Embora ele atue como uma biblioteca Java distribuída sob versionamento semânti
 
 ## 2. Referencial Teórico
 
-O projeto utiliza conceitos relacionados a:
+- **2.1 Persistência de Dados e Mapeamento Objeto-Relacional (ORM):** fundamentos de bancos de dados relacionais, comunicação via interfaces de baixo nível (JDBC) e o problema da impedância objeto-relacional;
+- **2.2 Metaprogramação, _Reflection_ e Arquitetura de _Microframeworks_:** conceitos de introspecção em tempo de execução, programação orientada a metadados (_annotations_) e diferenças conceituais entre _frameworks_ tradicionais e bibliotecas leves;
+- **2.3 Segurança Cibernética em Aplicações e _SQL Injection_:** panorama de ataques cibernéticos à camada de persistência, vulnerabilidades de injeção de comandos, princípio de consultas parametrizadas e diretrizes do OWASP _Top_ 10;
+- **2.4 Cultura _DevSecOps_ e Engenharia de Software Contínua (CI/CD):** transição do modelo DevOps tradicional para o _DevSecOps_, conceito de segurança antecipada (_Shift-Left Security_) e automação de integração e entrega contínuas;
+- **2.5 Qualidade de Código, Análise Estática de Segurança (SAST) e _Supply Chain Security_:** conceitos de código repetitivo (_boilerplate_), dívida técnica, verificação estática de vulnerabilidades e integridade da cadeia de suprimentos de _software_;
+- **2.6 Observabilidade, Auditoria de Sistemas e _ChatOps_:** fundamentos de rastreabilidade de erros e desempenho em sistemas críticos e práticas de operação colaborativa orientada a notificações.
 
-- JDBC e acesso a bancos de dados relacionais;
-- Mapeamento objeto-relacional (ORM);
-- _SQL Injection_ e consultas parametrizadas;
-- OWASP _Top_ 10;
-- _DevSecOps_;
-- Integração e entrega contínuas;
-- SAST (_Static Application Security Testing_);
-- auditoria e observabilidade de aplicações.
-
-Esta seção deverá ser complementada com a fundamentação dos conceitos e com pelo menos cinco artigos atuais sobre ataques cibernéticos, segurança de aplicações e práticas _DevSecOps_.
+Esta seção deverá ser complementada com a fundamentação teórica dos conceitos e com pelo menos cinco artigos atuais sobre ataques cibernéticos, segurança de aplicações e práticas _DevSecOps_.
 
 ## 3. Caso de Uso
 
@@ -344,15 +340,11 @@ OrmConfig.setLogger(new OrmLogger() {
 });
 ```
 
-### 3.4 Vantagens e desvantagens
+### 3.4 Comparação com Hibernate/JPA
 
-As vantagens de adotar o SEOS é a garantia de um processo mais simplificado e seguro para realizar operações transacionais em banco de dados sem afetar o controle interno de conexões JDBC e a performance da aplicação, graças aos seus métodos que mapeiam parametros e resultados via reflections os riscos de expor o produto a um SQL Injection são mitigados. Em suma, a arquitetura do framework consolida-se em quatro pilares fundamentais: Padronização, Simplificação, Proteção e Reutilização.
+Para fundamentar a construção de uma biblioteca híbrida própria em vez da adoção direta de uma ferramenta tradicional de mercado no cenário estudado, foi realizada uma comparação arquitetural com o Hibernate, uma das soluções ORM mais utilizadas no ecossistema Java, conforme sintetizado na Tabela 3:
 
-Como limitações, o SEOS mantém parte do controle explícito no código da aplicação. Relacionamentos, _joins_, conexões e transações não são gerenciados automaticamente pelo framework. Essas características devem ser avaliadas em conjunto com as necessidades do ambiente empresarial.
-
-### 3.5 Comparação com Hibernate/JPA
-
-Antes de começar a implementar o SEOS no ambiente da empresa, foi realizada uma comparação com o Hibernate, uma das soluções ORM mais utilizadas no ecossistema Java.
+#### Tabela 3 — Comparação arquitetural entre o Hibernate/JPA e o SEOS
 
 | Requisito do projeto         | Hibernate / JPA                                                                         | SEOS híbrido JDBC                                                                  | Adequação ao cenário atual                                       |
 | ---------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -360,14 +352,79 @@ Antes de começar a implementar o SEOS no ambiente da empresa, foi realizada uma
 | Previsibilidade das escritas | O resultado depende do estado da entidade, do contexto e das configurações de `flush`.  | Cada chamada representa um comando visível, sem sincronização implícita posterior. | O SEOS facilita a rastreabilidade nos projetos.                  |
 | SQL Oracle específico        | Pode ser usado por SQL nativo, paralelamente ao modelo de entidades.                    | É parte natural da API e permanece concentrado na camada de `Repository`.          | O SEOS evita manter duas formas de consulta para o mesmo módulo. |
 | CRUD de tabelas customizadas | Exige mapear entidades e configurar o ambiente JPA.                                     | Exige DTO anotado e _builders_ diretos.                                            | O SEOS atende com menor superfície de configuração.              |
-| Atualizações parciais        | Possui alternativas como entidade gerenciada, consultas específicas e `@DynamicUpdate`. | A estratégia Anti-Null transforma o DTO parcial diretamente no `SET`.              | O SEOS expressa de forma simples o padrão recorrente do projeto. |
+| Atualizações parciais        | Possui alternativas como entidade gerenciada, consultas específicas e `@DynamicUpdate`. | A estratégia _Anti-Null_ transforma o DTO parcial diretamente no `SET`.            | O SEOS expressa de forma simples o padrão recorrente do projeto. |
 | Controle transacional        | Integra-se a JTA, Spring e outros gerenciadores quando disponíveis.                     | Usa `commit`, `rollback` e conexão definidos pelo chamador.                        | O SEOS participa do limite transacional adotado pelo projeto.    |
 | Consultas e projeções        | Oferece JPQL, Criteria, SQL nativo e projeções.                                         | Oferece DTO, resultado único, escalar, mapa, dicionário e SQL explícito.           | A API atual cobre os formatos utilizados pelos DAOs.             |
 | Relacionamentos de domínio   | Automatiza associações, cascatas e estratégias de carregamento.                         | Mantém _joins_ e composição de resultados explícitos.                              | O escopo atual privilegia operações objetivas.                   |
 | Dependências e inicialização | Requer o _runtime_ e a configuração do provedor ORM.                                    | Utiliza JDBC e poucas classes utilitárias já incorporadas ao projeto.              | O SEOS acrescenta baixo _overhead_ à implantação.                |
-| Diagnóstico                  | Possui ecossistema de logs e métricas, sujeito à configuração adotada.                  | Concentra SQL e parâmetros e audita erros, origem e consultas lentas.              | A observabilidade atende ao diagnóstico necessário.              |
+| Diagnóstico                  | Possui ecossistema de _logs_ e métricas, sujeito à configuração adotada.                | Concentra SQL e parâmetros e audita erros, origem e consultas lentas.              | A observabilidade atende ao diagnóstico necessário.              |
 
-### 3.6 Quadro de respostas — antes e depois
+**Fonte:** Elaborada pela autora (2026).
+
+### 3.5 Vantagens e desvantagens
+
+A principal vantagem de adotar o SEOS é a garantia de um processo mais simplificado, auditável e seguro para realizar operações em banco de dados, sem afetar o controle interno de conexões JDBC nem a _performance_ da aplicação. Graças aos seus métodos que automatizam a parametrização das consultas e mapeiam os resultados via _reflection_, os riscos de expor o produto a ataques de _SQL Injection_ são mitigados. Em suma, a arquitetura do _framework_ consolida-se em quatro pilares fundamentais: **Padronização, Simplificação, Proteção e Reutilização**.
+
+Como contrapartida natural de sua proposta enxuta frente a um ORM completo como o Hibernate/JPA, o SEOS concentra sua automação em operações diretas por tabela e não abrange recursos avançados de modelo de domínio, como o mapeamento automático de relacionamentos entre entidades (`@OneToMany`, `@ManyToOne`), o carregamento sob demanda (_lazy loading_) ou mecanismos próprios de _cache_. Dessa forma, consultas que envolvem múltiplos _joins_ ou regras de atualização fora do padrão _Anti-Null_ continuam exigindo a escrita da instrução SQL pela equipe, ainda que se beneficiem do encapsulamento seguro, do mapeamento de retorno e da auditoria fornecidos pelo `SQLResult`.
+
+### 3.6 Plano de aplicação _DevSecOps_
+
+Embora tenha sido inspirado nas dores reais observadas no ambiente corporativo estudado, o SEOS foi desenvolvido como um projeto autoral independente (`com.github.marygraywolf.seos`), hospedado em repositório próprio no GitHub e desvinculado de qualquer nomenclatura, regra de negócio ou código proprietário da empresa. Por se tratar de uma biblioteca projetada para atuar no núcleo da camada de persistência de aplicações Java/JDBC, sua estabilidade e sua segurança são requisitos essenciais: qualquer falha estrutural ou vulnerabilidade na biblioteca impactaria diretamente os sistemas que a importassem como dependência. Diante disso, o ciclo de vida do SEOS foi estruturado sob a cultura _DevSecOps_, priorizando ferramentas gerenciadas no modelo _Software as a Service_ (SaaS), segurança por padrão (_security by design_) e ausência de custos com servidores dedicados. A Tabela 4 sintetiza a matriz de decisão arquitetural utilizada para a escolha de cada tecnologia da esteira frente às alternativas de mercado:
+
+#### Tabela 4 — Matriz de decisão das ferramentas da esteira _DevSecOps_
+
+| Categoria | Ferramenta Adotada | Principais Concorrentes | Justificativa Técnica da Decisão |
+| :--- | :--- | :--- | :--- |
+| **Orquestração (CI/CD)** | **GitHub Actions** | Jenkins, GitLab CI | O Jenkins exige provisionamento, hospedagem e manutenção contínua de servidores e _plugins_. O GitLab CI exigiria manter a biblioteca fora do ecossistema onde o repositório já está hospedado. O GitHub Actions oferece execução nativa e efêmera diretamente no repositório do projeto, sem custo de infraestrutura. |
+| **_Build_ e Empacotamento** | **Apache Maven** | Gradle | Embora o Gradle utilize _scripts_ dinâmicos (Groovy/Kotlin), essa flexibilidade permite lógica imperativa no arquivo de _build_, dificultando a auditoria. O Maven possui ciclo de vida estrito e declarativo em _Extensible Markup Language_ (XML), facilitando a injeção padronizada de _plugins_ de segurança e o controle determinístico de versões. |
+| **Inspeção de Qualidade** | **SonarCloud** | Codacy, Code Climate | Possui regras maduras para o ecossistema Java/JDBC e aplica a metodologia _Clean as You Code_ com _Quality Gate_ nativo, capaz de bloquear _Pull Requests_ automaticamente caso novas métricas de cobertura, duplicação ou _code smells_ sejam violadas. |
+| **Segurança (SAST)** | **Semgrep** | Checkmarx, Fortify, Snyk | Soluções comerciais como Checkmarx e Fortify demandam alto custo de licenciamento e elevam o tempo de _build_, prejudicando o _feedback_ rápido da esteira. O Semgrep executa localmente no agente de integração (_runner_) em poucos segundos e exporta nativamente o laudo em formato SARIF para a aba _Security_ do próprio GitHub. |
+| **Repositório de Pacotes (CD)** | **GitHub Packages** | Sonatype Nexus, JFrog Artifactory | Nexus e Artifactory demandam máquinas virtuais próprias, gestão de armazenamento e controle separado de credenciais. O GitHub Packages elimina a complexidade de Gestão de Identidade e Acesso — _Identity and Access Management_ (IAM) — ao publicar o pacote diretamente no repositório do projeto via `GITHUB_TOKEN`. |
+| **Observabilidade (_ChatOps_)** | **Microsoft Teams** | Slack, E-mail | Notificações por e-mail não atendem à resposta em tempo real e geram fadiga de alertas, enquanto o Slack exigiria licenciamento adicional para simular um cenário corporativo. O Microsoft Teams, integrado via _Workflows_ e _Adaptive Cards_, reflete fielmente o padrão de comunicação utilizado em ambientes empresariais. |
+
+**Fonte:** Elaborada pela autora (2026).
+
+Com base nessas escolhas, a automação no GitHub Actions foi dividida em dois fluxos de trabalho (_workflows_) independentes: um dedicado à Integração, Qualidade e Segurança Contínua (`ci_integracao_e_qualidade.yml`) e outro exclusivo para a Entrega Contínua (`cd_entrega_continua.yml`). Como camada adicional de proteção contra ataques à cadeia de suprimentos (_Supply Chain_), todas as _actions_ externas utilizadas nas esteiras foram fixadas pelo _hash_ imutável do _commit_ (SHA-256) em vez de _tags_ mutáveis, prevenindo a execução de código adulterado em dependências de terceiros.
+
+O fluxo de Integração Contínua — _Continuous Integration_ (CI) — é acionado a cada _push_ ou abertura de _Pull Request_ na _branch_ `main`, provisionando um ambiente Ubuntu com JDK 11 (Temurin) para compilação e execução do comando `mvn clean verify`. Nessa etapa, a confiabilidade do _microframework_ é validada pela bateria de testes unitários com JUnit 5 e Mockito, utilizando objetos simulados (_mocks_) para reproduzir conexões JDBC, `PreparedStatement`, `CallableStatement` e `ResultSet` em memória sem depender de uma instância de banco de dados durante a execução da esteira, enquanto o JaCoCo coleta os dados e gera o relatório de cobertura:
+
+![Pipeline de Integração Contínua](/docs/image/imagePipelineCI.png)
+
+![Execução dos testes automatizados](/docs/image/imagePipelineTestes.png)
+
+Concluída a fase de testes, a esteira envia os resultados e o relatório de cobertura para o SonarCloud, dando início à etapa de Qualidade Contínua (_Continuous Quality_). A plataforma analisa a cobertura de testes, o percentual de duplicação, _bugs_, vulnerabilidades e _code smells_, cabendo ao _Quality Gate_ verificar os critérios estabelecidos e reprovar automaticamente a integração da _Pull Request_ caso qualquer indicador fique abaixo do padrão exigido:
+
+![Imagem da plataforma do SonarQube Cloud](/docs/image/imageSonarQube.png)
+
+Na sequência, aplica-se a prática de Segurança Antecipada (_Shift-Left Security_) por meio do Semgrep, que realiza a varredura SAST no código Java do SEOS com base nas categorias do OWASP _Top_ 10. Para proteger o ambiente de _build_, a instalação da ferramenta restringe pacotes binários desconhecidos por meio do parâmetro `--only-binary :all:`, e o resultado da análise é exportado no padrão _Static Analysis Results Interchange Format_ (SARIF) diretamente para a aba _GitHub Security_ do repositório:
+
+![Análise SAST com Semgrep](/docs/image/imagePipelineSAST.png)
+
+Para garantir resposta rápida caso qualquer validação anterior apresente falha, os dois _workflows_ contam com um mecanismo assíncrono de observabilidade e _ChatOps_ (`if: failure()`) que aciona um alerta via _Webhook_ integrado ao Microsoft Teams. A notificação é renderizada em formato _Adaptive Card_ e informa em tempo real a esteira afetada, o repositório, a _branch_ ou versão, o motivo da falha e o atalho direto para os _logs_ da execução, reduzindo o Tempo Médio de Recuperação — _Mean Time to Recovery_ (MTTR) — durante o ciclo de desenvolvimento:
+
+![Alerta automatizado no Microsoft Teams](/docs/image/imageMensagemTeams.png)
+
+Por sua vez, a disponibilização oficial da biblioteca ocorre na esteira de Entrega Contínua — _Continuous Delivery_ (CD) — definida em `cd_entrega_continua.yml`, disparada exclusivamente quando uma _tag_ de versionamento semântico (`v*.*.*`) é enviada ao repositório. Nessa etapa, a _pipeline_ extrai o número da _tag_, atualiza dinamicamente a versão no `pom.xml` (`mvn versions:set`) e executa a publicação autenticada (`mvn deploy`) no _GitHub Packages_, disponibilizando o artefato `.jar` pronto para ser importado como dependência Maven por projetos externos:
+
+![Pipeline de Entrega Contínua](/docs/image/imagePipelineCD.png)
+
+![Pacote publicado no GitHub Packages](/docs/image/imagePackageMaven.png)
+
+Por fim, a Tabela 5 apresenta o plano e cronograma estruturado para o desenvolvimento da biblioteca, a implantação de sua esteira _DevSecOps_ e a sua aplicação prática na refatoração do cenário estudado:
+
+#### Tabela 5 — Plano e cronograma de aplicação _DevSecOps_ e adoção do SEOS
+
+| Fase | Período | Etapa do Plano | Entregável e Objetivo Técnico |
+| :--- | :--- | :--- | :--- |
+| **Fase 1** | Mês 1 | Diagnóstico e Concepção do SEOS | Levantamento do cenário legado e implementação autoral do núcleo em Java puro/JDBC (`@TableDB`, `@ColumnDB`, `SQLBuilder`, `SQLResult`, `SQLCall` e `OrmLogger`). |
+| **Fase 2** | Mês 2 | Integração, Qualidade e SAST | Implementação do _workflow_ `ci_integracao_e_qualidade.yml` com testes unitários (JUnit 5, Mockito, JaCoCo), _Quality Gate_ no SonarCloud, análise SAST com Semgrep (SARIF) e fixação de _actions_ por _hash_ SHA-256. |
+| **Fase 3** | Mês 3 | _ChatOps_ e Entrega Contínua | Implementação do _workflow_ `cd_entrega_continua.yml`, alertas automatizados de falha no Microsoft Teams via _Webhook_ e publicação versionada (`v*.*.*`) no GitHub Packages. |
+| **Fase 4** | Mês 4 | Aplicação e Avaliação Comparativa | Refatoração de estudo de caso sobre os padrões vulneráveis mapeados no arquivo _Repository_ crítico (402 métodos e 21.381 linhas) para aferição das métricas de redução de código e segurança. |
+| **Fase 5** | Mês 5 | Plano de Adoção Gradual | Recomendação de diretrizes para importação da biblioteca nos novos desenvolvimentos e substituição progressiva dos métodos legados vulneráveis. |
+
+**Fonte:** Elaborada pela autora (2026).
+
+### 3.7 Quadro de respostas — antes e depois
 
 Este quadro deverá ser preenchido após a execução das avaliações:
 
@@ -381,39 +438,7 @@ Este quadro deverá ser preenchido após a execução das avaliações:
 | Mapeamento do `ResultSet`                     | Manual, campo a campo.                   | Realizado pelo SEOS.           |
 | Construção das consultas                      | Manual e distribuída nos métodos.        | Padronizada pelo `SQLBuilder`. |
 
-### 3.7 Resultado
-
-Até o momento, foram identificadas a necessidade de padronização da camada de persistência, a redução de código repetitivo e a necessidade de ampliar os mecanismos de segurança. Os resultados quantitativos da aplicação do SEOS ainda deverão ser registrados nesta seção.
-
-### 3.8 Recomendações — plano de aplicação DevSecOps
-
-O projeto será estruturado com base nas seguintes práticas:
-
-1. **Integração Contínua (Continuous Integration):** o workflow [`devsecops.yml`](.github/workflows/devsecops.yml) é executado em _push_ na branch `main` ou quando uma _pull request_ é aberta para essa branch. O GitHub Actions configura o JDK 11, executa `mvn clean verify`, compila a aplicação e executa os testes automatizados com JUnit 5 e Mockito. O JaCoCo coleta os dados dos testes e gera o relatório de cobertura.
-
-![alt text](/docs/image/imagePipelineCI.png)
-
-![alt text](/docs/image/imagePipelineTestes.png)
-
-2. **Qualidade Contínua (Continuous Quality):** a pipeline envia os resultados dos testes e da cobertura para o SonarCloud. A ferramenta analisa cobertura, duplicação, _bugs_, vulnerabilidades e _code smells_. O _Quality Gate_ verifica os critérios definidos e pode reprovar a alteração antes da integração da _pull request_.
-
-![Imagem da plataforma do SonarQube Cloud](/docs/image/imageSonarQube.png)
-
-3. **Segurança Antecipada (Shift-Left Security):** após a compilação, os testes e a análise de qualidade, o Semgrep realiza uma análise estática de segurança (SAST) no código Java do SEOS. O resultado é gerado em formato SARIF e enviado ao GitHub Security. As versões das dependências utilizadas na etapa são fixadas por _hash_ e a instalação de pacotes binários desconhecidos é restringida por `--only-binary :all:`.
-
-![alt text](/docs/image/imagePipelineSAST.png)
-
-4. **Observabilidade e ChatOps:** a pipeline possui um mecanismo de notificação assíncrona que aciona um alerta via _Webhook_ integrado ao Microsoft Teams quando uma etapa anterior falha. A mensagem informa a etapa, o projeto, o motivo e um link para os logs da execução.
-
-![alt text](/docs/image/imageMensagemTeams.png)
-
-5. **Entrega Contínua (Continuous Delivery):** esta etapa deverá ser detalhada com o fluxo de publicação, implantação e validação adotado pelo projeto.
-
-![alt text](/docs/image/imagePipelineCD.png)
-
-![alt text](/docs/image/imagePackageMaven.png)
-
-### 3.9 Dados do Projeto
+### 3.8 Resultados e Dados Consolidados do Projeto
 
 Os dados já levantados são:
 
@@ -425,11 +450,11 @@ Os dados já levantados são:
 - 156 chamadas que utilizam métodos `setXxx()`;
 - aproximadamente 43% de métodos potencialmente vulneráveis a SQL Injection.
 
-Ainda devem ser informados a quantidade de pessoas envolvidas, o volume total de trabalho, o período de desenvolvimento e a quantidade de módulos ou consultas analisados.
+Até o momento, foram identificadas a necessidade de padronização da camada de persistência, a redução de código repetitivo e a necessidade de ampliar os mecanismos de segurança. Os resultados quantitativos da aplicação do SEOS ainda deverão ser registrados nesta seção.
 
 ## 4. Conclusão
 
-Esta seção será preenchida após a conclusão das avaliações. Deverá retomar o problema identificado, apresentar os resultados do SEOS, discutir suas limitações e indicar possíveis trabalhos futuros.
+Esta seção será preenchida após a conclusão das avaliações. Deverá retomar o problema identificado, apresentar os resultados do SEOS, discutir suas limitações e indicar possíveis trabalhos futuros (como suporte a herança na leitura de _annotations_ dos DTOs, marcação explícita para permitir gravação de `NULL` em atualizações parciais fora do padrão _Anti-Null_, suporte a lotes heterogêneos no `buildInsertBatch` e construtores auxiliares para consultas com _joins_).
 
 ## 5. Referências
 
@@ -439,4 +464,4 @@ As referências bibliográficas deverão ser incluídas após a seleção das fo
 
 ### Anexo A — Questionário baseado no OWASP Top 10
 
-O questionário deverá ser incluído nesta seção e suas respostas deverão ser relacionadas ao quadro de respostas apresentado na seção 3.6.
+O questionário deverá ser incluído nesta seção e suas respostas deverão ser relacionadas ao quadro de respostas apresentado na seção 3.7.
