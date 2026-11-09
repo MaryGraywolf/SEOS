@@ -438,6 +438,50 @@ Este quadro deverá ser preenchido após a execução das avaliações:
 | Mapeamento do `ResultSet`                     | Manual, campo a campo.                   | Realizado pelo SEOS.           |
 | Construção das consultas                      | Manual e distribuída nos métodos.        | Padronizada pelo `SQLBuilder`. |
 
+#### Resultados da metrificação
+
+A comparação foi realizada em duas frentes complementares no repositório do portal corporativo (`portalTbm`): (i) o código **novo**, escrito já com o SEOS (9 DAOs), contrastado com o padrão histórico de JDBC manual do `SankhyaDAO`; e (ii) a **refatoração de uma amostra de métodos do próprio `SankhyaDAO`**, que permite a medição direta do antes e do depois sobre o mesmo arquivo analisado na Seção 1.3. O `SankhyaDAO` é o arquivo-base do levantamento (416 chamadas a `PreparedStatement`, coincidindo com o valor apresentado na Seção 1.3); na data desta medição ele possui 21.412 linhas, ante as 21.381 registradas no levantamento original.
+
+##### Quadro A — Padrão de código: JDBC manual × SEOS (medição em `src/main/java`)
+
+| Critério                                              | JDBC manual (restante do projeto)        | SEOS (9 DAOs do módulo de recebimento fiscal) |
+| ----------------------------------------------------- | ---------------------------------------- | --------------------------------------------- |
+| Arquivos                                              | 69 com `prepareStatement`                | 9 DAOs, 11 DTOs com `@TableDB`               |
+| Chamadas a `prepareStatement` escritas manualmente    | 1.314                                    | 0                                             |
+| Mapeamento manual `rs.getXxx()` nos DAOs              | Campo a campo                            | 0 (feito por `SQLResult`)                    |
+| Pontos de montagem de SQL pelo SEOS                   | —                                        | 82 (`SQLBuilder.build*`/`select`/`SQLResult`) |
+| Execuções via SEOS                                    | —                                        | 62                                            |
+| Linhas por método (indicativo)                        | ≈ 68 (21.412 linhas / 316 métodos)¹      | ≈ 27 (1.652 linhas / 62 métodos)              |
+| Arquivos sem nenhuma chamada de _log_                 | 41 de 69 (59%)                           | 0 de 9 (100% com `Logger`)                    |
+
+¹ Contagem de métodos feita por _script_ sobre as assinaturas do arquivo; o levantamento da equipe de Arquitetura (Seção 1.3) considera 409 métodos, o que resultaria em ≈ 52 linhas por método. As duas funcionalidades comparadas não são idênticas, de modo que os valores devem ser lidos como ordem de grandeza.
+
+**Fonte:** Elaborada pela autora (2026), a partir do repositório `portalTbm`.
+
+##### Exemplo comparativo
+
+O método `SankhyaDAO.buscarParceiroPorCpfCnpj` ocupa **32 linhas**: abre o `PreparedStatement`, aplica `setString`, percorre o `ResultSet` e lê cinco colunas com `rs.getString`, tratando o erro com `printStackTrace` e sem registro estruturado. Já no `VisitanteDAO`, a leitura de uma entidade completa por filtro parametrizado, o cadastro e a atualização condicional correspondem, respectivamente, a uma expressão encadeada de 3 linhas efetivas (`buildSelect(...).executeQuerySingle(...)`) e a duas expressões de 1 linha (`buildInsert(...).executeUpdate(...)` e `buildUpdate(..., "ID_VISITANTE = ?", id).executeUpdate(...)`), sendo que o `UPDATE` só é executado com a cláusula `WHERE` informada.
+
+##### Quadro B — Refatoração de amostra do `SankhyaDAO` (antes × depois)
+
+A amostra é composta por 15 métodos do `SankhyaDAO` (3 `UPDATE`, 1 `INSERT`, 6 consultas escalares ou de contagem, 2 listas, 2 consultas de linha única e 1 dicionário), selecionados por apresentarem JDBC manual, chamadores identificados e comportamento preservável. Os valores de "Antes" foram medidos por _script_ sobre o código atual; os de "Depois" são a **projeção** obtida a partir do código-alvo definido no plano de refatoração.
+
+| Indicador (soma dos 15 métodos)              | Antes (medido) | Depois (projetado)  | Variação |
+| -------------------------------------------- | -------------- | ------------------- | -------- |
+| Linhas de código                             | 363            | ≈ 232               | ≈ −36%   |
+| `prepareStatement` escritos manualmente      | 15             | 0                   | −100%    |
+| `setXxx(n, ...)`                             | 11             | 0                   | −100%    |
+| `rs.getXxx(...)`                             | 18             | 0                   | −100%    |
+| Concatenações de valor na SQL                | 8              | 0                   | −100%    |
+| `printStackTrace`                            | 10             | 0                   | −100%    |
+| Chamadas `.close()` manuais                  | 15             | 0                   | −100%    |
+| Chamadas explícitas de `Logger`              | 0              | 10                  | +10      |
+| Métodos com auditoria de tempo, origem e erro | 0 de 15       | 15 de 15            | +100 p.p. |
+
+No arquivo como um todo, a projeção é de redução de 416 para 401 chamadas manuais a `prepareStatement` e de 26 para 16 ocorrências de `printStackTrace`.
+
+**Fonte:** Elaborada pela autora (2026).
+
 ### 3.8 Resultados e Dados Consolidados do Projeto
 
 Os dados já levantados são:
@@ -451,6 +495,18 @@ Os dados já levantados são:
 - aproximadamente 43% de métodos potencialmente vulneráveis a SQL Injection.
 
 Até o momento, foram identificadas a necessidade de padronização da camada de persistência, a redução de código repetitivo e a necessidade de ampliar os mecanismos de segurança. Os resultados quantitativos da aplicação do SEOS ainda deverão ser registrados nesta seção.
+
+#### Resultados da metrificação
+
+**Aplicabilidade comprovada em código real.** O SEOS é utilizado em produção no módulo de recebimento fiscal e portaria do portal corporativo, com 9 DAOs, 11 DTOs mapeados por `@TableDB`/`@ColumnDB`, 82 pontos de montagem de SQL e 62 execuções, todos operando sobre a `Connection` fornecida pelo próprio chamador (`SankhyaConnector.conectarSankhya()`), o que confirma a premissa de preservação do controle de conexão e de transação. Nesses DAOs não há nenhuma chamada manual a `prepareStatement` nem a `rs.getXxx()`, e todos registram falhas por meio de `Logger`, ao passo que, no restante do projeto, 41 dos 69 arquivos com JDBC manual (59%) não possuem nenhuma chamada de _log_.
+
+**Redução de volume.** Os DAOs escritos com o SEOS apresentam média aproximada de 27 linhas por método, contra aproximadamente 68 linhas por método no `SankhyaDAO` (21.412 linhas), incluindo nos primeiros o texto SQL e as regras de negócio. Operações que no padrão manual exigem cerca de 30 linhas (como a busca de parceiro por CPF/CNPJ) correspondem, com o `SQLBuilder`, a uma a três linhas, e o mesmo DTO parcial atende às variações de `INSERT` e `UPDATE` pela estratégia _Anti-Null_, eliminando a duplicação de métodos por combinação de campos.
+
+**Segurança.** Todos os valores informados pelos chamadores trafegam como parâmetros de `PreparedStatement` aplicados centralmente por `SQLResult.setParameters`, e a classe valida previamente a correspondência entre placeholders (`?`) e parâmetros. O `buildUpdate` rejeita a operação sem cláusula `WHERE`. A mitigação nos métodos legados do `SankhyaDAO` será demonstrada pela refatoração de amostra (Quadro B da Seção 3.7), na qual as concatenações de valor na SQL são substituídas por parâmetros.
+
+**Projeção da refatoração de amostra.** Aplicando o SEOS a 15 métodos do `SankhyaDAO`, projeta-se a redução de 363 para aproximadamente 232 linhas (cerca de 36%) e a eliminação total, nessa amostra, dos `prepareStatement` manuais (15), dos `setXxx` (11), dos `rs.getXxx` (18), dos `printStackTrace` (10) e das 8 concatenações de valor na instrução SQL, distribuídas em 7 métodos, que passam a ser parâmetros vinculados. Em contrapartida, todos os 15 métodos passam a contar com a auditoria automática de tempo, origem e erro do `SQLResult`, e 10 deles registram a falha por meio de `Logger`, contra nenhum registro de _log_ na versão original.
+
+**Limitações da medição.** (i) Os DAOs que utilizam o SEOS foram criados já com a biblioteca, sem versão anterior em JDBC manual no histórico do repositório, razão pela qual a comparação direta antes/depois foi feita sobre a amostra refatorada do `SankhyaDAO`; (ii) os valores de linhas por método são indicativos, pois os métodos comparados não têm funcionalidade idêntica; (iii) a cópia do SEOS incorporada ao portal está em versão anterior à descrita na Seção 3.3, sem as classes `SQLCall`, `OrmLogger` e `OrmConfig`, de modo que a auditoria nesse repositório utiliza `java.util.logging` diretamente; (iv) a contagem de exposição a _SQL Injection_ por critérios do OWASP _Top_ 10 (Anexo A) e a varredura SAST dependem de execução própria e não foram consolidadas nesta seção.
 
 ## 4. Conclusão
 
