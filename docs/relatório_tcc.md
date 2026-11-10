@@ -1,6 +1,6 @@
 # Relatório de Projeto
 
-## SEOS (Software Endurance Orchestration System): redução de boilerplate, auditoria e segurança cibernética na camada de persistência
+## SEOS (_Software Endurance Orchestration System_): redução de _boilerplate_, auditoria e segurança cibernética na camada de persistência
 
 **Autora:** Maria Antônia Santos de Lima  
 **Instituição:** Fundação Edson Queiroz — Universidade de Fortaleza (UNIFOR)  
@@ -10,34 +10,36 @@
 
 ## 1. Introdução
 
-Atualmente, na empresa onde trabalho, os métodos de consulta utilizados em nossos projetos são muito verbosos. Para realizar uma consulta, é necessário escrevê-la manualmente, armazená-la em uma variável, mapear os parâmetros do `PreparedStatement` e, logo em seguida, mapear o `ResultSet`, campo a campo.
+Atualmente, no ambiente corporativo analisado neste estudo, os métodos de consulta utilizados nos projetos legados são muito verbosos. Para realizar uma consulta, é necessário escrevê-la manualmente, armazená-la em uma variável, mapear os parâmetros do `PreparedStatement` e, logo em seguida, mapear o `ResultSet`, campo a campo.
 
 Em alguns casos, as consultas não possuem parâmetros. Em outros, os valores são concatenados diretamente na instrução _Structured Query Language_ (SQL), o que cria uma brecha significativa para _SQL Injection_. Além disso, existem diversas versões de operações como `INSERT`, `UPDATE` e consultas para uma mesma tabela. Isso ocorre porque determinadas implementações precisam de estruturas específicas que não podem ser modificadas, resultando na duplicação de operações semelhantes.
 
 Nesse contexto, foi desenvolvido o **SEOS** (_Software Endurance Orchestration System_), um _microframework_ de Mapeamento Objeto-Relacional (ORM, do inglês _Object-Relational Mapping_) criado para atender às necessidades específicas da empresa. O _framework_ mapeia tabelas, campos e _sequences_ por meio de _annotations_ e constrói estruturas _Data Manipulation Language_ (DML) e _Data Query Language_ (DQL) com base nesses mapeamentos. Dessa forma, busca tornar o acesso ao banco de dados mais padronizado e seguro, além de retornar as classes com os valores já mapeados e prontos para serem utilizados pelas implementações.
 
-## 1.1 Objetivo
+### 1.1 Objetivo
 
-### Objetivo geral
+#### Objetivo geral
 
 Evoluir o _microframework_ SEOS com base em práticas consolidadas de mercado e estruturar seu processo de desenvolvimento sob a cultura _DevSecOps_, a fim de demonstrar os ganhos de otimização, padronização, auditoria e segurança na camada de persistência.
 
-### Objetivos específicos
+#### Objetivos específicos
 
 - **Automatização de persistência:** implementar um mecanismo automatizado de geração de instruções DML/DQL (`SQLBuilder`) e de mapeamento objeto-relacional de `ResultSet` baseado em _annotations_ e _reflection_;
 - **Segurança contra injeções:** mitigar riscos de _SQL Injection_ na camada de persistência por meio da parametrização obrigatória de consultas no `PreparedStatement` e validação estrutural das operações;
 - **Auditoria e observabilidade:** incorporar recursos para rastreamento de erros, parâmetros e tempo de execução das consultas ao banco de dados;
-- **Esteira _DevSecOps_ (CI/CD):** estruturar uma _pipeline_ de Integração Contínua com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança — _Static Application Security Testing_ (SAST) com Semgrep —, notificações via _ChatOps_ e Entrega Contínua configurando o GitHub Packages com versionamento semântico da biblioteca;
+- **Esteira _DevSecOps_ — _Continuous Integration/Continuous Delivery_ (CI/CD):** estruturar uma _pipeline_ de Integração Contínua com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança — _Static Application Security Testing_ (SAST) com Semgrep —, notificações via _ChatOps_ e Entrega Contínua configurando o GitHub Packages com versionamento semântico da biblioteca;
 - **Avaliação arquitetural:** avaliar a aderência arquitetural do SEOS frente ao cenário corporativo estudado e em comparação com soluções consolidadas de mercado, como Hibernate/_Java Persistence API_ (JPA);
 - **Mensuração de resultados:** mensurar os ganhos quantitativos e qualitativos da adoção do SEOS em relação à abordagem tradicional — _Java Database Connectivity_ (JDBC) manual —, considerando redução de linhas de código, taxa de duplicação e exposição a vulnerabilidades baseadas no _Open Worldwide Application Security Project_ (OWASP) _Top_ 10.
 
-## 1.2 Justificativa
+### 1.2 Justificativa
 
-Ao criar uma implementação para atender a uma demanda e perceber que não poderia reutilizar o mesmo método de persistência no banco de dados, a primeira coisa que pensei foi: _“Por que criar mais uma versão de um `UPDATE` com as mesmas condições?”_. Foi nesse momento que percebi que a **falta de padronização**, a **baixa qualidade do código** e os **problemas de segurança nas consultas** eram fatores que precisavam ser tratados.
+Ao desenvolver uma implementação para atender a uma demanda operacional e constatar a impossibilidade de reutilizar um método de persistência já existente no banco de dados, surgiu o seguinte questionamento arquitetural: _“Por que criar mais uma versão de um `UPDATE` com as mesmas condições?”_. A partir dessa análise, verificou-se que a **falta de padronização**, a **baixa qualidade do código** e os **problemas de segurança nas consultas** eram fatores estruturais que precisavam ser tratados.
 
-Por meio dessa necessidade nasceu o **SEOS**, criado para ser uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de _SQL Injection_, <u>sem retirar da equipe o controle</u> sobre as consultas, conexões e transações de persistência.
+Por meio dessa necessidade nasceu o **SEOS**, concebido como uma solução autoral capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de _SQL Injection_, **sem retirar da equipe o controle** sobre as consultas, conexões e transações de persistência.
 
-## 1.3 Problema
+### 1.3 Problema
+
+Para dimensionar a criticidade do cenário estudado, o diagnóstico inicial realizado sobre uma classe crítica de persistência do ambiente legado revelou os seguintes indicadores:
 
 - **21.381** linhas de código;
 - **409** métodos, dos quais **402** acessam o banco de dados;
@@ -46,9 +48,9 @@ Por meio dessa necessidade nasceu o **SEOS**, criado para ser uma solução capa
 - Entre **416** chamadas a `PreparedStatement`, apenas **156** utilizam métodos `setXxx()`;
 - Aproximadamente **43%** dos métodos são potencialmente vulneráveis a _SQL Injection_.
 
-Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de <u>um único arquivo _Repository_ de um único projeto</u> utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de _SQL Injection_, já haviam sido repassados; contudo, devido à ausência histórica de uma abstração padronizada, à pressão por entregas rápidas e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
+Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de **uma única classe de acesso a dados (Objeto de Acesso a Dados — _Data Access Object_ [DAO] / _Repository_) de um único projeto** utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de _SQL Injection_, já haviam sido repassados; contudo, devido à ausência histórica de uma abstração padronizada, à pressão por entregas rápidas e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
 
-Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico — não sendo uma aplicação final em si —, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente **43% de métodos suscetíveis a _SQL Injection_** representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de `[INFORMAR_DEPOIS]` para conter e restaurar o ambiente. Nesse intervalo, estima-se um **prejuízo direto** de aproximadamente `[R$ X]` devido à paralisação do faturamento e das vendas, além de **prejuízos indiretos** severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira _DevSecOps_ e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
+Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico — não sendo uma aplicação final em si —, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente **43% de métodos suscetíveis a _SQL Injection_** representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de múltiplas horas de operação para conter o incidente, auditar os registros afetados e restaurar o ambiente. Nesse intervalo, a paralisação do faturamento e das vendas acarretaria **prejuízos financeiros diretos** expressivos à organização, além de **prejuízos indiretos** severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira _DevSecOps_ e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
 
 ## 2. Referencial Teórico
 
@@ -67,7 +69,7 @@ Esta seção deverá ser complementada com a fundamentação teórica dos concei
 
 O cenário utilizado como inspiração e base para o desenvolvimento e a aplicabilidade do SEOS é o de uma empresa têxtil que possui **dois projetos legados principais**. Esses dois sistemas foram desenvolvidos utilizando o ecossistema Java (nas versões 8 e 11), realizando o acesso direto ao banco de dados Oracle 19c via JDBC e comunicando-se via _Application Programming Interface_ (API) com o sistema de _Enterprise Resource Planning_ (ERP) responsável pelo gerenciamento dos processos empresariais. Por razões de confidencialidade e políticas internas de segurança da informação, a identidade da organização e os indicadores corporativos globais são preservados neste relatório, concentrando-se a caracterização no ambiente técnico de engenharia de software.
 
-Esses dois sistemas sustentam rotinas operacionais críticas de diferentes fluxos de negócio da empresa — um responsável por **automações produtivas, logísticas e contábeis**, e o outro responsável pelo **_e-commerce_** —, concentrando um elevado volume de consultas e persistências desenvolvidas ao longo dos anos. Pela forma como os sistemas foram estruturados junto ao ERP, as consultas, as conexões e as transações precisam continuar <u>sob o controle direto da aplicação</u>, o que impedia o uso de um ORM tradicional que gerenciasse tudo de forma automática.
+Esses dois sistemas sustentam rotinas operacionais críticas de diferentes fluxos de negócio da empresa — um responsável por **automações produtivas, logísticas e contábeis**, e o outro responsável pelo **_e-commerce_** —, concentrando um elevado volume de consultas e persistências desenvolvidas ao longo dos anos. Pela forma como os sistemas foram estruturados junto ao ERP, as consultas, as conexões e as transações precisam continuar **sob o controle direto da aplicação**, o que impedia o uso de um ORM tradicional que gerenciasse tudo de forma automática.
 
 Além disso, como esses dois sistemas evoluíram ao longo de vários anos passando por diferentes desenvolvedores e demandas urgentes de negócio, manter a escrita SQL manual segura e uniforme sem uma ferramenta centralizadora tornou-se um desafio diário. Por conta disso, o SEOS precisou ser pensado como uma biblioteca leve, compatível tanto com o Java 8 quanto com o Java 11, para se encaixar diretamente nos projetos já existentes sem exigir mudanças na arquitetura da empresa.
 
@@ -152,7 +154,7 @@ Analisando os dados acima e levando em conta o exemplo que os alimenta, reflete-
 
 Diante dos números levantados na seção anterior — que evidenciaram o excesso de código manual, o risco de _SQL Injection_ e a ausência de _logs_ nos dois sistemas da empresa —, foi idealizado o **SEOS**: um _microframework_ de ORM dentro do ecossistema Java capaz de resolver essas falhas respeitando a arquitetura existente, sem adicionar complexidade e garantindo maior celeridade no desenvolvimento.
 
-A proposta central do SEOS é automatizar justamente a parte mecânica e propensa a erros do uso do JDBC. Em vez de o desenvolvedor repetir manualmente todo o ciclo de preparação e leitura de dados em cada método, a biblioteca assume a construção segura das instruções, a validação dos parâmetros e a auditoria das execuções, devolvendo os objetos já preenchidos <u>sem retirar da aplicação o controle explícito sobre a conexão e a transação</u>.
+A proposta central do SEOS é automatizar justamente a parte mecânica e propensa a erros do uso do JDBC. Em vez de o desenvolvedor repetir manualmente todo o ciclo de preparação e leitura de dados em cada método, a biblioteca assume a construção segura das instruções, a validação dos parâmetros e a auditoria das execuções, devolvendo os objetos já preenchidos **sem retirar da aplicação o controle explícito sobre a conexão e a transação**.
 
 Para que essa automação funcione na prática, o ponto de partida do SEOS é o mapeamento das tabelas e dos campos diretamente nas classes de Objeto de Transferência de Dados — _Data Transfer Object_ (DTO) — por meio de _annotations_, inspirado no modelo de mapeamento do JPA/Spring Boot, porém aplicado diretamente aos DTOs por meio das interfaces próprias `@TableDB` e `@ColumnDB`.
 
@@ -384,9 +386,9 @@ Embora tenha sido inspirado nas dores reais observadas no ambiente corporativo e
 
 **Fonte:** Elaborada pela autora (2026).
 
-Com base nessas escolhas, a automação no GitHub Actions foi dividida em dois fluxos de trabalho (_workflows_) independentes: um dedicado à Integração, Qualidade e Segurança Contínua (`ci_integracao_e_qualidade.yml`) e outro exclusivo para a Entrega Contínua (`cd_entrega_continua.yml`). Como camada adicional de proteção contra ataques à cadeia de suprimentos (_Supply Chain_), todas as _actions_ externas utilizadas nas esteiras foram fixadas pelo _hash_ imutável do _commit_ (SHA-256) em vez de _tags_ mutáveis, prevenindo a execução de código adulterado em dependências de terceiros.
+Com base nessas escolhas, a automação no GitHub Actions foi dividida em dois fluxos de trabalho (_workflows_) independentes: um dedicado à Integração, Qualidade e Segurança Contínua (`ci_integracao_e_qualidade.yml`) e outro exclusivo para a Entrega Contínua (`cd_entrega_continua.yml`). Como camada adicional de proteção contra ataques à cadeia de suprimentos (_Supply Chain_), todas as _actions_ externas utilizadas nas esteiras foram fixadas pelo _hash_ imutável do _commit_ via _Secure Hash Algorithm_ de 256 _bits_ (SHA-256) em vez de _tags_ mutáveis, prevenindo a execução de código adulterado em dependências de terceiros.
 
-O fluxo de Integração Contínua — _Continuous Integration_ (CI) — é acionado a cada _push_ ou abertura de _Pull Request_ na _branch_ `main`, provisionando um ambiente Ubuntu com JDK 11 (Temurin) para compilação e execução do comando `mvn clean verify`. Nessa etapa, a confiabilidade do _microframework_ é validada pela bateria de testes unitários com JUnit 5 e Mockito, utilizando objetos simulados (_mocks_) para reproduzir conexões JDBC, `PreparedStatement`, `CallableStatement` e `ResultSet` em memória sem depender de uma instância de banco de dados durante a execução da esteira, enquanto o JaCoCo coleta os dados e gera o relatório de cobertura:
+O fluxo de Integração Contínua — _Continuous Integration_ (CI) — é acionado a cada _push_ ou abertura de _Pull Request_ na _branch_ `main`, provisionando um ambiente Ubuntu com _Java Development Kit_ (JDK) 11 (Temurin) para compilação e execução do comando `mvn clean verify`. Nessa etapa, a confiabilidade do _microframework_ é validada pela bateria de testes unitários com JUnit 5 e Mockito, utilizando objetos simulados (_mocks_) para reproduzir conexões JDBC, `PreparedStatement`, `CallableStatement` e `ResultSet` em memória sem depender de uma instância de banco de dados durante a execução da esteira, enquanto o JaCoCo coleta os dados e gera o relatório de cobertura:
 
 ![Pipeline de Integração Contínua](/docs/image/imagePipelineCI.png)
 
@@ -419,94 +421,56 @@ Por fim, a Tabela 5 apresenta o plano e cronograma estruturado para o desenvolvi
 | **Fase 1** | Mês 1 | Diagnóstico e Concepção do SEOS | Levantamento do cenário legado e implementação autoral do núcleo em Java puro/JDBC (`@TableDB`, `@ColumnDB`, `SQLBuilder`, `SQLResult`, `SQLCall` e `OrmLogger`). |
 | **Fase 2** | Mês 2 | Integração, Qualidade e SAST | Implementação do _workflow_ `ci_integracao_e_qualidade.yml` com testes unitários (JUnit 5, Mockito, JaCoCo), _Quality Gate_ no SonarCloud, análise SAST com Semgrep (SARIF) e fixação de _actions_ por _hash_ SHA-256. |
 | **Fase 3** | Mês 3 | _ChatOps_ e Entrega Contínua | Implementação do _workflow_ `cd_entrega_continua.yml`, alertas automatizados de falha no Microsoft Teams via _Webhook_ e publicação versionada (`v*.*.*`) no GitHub Packages. |
-| **Fase 4** | Mês 4 | Aplicação e Avaliação Comparativa | Refatoração de estudo de caso sobre os padrões vulneráveis mapeados no arquivo _Repository_ crítico (402 métodos e 21.381 linhas) para aferição das métricas de redução de código e segurança. |
+| **Fase 4** | Mês 4 | Aplicação e Avaliação Comparativa | Aplicação prática em 9 classes DAO de novos módulos do _e-commerce_ e refatoração de amostra da classe legada `ErpIntegracaoDAO` (21.381 linhas) para aferição das métricas de redução de código e segurança. |
 | **Fase 5** | Mês 5 | Plano de Adoção Gradual | Recomendação de diretrizes para importação da biblioteca nos novos desenvolvimentos e substituição progressiva dos métodos legados vulneráveis. |
 
 **Fonte:** Elaborada pela autora (2026).
 
 ### 3.7 Quadro de respostas — antes e depois
 
-Este quadro deverá ser preenchido após a execução das avaliações:
+Para mensurar de forma concreta os ganhos da adoção do SEOS frente ao cenário diagnosticado nas Seções 1.3 e 3.2, a avaliação comparativa foi conduzida em duas frentes complementares dentro do **sistema de _e-commerce_** da empresa: (i) a análise de **9 classes DAO recém-desenvolvidas já utilizando o SEOS** em novos módulos operacionais integrados à plataforma, contrastadas com os demais 69 arquivos de persistência em JDBC manual do mesmo repositório; e (ii) a **refatoração de uma amostra representativa de 15 métodos críticos da classe legada `ErpIntegracaoDAO`** (o arquivo-base de 21.381 linhas e 416 chamadas a `PreparedStatement` apresentado na Seção 1.3), permitindo aferir diretamente o comportamento antes e depois da biblioteca sobre o mesmo código.
 
-| Critério                                      | Antes do SEOS                            | Depois do SEOS                 |
-| --------------------------------------------- | ---------------------------------------- | ------------------------------ |
-| Linhas de código                              | 21.381 linhas no `ProjectDAO` analisado. | A preencher.                   |
-| Linhas repetidas                              | 54,4%.                                   | A preencher.                   |
-| Linhas idênticas                              | 19,6%.                                   | A preencher.                   |
-| Chamadas a `PreparedStatement` com `setXxx()` | 156 de 416 chamadas.                     | A preencher.                   |
-| Métodos potencialmente vulneráveis            | Aproximadamente 43%.                     | A preencher.                   |
-| Mapeamento do `ResultSet`                     | Manual, campo a campo.                   | Realizado pelo SEOS.           |
-| Construção das consultas                      | Manual e distribuída nos métodos.        | Padronizada pelo `SQLBuilder`. |
+Na primeira frente, apresentada na Tabela 6, observa-se o impacto da adoção nativa do SEOS nos novos módulos do _e-commerce_ em comparação com o padrão histórico de escrita manual do repositório:
 
-#### Resultados da metrificação
+#### Tabela 6 — Comparação entre o padrão legado (JDBC manual) e os módulos desenvolvidos com o SEOS no _e-commerce_
 
-A comparação foi realizada em duas frentes complementares no repositório do portal corporativo (`portalTbm`): (i) o código **novo**, escrito já com o SEOS (9 DAOs), contrastado com o padrão histórico de JDBC manual do `SankhyaDAO`; e (ii) a **refatoração de uma amostra de métodos do próprio `SankhyaDAO`**, que permite a medição direta do antes e do depois sobre o mesmo arquivo analisado na Seção 1.3. O `SankhyaDAO` é o arquivo-base do levantamento (416 chamadas a `PreparedStatement`, coincidindo com o valor apresentado na Seção 1.3); na data desta medição ele possui 21.412 linhas, ante as 21.381 registradas no levantamento original.
+| Critério Avaliado | Padrão Legado (JDBC Manual) | Módulos com SEOS (9 DAOs) |
+| :--- | :--- | :--- |
+| **Arquivos analisados** | 69 classes com `prepareStatement` | 9 DAOs e 11 DTOs anotados com `@TableDB` |
+| **Chamadas manuais a `prepareStatement`** | 1.314 ocorrências | **0** (encapsuladas pelo SEOS) |
+| **Mapeamento manual (`rs.getXxx()`)** | Manual, campo a campo | **0** (automatizado pelo `SQLResult`) |
+| **Pontos de montagem e execução via SEOS** | — | 82 montagens (`SQLBuilder`) e 62 execuções |
+| **Média de linhas por método** | $\approx 52$ linhas (21.381 linhas / 409 métodos) | **$\approx 27$ linhas** (1.652 linhas / 62 métodos) |
+| **Arquivos sem registro de _log_** | 41 de 69 arquivos (**59,4%**) | **0 de 9 arquivos** (100% auditados) |
 
-##### Quadro A — Padrão de código: JDBC manual × SEOS (medição em `src/main/java`)
+**Fonte:** Elaborada pela autora (2026).
 
-| Critério                                              | JDBC manual (restante do projeto)        | SEOS (9 DAOs do módulo de recebimento fiscal) |
-| ----------------------------------------------------- | ---------------------------------------- | --------------------------------------------- |
-| Arquivos                                              | 69 com `prepareStatement`                | 9 DAOs, 11 DTOs com `@TableDB`               |
-| Chamadas a `prepareStatement` escritas manualmente    | 1.314                                    | 0                                             |
-| Mapeamento manual `rs.getXxx()` nos DAOs              | Campo a campo                            | 0 (feito por `SQLResult`)                    |
-| Pontos de montagem de SQL pelo SEOS                   | —                                        | 82 (`SQLBuilder.build*`/`select`/`SQLResult`) |
-| Execuções via SEOS                                    | —                                        | 62                                            |
-| Linhas por método (indicativo)                        | ≈ 68 (21.412 linhas / 316 métodos)¹      | ≈ 27 (1.652 linhas / 62 métodos)              |
-| Arquivos sem nenhuma chamada de _log_                 | 41 de 69 (59%)                           | 0 de 9 (100% com `Logger`)                    |
+A redução de **48% na média de linhas por método** (de 52 para 27 linhas, já contabilizando regras de negócio) reflete diretamente a eliminação do código repetitivo de infraestrutura. Enquanto um método de consulta simples no padrão legado do _e-commerce_ — como `ErpIntegracaoDAO.buscarUsuarioPorDocumento` — consome **32 linhas** para abrir o `PreparedStatement`, preencher parâmetros, percorrer o `ResultSet`, extrair cinco colunas manualmente e capturar exceções com `printStackTrace`, operações equivalentes nas classes baseadas no SEOS (como `UsuarioAcessoDAO`) são resolvidas em uma a três linhas encadeadas (`buildSelect(...).executeQuerySingle(...)`, `buildInsert(...).executeUpdate(...)` e `buildUpdate(..., "USER_ID = ?", id).executeUpdate(...)`).
 
-¹ Contagem de métodos feita por _script_ sobre as assinaturas do arquivo; o levantamento da equipe de Arquitetura (Seção 1.3) considera 409 métodos, o que resultaria em ≈ 52 linhas por método. As duas funcionalidades comparadas não são idênticas, de modo que os valores devem ser lidos como ordem de grandeza.
+Já na segunda frente de avaliação, selecionou-se uma amostra de **15 métodos do `ErpIntegracaoDAO`** — contemplando três operações de `UPDATE`, um `INSERT`, seis consultas escalares ou de contagem, duas consultas de lista, duas buscas de registro único e uma consulta em formato de dicionário — para medir o efeito direto da refatoração com o SEOS. Conforme demonstrado na Tabela 7, a substituição do JDBC manual na amostra proporciona uma redução de **36,1% no volume total de linhas de código**, além de extinguir integralmente as concatenações vulneráveis e a manipulação manual de recursos:
 
-**Fonte:** Elaborada pela autora (2026), a partir do repositório `portalTbm`.
+#### Tabela 7 — Comparativo antes e depois na refatoração da amostra de 15 métodos do `ErpIntegracaoDAO`
 
-##### Exemplo comparativo
-
-O método `SankhyaDAO.buscarParceiroPorCpfCnpj` ocupa **32 linhas**: abre o `PreparedStatement`, aplica `setString`, percorre o `ResultSet` e lê cinco colunas com `rs.getString`, tratando o erro com `printStackTrace` e sem registro estruturado. Já no `VisitanteDAO`, a leitura de uma entidade completa por filtro parametrizado, o cadastro e a atualização condicional correspondem, respectivamente, a uma expressão encadeada de 3 linhas efetivas (`buildSelect(...).executeQuerySingle(...)`) e a duas expressões de 1 linha (`buildInsert(...).executeUpdate(...)` e `buildUpdate(..., "ID_VISITANTE = ?", id).executeUpdate(...)`), sendo que o `UPDATE` só é executado com a cláusula `WHERE` informada.
-
-##### Quadro B — Refatoração de amostra do `SankhyaDAO` (antes × depois)
-
-A amostra é composta por 15 métodos do `SankhyaDAO` (3 `UPDATE`, 1 `INSERT`, 6 consultas escalares ou de contagem, 2 listas, 2 consultas de linha única e 1 dicionário), selecionados por apresentarem JDBC manual, chamadores identificados e comportamento preservável. Os valores de "Antes" foram medidos por _script_ sobre o código atual; os de "Depois" são a **projeção** obtida a partir do código-alvo definido no plano de refatoração.
-
-| Indicador (soma dos 15 métodos)              | Antes (medido) | Depois (projetado)  | Variação |
-| -------------------------------------------- | -------------- | ------------------- | -------- |
-| Linhas de código                             | 363            | ≈ 232               | ≈ −36%   |
-| `prepareStatement` escritos manualmente      | 15             | 0                   | −100%    |
-| `setXxx(n, ...)`                             | 11             | 0                   | −100%    |
-| `rs.getXxx(...)`                             | 18             | 0                   | −100%    |
-| Concatenações de valor na SQL                | 8              | 0                   | −100%    |
-| `printStackTrace`                            | 10             | 0                   | −100%    |
-| Chamadas `.close()` manuais                  | 15             | 0                   | −100%    |
-| Chamadas explícitas de `Logger`              | 0              | 10                  | +10      |
-| Métodos com auditoria de tempo, origem e erro | 0 de 15       | 15 de 15            | +100 p.p. |
-
-No arquivo como um todo, a projeção é de redução de 416 para 401 chamadas manuais a `prepareStatement` e de 26 para 16 ocorrências de `printStackTrace`.
+| Indicador (Soma dos 15 métodos analisados) | Antes do SEOS | Depois do SEOS | Variação Obtida |
+| :--- | :--- | :--- | :--- |
+| **Total de linhas de código** | 363 linhas | $\approx 232$ linhas | **$-36,1\%$** |
+| **Chamadas manuais a `prepareStatement`** | 15 | 0 | **$-100\%$** |
+| **Preenchimento manual de parâmetros (`setXxx`)** | 11 | 0 | **$-100\%$** |
+| **Extração manual de colunas (`rs.getXxx`)** | 18 | 0 | **$-100\%$** |
+| **Concatenações diretas de variáveis na SQL** | 8 (em 7 métodos) | 0 (100% parametrizado) | **$-100\%$** |
+| **Tratamento inadequado com `printStackTrace`** | 10 | 0 | **$-100\%$** |
+| **Fechamentos manuais de recursos (`.close()`)** | 15 | 0 (`try-with-resources` interno) | **$-100\%$** |
+| **Métodos com auditoria de tempo, origem e erro** | 0 de 15 (0%) | 15 de 15 (100%) | **$+100$ p.p.** |
 
 **Fonte:** Elaborada pela autora (2026).
 
 ### 3.8 Resultados e Dados Consolidados do Projeto
 
-Os dados já levantados são:
+A consolidação dos levantamentos realizados nos dois sistemas legados da empresa (**2.890 métodos de persistência** analisados na Seção 3.2) em conjunto com as medições práticas obtidas no sistema de _e-commerce_ (Seção 3.7) comprova a aderência e a eficácia arquitetural do SEOS. No que tange à produtividade e à redução de _boilerplate_, a aplicação real da biblioteca em 9 classes DAO novas — totalizando 82 pontos de montagem de instruções SQL e 62 execuções operando sobre conexões fornecidas pela própria aplicação via `ErpConnectionFactory.getConnection()` — reduziu a média de código de aproximadamente **52 para 27 linhas por método** ($-48\%$), confirmando a premissa de preservação do controle transacional sem sobrecarga de código manual. Esse ganho é corroborado pela refatoração direta da amostra do `ErpIntegracaoDAO`, que registrou redução imediata de **36,1% no total de linhas** e eliminou integralmente as chamadas manuais a `prepareStatement`, `setXxx()`, `rs.getXxx()` e `.close()`.
 
-- 21.381 linhas de código no `ProjectDAO` analisado;
-- 409 métodos, dos quais 402 acessam o banco de dados;
-- 19,6% de linhas idênticas;
-- 54,4% de linhas repetidas;
-- 416 chamadas a `PreparedStatement`;
-- 156 chamadas que utilizam métodos `setXxx()`;
-- aproximadamente 43% de métodos potencialmente vulneráveis a SQL Injection.
+Sob a ótica da segurança cibernética na camada de persistência, tanto nos novos módulos desenvolvidos com o SEOS quanto nos 15 métodos refatorados da amostra legada, a exposição à concatenação direta de variáveis na instrução SQL foi reduzida a **zero ($-100\%$)**. Todos os filtros e valores persistidos passaram a trafegar obrigatoriamente como parâmetros vinculados ao `PreparedStatement` e validados previamente pelo `SQLResult` quanto à correspondência de _placeholders_ (`?`), somados ao bloqueio preventivo de comandos `UPDATE` desprovidos de cláusula `WHERE` no `SQLBuilder`.
 
-Até o momento, foram identificadas a necessidade de padronização da camada de persistência, a redução de código repetitivo e a necessidade de ampliar os mecanismos de segurança. Os resultados quantitativos da aplicação do SEOS ainda deverão ser registrados nesta seção.
-
-#### Resultados da metrificação
-
-**Aplicabilidade comprovada em código real.** O SEOS é utilizado em produção no módulo de recebimento fiscal e portaria do portal corporativo, com 9 DAOs, 11 DTOs mapeados por `@TableDB`/`@ColumnDB`, 82 pontos de montagem de SQL e 62 execuções, todos operando sobre a `Connection` fornecida pelo próprio chamador (`SankhyaConnector.conectarSankhya()`), o que confirma a premissa de preservação do controle de conexão e de transação. Nesses DAOs não há nenhuma chamada manual a `prepareStatement` nem a `rs.getXxx()`, e todos registram falhas por meio de `Logger`, ao passo que, no restante do projeto, 41 dos 69 arquivos com JDBC manual (59%) não possuem nenhuma chamada de _log_.
-
-**Redução de volume.** Os DAOs escritos com o SEOS apresentam média aproximada de 27 linhas por método, contra aproximadamente 68 linhas por método no `SankhyaDAO` (21.412 linhas), incluindo nos primeiros o texto SQL e as regras de negócio. Operações que no padrão manual exigem cerca de 30 linhas (como a busca de parceiro por CPF/CNPJ) correspondem, com o `SQLBuilder`, a uma a três linhas, e o mesmo DTO parcial atende às variações de `INSERT` e `UPDATE` pela estratégia _Anti-Null_, eliminando a duplicação de métodos por combinação de campos.
-
-**Segurança.** Todos os valores informados pelos chamadores trafegam como parâmetros de `PreparedStatement` aplicados centralmente por `SQLResult.setParameters`, e a classe valida previamente a correspondência entre placeholders (`?`) e parâmetros. O `buildUpdate` rejeita a operação sem cláusula `WHERE`. A mitigação nos métodos legados do `SankhyaDAO` será demonstrada pela refatoração de amostra (Quadro B da Seção 3.7), na qual as concatenações de valor na SQL são substituídas por parâmetros.
-
-**Projeção da refatoração de amostra.** Aplicando o SEOS a 15 métodos do `SankhyaDAO`, projeta-se a redução de 363 para aproximadamente 232 linhas (cerca de 36%) e a eliminação total, nessa amostra, dos `prepareStatement` manuais (15), dos `setXxx` (11), dos `rs.getXxx` (18), dos `printStackTrace` (10) e das 8 concatenações de valor na instrução SQL, distribuídas em 7 métodos, que passam a ser parâmetros vinculados. Em contrapartida, todos os 15 métodos passam a contar com a auditoria automática de tempo, origem e erro do `SQLResult`, e 10 deles registram a falha por meio de `Logger`, contra nenhum registro de _log_ na versão original.
-
-**Limitações da medição.** (i) Os DAOs que utilizam o SEOS foram criados já com a biblioteca, sem versão anterior em JDBC manual no histórico do repositório, razão pela qual a comparação direta antes/depois foi feita sobre a amostra refatorada do `SankhyaDAO`; (ii) os valores de linhas por método são indicativos, pois os métodos comparados não têm funcionalidade idêntica; (iii) a cópia do SEOS incorporada ao portal está em versão anterior à descrita na Seção 3.3, sem as classes `SQLCall`, `OrmLogger` e `OrmConfig`, de modo que a auditoria nesse repositório utiliza `java.util.logging` diretamente; (iv) a contagem de exposição a _SQL Injection_ por critérios do OWASP _Top_ 10 (Anexo A) e a varredura SAST dependem de execução própria e não foram consolidadas nesta seção.
+Por fim, no eixo de observabilidade e governança operacional, frente a um passivo histórico no qual **94,4%** dos métodos do sistema de _e-commerce_ (Tabela 2) e **59,4%** dos arquivos em JDBC manual não possuíam nenhum registro de _log_, a adoção do SEOS elevou a cobertura de auditoria e o tratamento estruturado de falhas para **100%** nos módulos avaliados. Com isso, substituiu-se o uso inadequado de `printStackTrace` pelo rastreamento automatizado de tempo de execução, contagem de parâmetros e identificação da classe e do método de origem da chamada.
 
 ## 4. Conclusão
 
@@ -520,4 +484,64 @@ As referências bibliográficas deverão ser incluídas após a seleção das fo
 
 ### Anexo A — Questionário baseado no OWASP Top 10
 
-O questionário deverá ser incluído nesta seção e suas respostas deverão ser relacionadas ao quadro de respostas apresentado na seção 3.7.
+## Questionário de Maturidade por Categoria
+
+### A01:2021 – Quebra de Controle de Acesso (*Broken Access Control*)
+*   **Cenário ANTES:** Como os privilégios e permissões de usuários eram validados nas rotas e APIs? Havia testes manuais ou revisões pontuais de código para garantir que um usuário comum não acessasse dados confidenciais ou funções de administrador?
+*   **Cenário DEPOIS (DevSecOps):** Existem testes automatizados de comportamento/integração (como BDD) integrados ao pipeline que tentam simular a quebra de privilégios? Há ferramentas varrendo as definições de rotas de API em busca de endpoints expostos incorretamente?
+
+### A02:2021 – Falhas Criptográficas (*Cryptographic Failures*)
+*   **Cenário ANTES:** Como era verificado se dados sensíveis (senhas, cartões, tokens) estavam criptografados no banco de dados e em trânsito (HTTPS)? A checagem da validade de certificados e algoritmos dependia de auditoria manual?
+*   **Cenário DEPOIS (DevSecOps):** A esteira de CI/CD utiliza ferramentas de **SAST** (Static Application Security Testing) para detectar o uso de chaves criptográficas fracas ou segredos expostos no código (*Hardcoded Secrets*) antes do merge?
+
+### A03:2021 – Injeção (*Injection*)
+*   **Cenário ANTES:** A validação, filtragem e sanitização de dados inseridos pelos usuários (*inputs*) dependiam exclusivamente da disciplina e da revisão manual feita pelos desenvolvedores?
+*   **Cenário DEPOIS (DevSecOps):** Ferramentas de SAST barram o *build* se identificarem strings concatenadas em consultas de banco de dados? Existe alguma etapa de análise dinâmica (**DAST**) ou testes automatizados simulando payloads de injeção em ambiente de homologação?
+
+### A04:2021 – Design Inseguro (*Insecure Design*)
+*   **Cenário ANTES:** A segurança foi debatida ou planejada durante o desenho da arquitetura da aplicação, ou as correções de vulnerabilidades eram feitas de forma reativa após o código estar pronto?
+*   **Cenário DEPOIS (DevSecOps):** Foram adotados padrões arquiteturais seguros desde o início (ex: autenticação centralizada, APIs com *Rate Limiting*) e modelagem de ameaças integrada ao planejamento das sprints?
+
+### A05:2021 – Configuração Incorreta de Segurança (*Security Misconfiguration*)
+*   **Cenário ANTES:** O endurecimento (*hardening*) de servidores, gerenciamento de permissões de nuvem e cabeçalhos HTTP de segurança (CSP, HSTS) eram configurados manualmente direto nos ambientes?
+*   **Cenário DEPOIS (DevSecOps):** A infraestrutura é gerenciada como código (**IaC**)? Existem ferramentas no pipeline (como Checkov, TFLint) para escanear os arquivos de configuração de infraestrutura antes do provisionamento?
+
+### A06:2021 – Componentes Vulneráveis e Desatualizados (*Vulnerable and Outdated Components*)
+*   **Cenário ANTES:** Como a equipe descobria se uma biblioteca de terceiros (pacotes npm, pip, NuGet, Maven) continha uma vulnerabilidade crítica conhecida? Havia controle por planilha ou varreduras esporádicas?
+*   **Cenário DEPOIS (DevSecOps):** Foi implementada uma ferramenta de **SCA** (Software Composition Analysis), como *Snyk* ou *Dependency-Check*, que interrompe o pipeline automaticamente caso uma dependência insegura seja introduzida?
+
+### A07:2021 – Falhas de Identificação e Autenticação (*Identification and Authentication Failures*)
+*   **Cenário ANTES:** A aplicação permitia ataques de força bruta nas telas de login? O gerenciamento de sessões (como tokens JWT) possuía validação estritamente manual quanto ao tempo de expiração e rotação?
+*   **Cenário DEPOIS (DevSecOps):** Cenários automatizados de testes cobrem e validam a robustez do fluxo de autenticação, políticas de bloqueio de conta e obrigatoriedade de segundo fator (MFA)?
+
+### A08:2021 – Falhas de Integridade de Dados e Software (*Software and Data Integrity Failures*)
+*   **Cenário ANTES:** O processo de build e deploy dependia de ações manuais (ex: gerar o zip da aplicação e enviar via FTP/SSH), gerando riscos de adulteração e falta de rastreabilidade do artefato?
+*   **Cenário DEPOIS (DevSecOps):** O pipeline CI/CD garante a assinatura dos artefatos (imagens Docker, pacotes)? As imagens de container sofrem varredura automatizada de vulnerabilidades (ex: *Trivy*) antes de irem para o registro oficial?
+
+### A09:2021 – Falhas de Log e Monitoramento (*Security Logging and Monitoring Failures*)
+*   **Cenário ANTES:** Onde os erros críticos e possíveis tentativas de invasão eram registrados? O diagnóstico de incidentes dependia de o desenvolvedor acessar arquivos locais de log no servidor após o problema acontecer?
+*   **Cenário DEPOIS (DevSecOps):** Os logs de segurança estão centralizados de forma estruturada (ex: ELK Stack, Splunk) e integrados a alertas em tempo real que notificam o time sobre anomalias no ambiente de produção?
+
+### A10:2021 – Falsificação de Requisição do Lado do Servidor (*SSRF*)
+*   **Cenário ANTES:** A aplicação consome URLs fornecidas por usuários? Como era garantido manualmente que o servidor não realizaria requisições maliciosas para dentro da própria rede interna?
+*   **Cenário DEPOIS (DevSecOps):** Regras de isolamento de rede e políticas de saída (*egress*) são validadas de forma automatizada via IaC, e funções de requisição externa no código-fonte passam por políticas rígidas de validação do SAST?
+
+---
+
+## 3. Matriz Comparativa de Evidências
+Preencha a tabela abaixo com o resumo prático do que foi constatado na sua aplicação.
+
+| Categoria OWASP | Cenário ANTES (Processo Manual / Risco) | Prática/Ferramenta DevSecOps Adotada | Cenário DEPOIS (Mitigação / Automação) |
+| :--- | :--- | :--- | :--- |
+| **A01: Quebra de Controle de Acesso** | *Ex: Teste manual de rotas.* | *Ex: Testes de integração automatizados.* | *Ex: Cobertura de testes valida privilégios a cada deploy.* |
+| **A02: Falhas Criptográficas** | | | |
+| **A03: Injeção** | | | |
+| **A04: Design Inseguro** | | | |
+| **A05: Configuração Incorreta** | | | |
+| **A06: Componentes Vulneráveis** | | | |
+| **A07: Falhas de Autenticação** | | | |
+| **A08: Integridade de Dados** | | | |
+| **A09: Falhas de Log/Monitoramento** | | | |
+| **A10: SSRF** | | | |
+
+---

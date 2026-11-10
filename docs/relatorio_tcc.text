@@ -1,7 +1,10 @@
+\sloppy
+\emergencystretch=3em
+
 \section{Introdução}
 \label{sec:introducao}
 
-Atualmente, na empresa onde trabalho, os métodos de consulta utilizados em nossos projetos são muito verbosos. Para realizar uma consulta, é necessário escrevê-la manualmente, armazená-la em uma variável, mapear os parâmetros do \texttt{PreparedStatement} e, logo em seguida, mapear o \texttt{ResultSet}, campo a campo.
+Atualmente, no ambiente corporativo analisado neste estudo, os métodos de consulta utilizados nos projetos legados são muito verbosos. Para realizar uma consulta, é necessário escrevê-la manualmente, armazená-la em uma variável, mapear os parâmetros do \texttt{PreparedStatement} e, logo em seguida, mapear o \texttt{ResultSet}, campo a campo.
 
 Em alguns casos, as consultas não possuem parâmetros. Em outros, os valores são concatenados diretamente na instrução \textit{Structured Query Language} (SQL), o que cria uma brecha significativa para \textit{SQL Injection}. Além disso, existem diversas versões de operações como \texttt{INSERT}, \texttt{UPDATE} e consultas para uma mesma tabela. Isso ocorre porque determinadas implementações precisam de estruturas específicas que não podem ser modificadas, resultando na duplicação de operações semelhantes.
 
@@ -20,7 +23,7 @@ Evoluir o \textit{microframework} SEOS com base em práticas consolidadas de mer
     \item \textbf{Automatização de persistência:} implementar um mecanismo automatizado de geração de instruções DML/DQL (\texttt{SQLBuilder}) e de mapeamento objeto-relacional de \texttt{ResultSet} baseado em \textit{annotations} e \textit{reflection};
     \item \textbf{Segurança contra injeções:} mitigar riscos de \textit{SQL Injection} na camada de persistência por meio da parametrização obrigatória de consultas no \texttt{PreparedStatement} e validação estrutural das operações;
     \item \textbf{Auditoria e observabilidade:} incorporar recursos para rastreamento de erros, parâmetros e tempo de execução das consultas ao banco de dados;
-    \item \textbf{Esteira \textit{DevSecOps} (CI/CD):} estruturar uma \textit{pipeline} de Integração Contínua com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança --- \textit{Static Application Security Testing} (SAST) com Semgrep ---, notificações via \textit{ChatOps} e Entrega Contínua configurando o GitHub Packages com versionamento semântico da biblioteca;
+    \item \textbf{Esteira \textit{DevSecOps} --- \textit{Continuous Integration/Continuous Delivery} (CI/CD):} estruturar uma \textit{pipeline} de Integração Contínua com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança --- \textit{Static Application Security Testing} (SAST) com Semgrep ---, notificações via \textit{ChatOps} e Entrega Contínua configurando o GitHub Packages com versionamento semântico da biblioteca;
     \item \textbf{Avaliação arquitetural:} avaliar a aderência arquitetural do SEOS frente ao cenário corporativo estudado e em comparação com soluções consolidadas de mercado, como Hibernate/\textit{Java Persistence API} (JPA);
     \item \textbf{Mensuração de resultados:} mensurar os ganhos quantitativos e qualitativos da adoção do SEOS em relação à abordagem tradicional --- \textit{Java Database Connectivity} (JDBC) manual ---, considerando redução de linhas de código, taxa de duplicação e exposição a vulnerabilidades baseadas no \textit{Open Worldwide Application Security Project} (OWASP) \textit{Top} 10.
 \end{itemize}
@@ -28,12 +31,14 @@ Evoluir o \textit{microframework} SEOS com base em práticas consolidadas de mer
 \subsection{Justificativa}
 \label{subsec:justificativa}
 
-Ao criar uma implementação para atender a uma demanda e perceber que não poderia reutilizar o mesmo método de persistência no banco de dados, a primeira coisa que pensei foi: \textit{``Por que criar mais uma versão de um \texttt{UPDATE} com as mesmas condições?''}. Foi nesse momento que percebi que a \textbf{falta de padronização}, a \textbf{baixa qualidade do código} e os \textbf{problemas de segurança nas consultas} eram fatores que precisavam ser tratados.
+Ao desenvolver uma implementação para atender a uma demanda operacional e constatar a impossibilidade de reutilizar um método de persistência já existente no banco de dados, surgiu o seguinte questionamento arquitetural: \textit{``Por que criar mais uma versão de um \texttt{UPDATE} com as mesmas condições?''}. A partir dessa análise, verificou-se que a \textbf{falta de padronização}, a \textbf{baixa qualidade do código} e os \textbf{problemas de segurança nas consultas} eram fatores estruturais que precisavam ser tratados.
 
-Por meio dessa necessidade nasceu o \textbf{SEOS}, criado para ser uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de \textit{SQL Injection}, \underline{sem retirar da equipe o controle} sobre as consultas, conexões e transações de persistência.
+Por meio dessa necessidade nasceu o \textbf{SEOS}, concebido como uma solução autoral capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de \textit{SQL Injection}, \textbf{sem retirar da equipe o controle} sobre as consultas, conexões e transações de persistência.
 
 \subsection{Problema}
 \label{subsec:problema}
+
+Para dimensionar a criticidade do cenário estudado, o diagnóstico inicial realizado sobre uma classe crítica de persistência do ambiente legado revelou os seguintes indicadores:
 
 \begin{itemize}
     \item \textbf{21.381} linhas de código;
@@ -44,9 +49,9 @@ Por meio dessa necessidade nasceu o \textbf{SEOS}, criado para ser uma solução
     \item Aproximadamente \textbf{43\%} dos métodos são potencialmente vulneráveis a \textit{SQL Injection}.
 \end{itemize}
 
-Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de \underline{um único arquivo \textit{Repository} de um único projeto} utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de \textit{SQL Injection}, já haviam sido repassados; contudo, devido à ausência histórica de uma abstração padronizada, à pressão por entregas rápidas e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
+Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de \textbf{uma única classe de acesso a dados (Objeto de Acesso a Dados --- \textit{Data Access Object} [DAO] / \textit{Repository}) de um único projeto} utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de \textit{SQL Injection}, já haviam sido repassados; contudo, devido à ausência histórica de uma abstração padronizada, à pressão por entregas rápidas e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
 
-Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico --- não sendo uma aplicação final em si ---, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente \textbf{43\% de métodos suscetíveis a \textit{SQL Injection}} representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de \texttt{[INFORMAR\_DEPOIS]} para conter e restaurar o ambiente. Nesse intervalo, estima-se um \textbf{prejuízo direto} de aproximadamente \texttt{[R\$ X]} devido à paralisação do faturamento e das vendas, além de \textbf{prejuízos indiretos} severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira \textit{DevSecOps} e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
+Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico --- não sendo uma aplicação final em si ---, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente \textbf{43\% de métodos suscetíveis a \textit{SQL Injection}} representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de múltiplas horas de operação para conter o incidente, auditar os registros afetados e restaurar o ambiente. Nesse intervalo, a paralisação do faturamento e das vendas acarretaria \textbf{prejuízos financeiros diretos} expressivos à organização, além de \textbf{prejuízos indiretos} severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira \textit{DevSecOps} e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
 
 \section{Referencial Teórico}
 \label{sec:referencial_teorico}
@@ -64,49 +69,50 @@ Embora ele atue como uma biblioteca Java distribuída sob versionamento semânti
 \subsection{Observabilidade, Auditoria de Sistemas e \textit{ChatOps}}
 
 \section{Caso de Uso}
-\label{sec:caso_de_uso}
 
 \subsection{Contexto do Trabalho}
-\label{subsec:contexto_trabalho}
 
 O cenário utilizado como inspiração e base para o desenvolvimento e a aplicabilidade do SEOS é o de uma empresa têxtil que possui \textbf{dois projetos legados principais}. Esses dois sistemas foram desenvolvidos utilizando o ecossistema Java (nas versões 8 e 11), realizando o acesso direto ao banco de dados Oracle 19c via JDBC e comunicando-se via \textit{Application Programming Interface} (API) com o sistema de \textit{Enterprise Resource Planning} (ERP) responsável pelo gerenciamento dos processos empresariais. Por razões de confidencialidade e políticas internas de segurança da informação, a identidade da organização e os indicadores corporativos globais são preservados neste relatório, concentrando-se a caracterização no ambiente técnico de engenharia de software.
 
-Esses dois sistemas sustentam rotinas operacionais críticas de diferentes fluxos de negócio da empresa --- um responsável por \textbf{automações produtivas, logísticas e contábeis}, e o outro responsável pelo \textbf{\textit{e-commerce}} ---, concentrando um elevado volume de consultas e persistências desenvolvidas ao longo dos anos. Pela forma como os sistemas foram estruturados junto ao ERP, as consultas, as conexões e as transações precisam continuar \underline{sob o controle direto da aplicação}, o que impedia o uso de um ORM tradicional que gerenciasse tudo de forma automática.
+Esses dois sistemas sustentam rotinas operacionais críticas de diferentes fluxos de negócio da empresa --- um responsável por \textbf{automações produtivas, logísticas e contábeis}, e o outro responsável pelo \textbf{\textit{e-commerce}} ---, concentrando um elevado volume de consultas e persistências desenvolvidas ao longo dos anos. Pela forma como os sistemas foram estruturados junto ao ERP, as consultas, as conexões e as transações precisam continuar \textbf{sob o controle direto da aplicação}, o que impedia o uso de um ORM tradicional que gerenciasse tudo de forma automática.
 
 Além disso, como esses dois sistemas evoluíram ao longo de vários anos passando por diferentes desenvolvedores e demandas urgentes de negócio, manter a escrita SQL manual segura e uniforme sem uma ferramenta centralizadora tornou-se um desafio diário. Por conta disso, o SEOS precisou ser pensado como uma biblioteca leve, compatível tanto com o Java 8 quanto com o Java 11, para se encaixar diretamente nos projetos já existentes sem exigir mudanças na arquitetura da empresa.
 
+\vspace{0.3cm}
 \subsection{Situação Atual}
-\label{subsec:situacao_atual}
 
 Na situação anterior ao SEOS, não havia uma padronização para a camada de persistência nos dois sistemas. O desenvolvedor precisava construir cada instrução SQL manualmente, mapear os parâmetros seja via \texttt{PreparedStatement} ou concatenando, percorrer o \texttt{ResultSet} campo a campo e tratar possíveis erros por conta própria. Às vezes, eram reaproveitados métodos parecidos para aceleração da demanda, mas, em grande parte dos casos, esses métodos estavam desenvolvidos erroneamente. Para dimensionar o impacto real dessas práticas na totalidade dos dois projetos legados --- ampliando a análise inicial daquele arquivo isolado apresentado na Seção~1.3 ---, foi realizado um levantamento junto à equipe de Arquitetura analisando todos os métodos que interagem com o banco de dados (totalizando \textbf{2.890 métodos} somados entre as duas aplicações).
 
-No primeiro sistema, responsável pelas automações corporativas (produtivas, logísticas e contábeis), foram analisados \textbf{1.641 métodos} de acesso ao banco, cujos resultados foram organizados conforme apresentado na Tabela~1:
+No primeiro sistema, responsável pelas automações corporativas (produtivas, logísticas e contábeis), foram analisados \textbf{1.641 métodos} de acesso ao banco, cujos resultados foram organizados conforme apresentado na Tabela~\ref{tab:resultados_automacoes}:
 
-
-
-\begin{table}[htbp]
-\centering
-\caption{Levantamento de métodos de persistência no sistema de automações corporativas}
-\label{tab:resultados_automacoes}
-\begin{tabular}{c p{8.5cm} r r}
-\hline
-\textbf{\#} & \textbf{Indicador} & \textbf{Quantidade} & \textbf{\% dos 1.641} \\ \hline
-1 & Métodos que realizam funções no banco & 1.641 & 100\% \\
-2 & Usam conexão JDBC (\texttt{PreparedStatement}, \texttt{CallableStatement}, \texttt{getPreparedStatement}) & 1.321 & 80,5\% \\
-3 & Não usam JDBC direto & 320 & 19,5\% \\
-4 & Com alguma má prática de consulta & \textbf{395} & \textbf{24,1\%} \\
-5 & Vulneráveis (concatenam \texttt{String} ou tipo não resolvido) & \textbf{283} & \textbf{17,2\%} \\
-6 & Sem nenhuma chamada de \textit{log} & \textbf{573} & \textbf{34,9\%} \\ \hline
-\end{tabular}
-\vspace{0.2cm}
-\\ {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\begin{table}[H]
+    \centering
+    \caption{Levantamento de métodos de persistência no sistema de automações corporativas}
+    \label{tab:resultados_automacoes}
+    \vspace{0.15cm}
+    \begingroup
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{|c|p{7.8cm}|r|r|}
+    \hline
+    \textbf{\#} & \textbf{Indicador} & \textbf{Quantidade} & \textbf{\% dos 1.641} \\ \hline
+    1 & Métodos que realizam funções no banco & 1.641 & 100\% \\ \hline
+    2 & Usam conexão JDBC (\texttt{PreparedStatement}, \texttt{CallableStatement}, \texttt{getPreparedStatement}) & 1.321 & 80,5\% \\ \hline
+    3 & Não usam JDBC direto & 320 & 19,5\% \\ \hline
+    4 & Com alguma má prática de consulta & \textbf{395} & \textbf{24,1\%} \\ \hline
+    5 & Vulneráveis (concatenam \texttt{String} ou tipo não resolvido) & \textbf{283} & \textbf{17,2\%} \\ \hline
+    6 & Sem nenhuma chamada de \textit{log} & \textbf{573} & \textbf{34,9\%} \\ \hline
+    \end{tabular}
+    \endgroup
+    \vspace{0.15cm}
+    
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
 \end{table}
 
-Dos \textbf{573 métodos sem \textit{logs}}, \textbf{254} possuem \texttt{try/catch} mas não registram \textit{logs} de erro ou de sucesso, \textbf{58} só aplicam \texttt{System.out} ou \texttt{printStackTrace} e \textbf{28} possuem vulnerabilidades. Já no segundo sistema, responsável pelo \textit{e-commerce}, o cenário mostrou-se ainda mais crítico quanto à exposição a \textit{SQL Injection} e à falta de rastreabilidade, conforme demonstrado na Tabela~2:
+Dos \textbf{573 métodos sem \textit{logs}}, \textbf{254} possuem \texttt{try/catch} mas não registram \textit{logs} de erro ou de sucesso, \textbf{58} só aplicam \texttt{System.out} ou \texttt{printStackTrace} e \textbf{28} possuem vulnerabilidades. Já no segundo sistema, responsável pelo \textit{e-commerce}, o cenário mostrou-se ainda mais crítico quanto à exposição a \textit{SQL Injection} e à falta de rastreabilidade, conforme demonstrado na Tabela~\ref{tab:resultados_ecommerce}:
 
-
-
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \caption{Levantamento de métodos de persistência no sistema de \textit{e-commerce}}
 \label{tab:resultados_ecommerce}
@@ -180,13 +186,14 @@ No Quadro~1, apresenta-se um exemplo claro do padrão de código que alimentou o
 \end{minipage}
 \vspace{0.3cm}
 
-Analisando os dados acima e levando em conta o exemplo apresentado no Quadro~1, reflete-se o quão verboso e vulnerável é o padrão de desenvolvimento aplicado ao longo dos anos de construção desses sistemas. Além do elevado volume de código para o mapeamento manual do \texttt{ResultSet} (linhas 18 a 30), a concatenação direta de parâmetros na instrução SQL (linhas 07 a 12) dificulta a padronização e expõe a aplicação a ataques de \textit{SQL Injection}. Adicionalmente, a existência de várias implementações semelhantes e a ausência de \textit{logs} estruturados de auditoria --- restrita ao uso de \texttt{System.err.println} e \texttt{printStackTrace} no bloco \texttt{catch} (linhas 31 a 34) --- aumentam significativamente o custo de manutenção e diagnóstico.
+Analisando os dados acima e levando em conta o exemplo que os alimenta, reflete-se o quão verboso e vulnerável é o padrão de desenvolvimento aplicado ao longo dos anos de construção desses sistemas, pois, além do volume de código, a concatenação direta de valores na consulta dificulta a padronização e pode permitir \textit{SQL Injection}. A existência de várias implementações semelhantes e a falta de \textit{logs} de auditoria também aumentam o custo de manutenção.
 
+\vspace{0.3cm}
 \subsection{Solução Proposta}
 
 Diante dos números levantados na seção anterior --- que evidenciaram o excesso de código manual, o risco de \textit{SQL Injection} e a ausência de \textit{logs} nos dois sistemas da empresa ---, foi idealizado o \textbf{SEOS}: um \textit{microframework} de ORM dentro do ecossistema Java capaz de resolver essas falhas respeitando a arquitetura existente, sem adicionar complexidade e garantindo maior celeridade no desenvolvimento.
 
-A proposta central do SEOS é automatizar justamente a parte mecânica e propensa a erros do uso do JDBC. Em vez de o desenvolvedor repetir manualmente todo o ciclo de preparação e leitura de dados em cada método, a biblioteca assume a construção segura das instruções, a validação dos parâmetros e a auditoria das execuções, devolvendo os objetos já preenchidos \underline{sem retirar da aplicação o controle explícito sobre a conexão e a transação}.
+A proposta central do SEOS é automatizar justamente a parte mecânica e propensa a erros do uso do JDBC. Em vez de o desenvolvedor repetir manualmente todo o ciclo de preparação e leitura de dados em cada método, a biblioteca assume a construção segura das instruções, a validação dos parâmetros e a auditoria das execuções, devolvendo os objetos já preenchidos \textbf{sem retirar da aplicação o controle explícito sobre a conexão e a transação}.
 
 Para que essa automação funcione na prática, o ponto de partida do SEOS é o mapeamento das tabelas e dos campos diretamente nas classes de Objeto de Transferência de Dados --- \textit{Data Transfer Object} (DTO) --- por meio de \textit{annotations}, inspirado no modelo de mapeamento do JPA/Spring Boot, porém aplicado diretamente aos DTOs por meio das interfaces próprias \texttt{@TableDB} e \texttt{@ColumnDB}.
 
@@ -518,79 +525,84 @@ Por fim, para solucionar a grave ausência de rastreabilidade apontada na Seçã
 \vspace{0.15cm}
 {\footnotesize \textbf{Fonte:} Elaborado pela autora (2026).}
 \end{minipage}
-\vspace{0.3cm}
 
+\vspace{0.3cm}
 \subsection{Comparação com Hibernate/JPA}
 
 Para fundamentar a construção de uma biblioteca híbrida própria em vez da adoção direta de uma ferramenta tradicional de mercado no cenário estudado, foi realizada uma comparação arquitetural com o Hibernate, uma das soluções ORM mais utilizadas no ecossistema Java, conforme sintetizado na Tabela~3:
 
+\clearpage
+\begin{table}[H]
+    \centering
+    \caption{Comparação arquitetural entre o Hibernate/JPA e o SEOS}
+    \label{tab:comparacao-hibernate-seos}
+    \vspace{0.15cm}
+    \begingroup
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{|p{2.5cm}|p{3.3cm}|p{3.3cm}|p{3.4cm}|}
+    \hline
+    \textbf{Requisito do projeto} & \textbf{Hibernate / JPA} & \textbf{SEOS híbrido JDBC} & \textbf{Adequação ao cenário atual} \\ \hline
+    Integração com conexões ERP & Requer configurar e integrar o contexto de persistência ao ciclo da plataforma. & Recebe diretamente a \texttt{Connection} já fornecida pela aplicação. & O SEOS preserva o modelo operacional existente. \\ \hline
+    Previsibilidade das escritas & O resultado depende do estado da entidade, do contexto e das configurações de \texttt{flush}. & Cada chamada representa um comando visível, sem sincronização implícita posterior. & O SEOS facilita a rastreabilidade nos projetos. \\ \hline
+    SQL Oracle específico & Pode ser usado por SQL nativo, paralelamente ao modelo de entidades. & É parte natural da API e permanece concentrado na camada de \texttt{Repository}. & O SEOS evita manter duas formas de consulta para o mesmo módulo. \\ \hline
+    CRUD de tabelas customizadas & Exige mapear entidades e configurar o ambiente JPA. & Exige DTO anotado e \textit{builders} diretos. & O SEOS atende com menor superfície de configuração. \\ \hline
+    Atualizações parciais & Possui alternativas como entidade gerenciada, consultas específicas e \texttt{@DynamicUpdate}. & A estratégia \textit{Anti-Null} transforma o DTO parcial diretamente no \texttt{SET}. & O SEOS expressa de forma simples o padrão recorrente do projeto. \\ \hline
+    Controle transacional & Integra-se a JTA, Spring e outros gerenciadores quando disponíveis. & Usa \texttt{commit}, \texttt{rollback} e conexão definidos pelo chamador. & O SEOS participa do limite transacional adotado pelo projeto. \\ \hline
+    Consultas e projeções & Oferece JPQL, Criteria, SQL nativo e projeções. & Oferece DTO, resultado único, escalar, mapa, dicionário e SQL explícito. & A API atual cobre os formatos utilizados pelos DAOs. \\ \hline
+    Relacionamentos de domínio & Automatiza associações, cascatas e estratégias de carregamento. & Mantém \textit{joins} e composição de resultados explícitos. & O escopo atual privilegia operações objetivas. \\ \hline
+    Dependências e inicialização & Requer o \textit{runtime} e a configuração do provedor ORM. & Utiliza JDBC e poucas classes utilitárias já incorporadas ao projeto. & O SEOS acrescenta baixo \textit{overhead} à implantação. \\ \hline
+    Diagnóstico & Possui ecossistema de \textit{logs} e métricas, sujeito à configuração adotada. & Concentra SQL e parâmetros e audita erros, origem e consultas lentas. & A observabilidade atende ao diagnóstico necessário. \\ \hline
+    \end{tabular}
+    \endgroup
+    \vspace{0.15cm}
+    
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{table}
+
 \vspace{0.3cm}
-\noindent
-\begin{minipage}{\linewidth}
-\centering
-\textbf{Tabela 3 --- Comparação arquitetural entre o Hibernate/JPA e o SEOS}
-\vspace{0.15cm}
-
-{\footnotesize
-\begin{tabular}{p{2.8cm} p{3.7cm} p{3.7cm} p{3.5cm}}
-\hline
-\textbf{Requisito do projeto} & \textbf{Hibernate / JPA} & \textbf{SEOS híbrido JDBC} & \textbf{Adequação ao cenário atual} \\ \hline
-Integração com conexões ERP & Requer configurar e integrar o contexto de persistência ao ciclo da plataforma. & Recebe diretamente a \texttt{Connection} já fornecida pela aplicação. & O SEOS preserva o modelo operacional existente. \\ \hline
-Previsibilidade das escritas & O resultado depende do estado da entidade, do contexto e das configurações de \texttt{flush}. & Cada chamada representa um comando visível, sem sincronização implícita posterior. & O SEOS facilita a rastreabilidade nos projetos. \\ \hline
-SQL Oracle específico & Pode ser usado por SQL nativo, paralelamente ao modelo de entidades. & É parte natural da API e permanece concentrado na camada de \texttt{Repository}. & O SEOS evita manter duas formas de consulta para o mesmo módulo. \\ \hline
-CRUD de tabelas customizadas & Exige mapear entidades e configurar o ambiente JPA. & Exige DTO anotado e \textit{builders} diretos. & O SEOS atende com menor superfície de configuração. \\ \hline
-Atualizações parciais & Possui alternativas como entidade gerenciada, consultas específicas e \texttt{@DynamicUpdate}. & A estratégia \textit{Anti-Null} transforma o DTO parcial diretamente no \texttt{SET}. & O SEOS expressa de forma simples o padrão recorrente do projeto. \\ \hline
-Controle transacional & Integra-se a JTA, Spring e outros gerenciadores quando disponíveis. & Usa \texttt{commit}, \texttt{rollback} e conexão definidos pelo chamador. & O SEOS participa do limite transacional adotado pelo projeto. \\ \hline
-Consultas e projeções & Oferece JPQL, Criteria, SQL nativo e projeções. & Oferece DTO, resultado único, escalar, mapa, dicionário e SQL explícito. & A API atual cobre os formatos utilizados pelos DAOs. \\ \hline
-Relacionamentos de domínio & Automatiza associações, cascatas e estratégias de carregamento. & Mantém \textit{joins} e composição de resultados explícitos. & O escopo atual privilegia operações objetivas. \\ \hline
-Dependências e inicialização & Requer o \textit{runtime} e a configuração do provedor ORM. & Utiliza JDBC e poucas classes utilitárias já incorporadas ao projeto. & O SEOS acrescenta baixo \textit{overhead} à implantação. \\ \hline
-Diagnóstico & Possui ecossistema de \textit{logs} e métricas, sujeito à configuração adotada. & Concentra SQL e parâmetros e audita erros, origem e consultas lentas. & A observabilidade atende ao diagnóstico necessário. \\ \hline
-\end{tabular}
-}
-\vspace{0.15cm}
-
-{\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
-\end{minipage}
-\vspace{0.3cm}
-
 \subsection{Vantagens e Desvantagens}
 
 A principal vantagem de adotar o SEOS é a garantia de um processo mais simplificado, auditável e seguro para realizar operações em banco de dados, sem afetar o controle interno de conexões JDBC nem a \textit{performance} da aplicação. Graças aos seus métodos que automatizam a parametrização das consultas e mapeiam os resultados via \textit{reflection}, os riscos de expor o produto a ataques de \textit{SQL Injection} são mitigados. Em suma, a arquitetura do \textit{framework} consolida-se em quatro pilares fundamentais: \textbf{Padronização, Simplificação, Proteção e Reutilização}.
 
 Como contrapartida natural de sua proposta enxuta frente a um ORM completo como o Hibernate/JPA, o SEOS concentra sua automação em operações diretas por tabela e não abrange recursos avançados de modelo de domínio, como o mapeamento automático de relacionamentos entre entidades (\texttt{@OneToMany}, \texttt{@ManyToOne}), o carregamento sob demanda (\textit{lazy loading}) ou mecanismos próprios de \textit{cache}. Dessa forma, consultas que envolvem múltiplos \textit{joins} ou regras de atualização fora do padrão \textit{Anti-Null} continuam exigindo a escrita da instrução SQL pela equipe, ainda que se beneficiem do encapsulamento seguro, do mapeamento de retorno e da auditoria fornecidos pelo \texttt{SQLResult}.
 
+\vspace{0.3cm}
 \subsection{Plano de Aplicação \textit{DevSecOps}}
 
 Embora tenha sido inspirado nas dores reais observadas no ambiente corporativo estudado, o SEOS foi desenvolvido como um projeto autoral independente (\texttt{com.github.marygraywolf.seos}), hospedado em repositório próprio no GitHub e desvinculado de qualquer nomenclatura, regra de negócio ou código proprietário da empresa. Por se tratar de uma biblioteca projetada para atuar no núcleo da camada de persistência de aplicações Java/JDBC, sua estabilidade e sua segurança são requisitos essenciais: qualquer falha estrutural ou vulnerabilidade na biblioteca impactaria diretamente os sistemas que a importassem como dependência. Diante disso, o ciclo de vida do SEOS foi estruturado sob a cultura \textit{DevSecOps}, priorizando ferramentas gerenciadas no modelo \textit{Software as a Service} (SaaS), segurança por padrão (\textit{security by design}) e ausência de custos com servidores dedicados. A Tabela~4 sintetiza a matriz de decisão arquitetural utilizada para a escolha de cada tecnologia da esteira frente às alternativas de mercado:
 
-\vspace{0.3cm}
-\noindent
-\begin{minipage}{\linewidth}
-\centering
-\textbf{Tabela 4 --- Matriz de decisão das ferramentas da esteira \textit{DevSecOps}}
-\vspace{0.15cm}
+\clearpage
+\begin{table}[H]
+    \centering
+    \caption{Matriz de decisão das ferramentas da esteira DevSecOps}
+    \label{tab:matriz-devsecops}
+    \vspace{0.15cm}
+    \begingroup
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{|p{2.5cm}|p{2.4cm}|p{2.5cm}|p{6.3cm}|}
+    \hline
+    \textbf{Categoria} & \textbf{Ferramenta Adotada} & \textbf{Principais Concorrentes} & \textbf{Justificativa Técnica da Decisão} \\ \hline
+   \textbf{Orquestração (CI/CD)} & GitHub Actions & Jenkins, GitLab CI & O Jenkins exige provisionamento, hospedagem e manutenção contínua de servidores e \textit{plugins}. O GitLab CI exigiria manter a biblioteca fora do ecossistema onde o repositório já está hospedado. O GitHub Actions oferece execução nativa e efêmera diretamente no repositório do projeto, sem custo de infraestrutura. \\ \hline
+    \textbf{Build e Empacotamento} & Apache Maven & Gradle & Embora o Gradle utilize scripts dinâmicos (Groovy/Kotlin), essa flexibilidade permite lógica imperativa no arquivo de \textit{build}, dificultando a auditoria. O Maven possui ciclo de vida estrito e declarativo em XML, facilitando a injeção padronizada de \textit{plugins} de segurança e o controle determinístico de versões. \\ \hline
+    \textbf{Inspeção de Qualidade} & SonarCloud & Codacy, Code Climate & Possui regras maduras para o ecossistema Java/JDBC e aplica a metodologia Clean as You Code com Quality Gate nativo, capaz de bloquear Pull Requests automaticamente caso novas métricas de cobertura, duplicação ou \textit{code smells} sejam violadas. \\ \hline
+    \textbf{Segurança (SAST)} & Semgrep & Checkmarx, Fortify, Snyk & Soluções comerciais demandam alto custo de licenciamento e elevam o tempo de \textit{build}, prejudicando o feedback rápido da esteira. O Semgrep executa localmente no agente de integração (\textit{runner}) em poucos segundos e exporta nativamente o laudo em formato SARIF para a aba Security do próprio GitHub. \\ \hline
+    \textbf{Repositório de Pacotes (CD)} & GitHub Packages & Sonatype Nexus, JFrog Artifactory & Nexus e Artifactory demandam máquinas virtuais próprias, gestão de armazenamento e controle separado de credenciais. O GitHub Packages elimina a complexidade de IAM ao publicar o pacote diretamente no repositório do projeto via \texttt{GITHUB\_TOKEN}. \\ \hline
+    \textbf{Observabilidade (\textit{ChatOps})} & Microsoft Teams & Slack, E-mail & Notificações por e-mail não atendem à resposta em tempo real e geram fadiga de alertas, enquanto o Slack exigiria licenciamento adicional. O Microsoft Teams, integrado via Workflows e \textit{Adaptive Cards}, reflete fielmente o padrão de comunicação empresarial. \\ \hline
+    \end{tabular}
+    \endgroup
+    \vspace{0.15cm}
+    
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{table}
+\clearpage
 
-{\footnotesize
-\begin{tabular}{p{2.5cm} p{2.4cm} p{2.5cm} p{6.3cm}}
-\hline
-\textbf{Categoria} & \textbf{Ferramenta Adotada} & \textbf{Principais Concorrentes} & \textbf{Justificativa Técnica da Decisão} \\ \hline
-\textbf{Orquestração (CI/CD)} & \textbf{GitHub Actions} & Jenkins, GitLab CI & O Jenkins exige provisionamento, hospedagem e manutenção contínua de servidores e \textit{plugins}. O GitLab CI exigiria manter a biblioteca fora do ecossistema onde o repositório já está hospedado. O GitHub Actions oferece execução nativa e efêmera diretamente no repositório do projeto, sem custo de infraestrutura. \\ \hline
-\textbf{\textit{Build} e Empacotamento} & \textbf{Apache Maven} & Gradle & Embora o Gradle utilize \textit{scripts} dinâmicos (Groovy/Kotlin), essa flexibilidade permite lógica imperativa no arquivo de \textit{build}, dificultando a auditoria. O Maven possui ciclo de vida estrito e declarativo em \textit{Extensible Markup Language} (XML), facilitando a injeção padronizada de \textit{plugins} de segurança e o controle determinístico de versões. \\ \hline
-\textbf{Inspeção de Qualidade} & \textbf{SonarCloud} & Codacy, Code Climate & Possui regras maduras para o ecossistema Java/JDBC e aplica a metodologia \textit{Clean as You Code} com \textit{Quality Gate} nativo, capaz de bloquear \textit{Pull Requests} automaticamente caso novas métricas de cobertura, duplicação ou \textit{code smells} sejam violadas. \\ \hline
-\textbf{Segurança (SAST)} & \textbf{Semgrep} & Checkmarx, Fortify, Snyk & Soluções comerciais como Checkmarx e Fortify demandam alto custo de licenciamento e elevam o tempo de \textit{build}, prejudicando o \textit{feedback} rápido da esteira. O Semgrep executa localmente no agente de integração (\textit{runner}) em poucos segundos e exporta nativamente o laudo em formato SARIF para a aba \textit{Security} do próprio GitHub. \\ \hline
-\textbf{Repositório de Pacotes (CD)} & \textbf{GitHub Packages} & Sonatype Nexus, JFrog Artifactory & Nexus e Artifactory demandam máquinas virtuais próprias, gestão de armazenamento e controle separado de credenciais. O GitHub Packages elimina a complexidade de Gestão de Identidade e Acesso --- \textit{Identity and Access Management} (IAM) --- ao publicar o pacote diretamente no repositório do projeto via \texttt{GITHUB\_TOKEN}. \\ \hline
-\textbf{Observabilidade (\textit{ChatOps})} & \textbf{Microsoft Teams} & Slack, E-mail & Notificações por e-mail não atendem à resposta em tempo real e geram fadiga de alertas, enquanto o Slack exigiria licenciamento adicional para simular um cenário corporativo. O Microsoft Teams, integrado via \textit{Workflows} e \textit{Adaptive Cards}, reflete fielmente o padrão de comunicação utilizado em ambientes empresariais. \\ \hline
-\end{tabular}
-}
-\vspace{0.15cm}
+Com base nessas escolhas, a automação no GitHub Actions foi dividida em dois fluxos de trabalho (\textit{workflows}) independentes: um dedicado à Integração, Qualidade e Segurança Contínua (\texttt{ci\_integracao\_\allowbreak e\_qualidade.yml}) e outro exclusivo para a Entrega Contínua (\texttt{cd\_entrega\_\allowbreak continua.yml}). Como camada adicional de proteção contra ataques à cadeia de suprimentos (\textit{Supply Chain}), todas as \textit{actions} externas utilizadas nas esteiras foram fixadas pelo \textit{hash} imutável do \textit{commit} via \textit{Secure Hash Algorithm} de 256~\textit{bits} (SHA-256) em vez de \textit{tags} mutáveis, prevenindo a execução de código adulterado em dependências de terceiros.
 
-{\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
-\end{minipage}
-\vspace{0.3cm}
-
-Com base nessas escolhas, a automação no GitHub Actions foi dividida em dois fluxos de trabalho (\textit{workflows}) independentes: um dedicado à Integração, Qualidade e Segurança Contínua (\texttt{ci\_integracao\_e\_qualidade.yml}) e outro exclusivo para a Entrega Contínua (\texttt{cd\_entrega\_continua.yml}). Como camada adicional de proteção contra ataques à cadeia de suprimentos (\textit{Supply Chain}), todas as \textit{actions} externas utilizadas nas esteiras foram fixadas pelo \textit{hash} imutável do \textit{commit} (SHA-256) em vez de \textit{tags} mutáveis, prevenindo a execução de código adulterado em dependências de terceiros.
-
-O fluxo de Integração Contínua --- \textit{Continuous Integration} (CI) --- é acionado a cada \textit{push} ou abertura de \textit{Pull Request} na \textit{branch} \texttt{main}, provisionando um ambiente Ubuntu com JDK~11 (Temurin) para compilação e execução do comando \texttt{mvn clean verify}. Nessa etapa, a confiabilidade do \textit{microframework} é validada pela bateria de testes unitários com JUnit~5 e Mockito, utilizando objetos simulados (\textit{mocks}) para reproduzir conexões JDBC, \texttt{PreparedStatement}, \texttt{CallableStatement} e \texttt{ResultSet} em memória sem depender de uma instância de banco de dados durante a execução da esteira, enquanto o JaCoCo coleta os dados e gera o relatório de cobertura (Figuras~1 e~2):
+O fluxo de Integração Contínua --- \textit{Continuous Integration} (CI) --- é acionado a cada \textit{push} ou abertura de \textit{Pull Request} na \textit{branch} \texttt{main}, provisionando um ambiente Ubuntu com \textit{Java Development Kit} (JDK)~11 (Temurin) para compilação e execução do comando \texttt{mvn clean verify}. Nessa etapa, a confiabilidade do \textit{microframework} é validada pela bateria de testes unitários com JUnit~5 e Mockito, utilizando objetos simulados (\textit{mocks}) para reproduzir conexões JDBC, \texttt{PreparedStatement}, \texttt{CallableStatement} e \texttt{ResultSet} em memória sem depender de uma instância de banco de dados durante a execução da esteira, enquanto o JaCoCo coleta os dados e gera o relatório de cobertura (Figuras~1 e~2):
 
 \vspace{0.3cm}
 \noindent
@@ -599,7 +611,7 @@ O fluxo de Integração Contínua --- \textit{Continuous Integration} (CI) --- �
 \textbf{Figura 1 --- Execução da esteira de Integração Contínua no GitHub Actions}
 \vspace{0.15cm}
 
-% \includegraphics[width=0.9\linewidth]{imagePipelineCI.png}
+\includegraphics[width=0.9\linewidth]{imagens/imagePipelineCI.png}
 
 \vspace{0.15cm}
 {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
@@ -613,7 +625,7 @@ O fluxo de Integração Contínua --- \textit{Continuous Integration} (CI) --- �
 \textbf{Figura 2 --- Execução da bateria de testes automatizados e geração de cobertura}
 \vspace{0.15cm}
 
-% \includegraphics[width=0.9\linewidth]{imagePipelineTestes.png}
+\includegraphics[width=0.9\linewidth]{imagens/imagePipelineTestes.png}
 
 \vspace{0.15cm}
 {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
@@ -629,7 +641,7 @@ Concluída a fase de testes, a esteira envia os resultados e o relatório de cob
 \textbf{Figura 3 --- Painel de análise de qualidade e cobertura no SonarCloud}
 \vspace{0.15cm}
 
-% \includegraphics[width=0.9\linewidth]{imageSonarQube.png}
+\includegraphics[width=0.9\linewidth]{imagens/imageSonarQube.png}
 
 \vspace{0.15cm}
 {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
@@ -645,7 +657,7 @@ Na sequência, aplica-se a prática de Segurança Antecipada (\textit{Shift-Left
 \textbf{Figura 4 --- Execução da análise estática de segurança (SAST) com Semgrep}
 \vspace{0.15cm}
 
-% \includegraphics[width=0.9\linewidth]{imagePipelineSAST.png}
+\includegraphics[width=0.9\linewidth]{imagens/imagePipelineSAST.png}
 
 \vspace{0.15cm}
 {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
@@ -661,7 +673,7 @@ Para garantir resposta rápida caso qualquer validação anterior apresente falh
 \textbf{Figura 5 --- Notificação automatizada de falha via \textit{ChatOps} no Microsoft Teams}
 \vspace{0.15cm}
 
-% \includegraphics[width=0.9\linewidth]{imageMensagemTeams.png}
+\includegraphics[width=0.9\linewidth]{imagens/imageMensagemTeams.png}
 
 \vspace{0.15cm}
 {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
@@ -677,7 +689,7 @@ Por sua vez, a disponibilização oficial da biblioteca ocorre na esteira de Ent
 \textbf{Figura 6 --- Execução da esteira de Entrega Contínua (CD) por \textit{tag} semântica}
 \vspace{0.15cm}
 
-% \includegraphics[width=0.9\linewidth]{imagePipelineCD.png}
+\includegraphics[width=0.9\linewidth]{imagens/imagePipelineCD.png}
 
 \vspace{0.15cm}
 {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
@@ -691,7 +703,7 @@ Por sua vez, a disponibilização oficial da biblioteca ocorre na esteira de Ent
 \textbf{Figura 7 --- Artefato da biblioteca SEOS publicado e versionado no \textit{GitHub Packages}}
 \vspace{0.15cm}
 
-% \includegraphics[width=0.9\linewidth]{imagePackageMaven.png}
+\includegraphics[width=0.9\linewidth]{imagens/imagePackageMaven.png}
 
 \vspace{0.15cm}
 {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
@@ -700,29 +712,99 @@ Por sua vez, a disponibilização oficial da biblioteca ocorre na esteira de Ent
 
 Por fim, a Tabela~5 apresenta o plano e cronograma estruturado para o desenvolvimento da biblioteca, a implantação de sua esteira \textit{DevSecOps} e a sua aplicação prática na refatoração do cenário estudado:
 
+\clearpage
+\begin{table}[H]
+    \centering
+    \caption{Plano e cronograma de aplicação \textit{DevSecOps} e adoção do SEOS}
+    \label{tab:cronograma-devsecops}
+    \vspace{0.15cm}
+    \begingroup
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{|p{1.2cm}|p{1.3cm}|p{3.2cm}|p{6.8cm}|}
+    \hline
+    \textbf{Fase} & \textbf{Período} & \textbf{Etapa do Plano} & \textbf{Entregável e Objetivo Técnico} \\ \hline
+    \textbf{Fase 1} & Mês 1 & Diagnóstico e Concepção do SEOS & Levantamento do cenário legado e implementação autoral do núcleo em Java puro/JDBC (\texttt{@TableDB}, \texttt{@ColumnDB}, \texttt{SQLBuilder}, \texttt{SQLResult}, \texttt{SQLCall} e \texttt{OrmLogger}). \\ \hline
+    \textbf{Fase 2} & Mês 2 & Integração, Qualidade e SAST & Implementação do \textit{workflow} \texttt{ci\_integracao\_e\_qualidade.yml} com testes unitários (JUnit~5, Mockito, JaCoCo), \textit{Quality Gate} no SonarCloud, análise SAST com Semgrep (SARIF) e fixação de \textit{actions} por \textit{hash} SHA-256. \\ \hline
+    \textbf{Fase 3} & Mês 3 & \textit{ChatOps} e Entrega Contínua & Implementação do \textit{workflow} \texttt{cd\_entrega\_continua.yml}, alertas automatizados de falha no Microsoft Teams via \textit{Webhook} e publicação versionada (\texttt{v*.*.*}) no GitHub Packages. \\ \hline
+    \textbf{Fase 4} & Mês 4 & Aplicação e Avaliação Comparativa & Aplicação prática em 9 classes DAO de novos módulos do \textit{e-commerce} e refatoração de amostra da classe legada \texttt{ErpIntegracaoDAO} (21.381 linhas) para aferição das métricas de redução de código e segurança. \\ \hline
+    \textbf{Fase 5} & Mês 5 & Plano de Adoção Gradual & Recomendação de diretrizes para importação da biblioteca nos novos desenvolvimentos e substituição progressiva dos métodos legados vulneráveis. \\ \hline
+    \end{tabular}
+    \endgroup
+    \vspace{0.15cm}
+    
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{table}
+
 \vspace{0.3cm}
-\noindent
-\begin{minipage}{\linewidth}
-\centering
-\textbf{Tabela 5 --- Plano e cronograma de aplicação \textit{DevSecOps} e adoção do SEOS}
-\vspace{0.15cm}
+\subsection{Quadro de Respostas --- Antes e Depois}
 
-{\footnotesize
-\begin{tabular}{p{1.5cm} p{1.5cm} p{3.6cm} p{7.1cm}}
-\hline
-\textbf{Fase} & \textbf{Período} & \textbf{Etapa do Plano} & \textbf{Entregável e Objetivo Técnico} \\ \hline
-\textbf{Fase 1} & Mês 1 & Diagnóstico e Concepção do SEOS & Levantamento do cenário legado e implementação autoral do núcleo em Java puro/JDBC (\texttt{@TableDB}, \texttt{@ColumnDB}, \texttt{SQLBuilder}, \texttt{SQLResult}, \texttt{SQLCall} e \texttt{OrmLogger}). \\ \hline
-\textbf{Fase 2} & Mês 2 & Integração, Qualidade e SAST & Implementação do \textit{workflow} \texttt{ci\_integracao\_e\_qualidade.yml} com testes unitários (JUnit~5, Mockito, JaCoCo), \textit{Quality Gate} no SonarCloud, análise SAST com Semgrep (SARIF) e fixação de \textit{actions} por \textit{hash} SHA-256. \\ \hline
-\textbf{Fase 3} & Mês 3 & \textit{ChatOps} e Entrega Contínua & Implementação do \textit{workflow} \texttt{cd\_entrega\_continua.yml}, alertas automatizados de falha no Microsoft Teams via \textit{Webhook} e publicação versionada (\texttt{v*.*.*}) no GitHub Packages. \\ \hline
-\textbf{Fase 4} & Mês 4 & Aplicação e Avaliação Comparativa & Refatoração de estudo de caso sobre os padrões vulneráveis mapeados no arquivo \textit{Repository} crítico (402 métodos e 21.381 linhas) para aferição das métricas de redução de código e segurança. \\ \hline
-\textbf{Fase 5} & Mês 5 & Plano de Adoção Gradual & Recomendação de diretrizes para importação da biblioteca nos novos desenvolvimentos e substituição progressiva dos métodos legados vulneráveis. \\ \hline
-\end{tabular}
-}
-\vspace{0.15cm}
+Para mensurar de forma concreta os ganhos da adoção do SEOS frente ao cenário diagnosticado nas Seções~1.3 e~3.2, a avaliação comparativa foi conduzida em duas frentes complementares dentro do \textbf{sistema de \textit{e-commerce}} da empresa: (i) a análise de \textbf{9 classes DAO recém-desenvolvidas já utilizando o SEOS} em novos módulos operacionais integrados à plataforma, contrastadas com os demais 69 arquivos de persistência em JDBC manual do mesmo repositório; e (ii) a \textbf{refatoração de uma amostra representativa de 15 métodos críticos da classe legada \texttt{ErpIntegracaoDAO}} (o arquivo-base de 21.381 linhas e 416 chamadas a \texttt{PreparedStatement} apresentado na Seção~1.3), permitindo aferir diretamente o comportamento antes e depois da biblioteca sobre o mesmo código.
 
-{\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
-\end{minipage}
+Na primeira frente, apresentada na Tabela~6, observa-se o impacto da adoção nativa do SEOS nos novos módulos do \textit{e-commerce} em comparação com o padrão histórico de escrita manual do repositório:
+
+\begin{table}[H]
+    \centering
+    \caption{Comparação entre o padrão legado (JDBC manual) e os módulos desenvolvidos com o SEOS no \textit{e-commerce}}
+    \label{tab:comparacao-modulos-ecommerce}
+    \vspace{0.15cm}
+    \begingroup
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{|p{4.2cm}|p{4.1cm}|p{4.4cm}|}
+    \hline
+    \textbf{Critério Avaliado} & \textbf{Padrão Legado (JDBC Manual)} & \textbf{Módulos com SEOS (9 DAOs)} \\ \hline
+    \textbf{Arquivos analisados} & 69 classes com \texttt{prepareStatement} & 9 DAOs e 11 DTOs anotados com \texttt{@TableDB} \\ \hline
+    \textbf{Chamadas manuais a \texttt{prepareStatement}} & 1.314 ocorrências & \textbf{0} (encapsuladas pelo SEOS) \\ \hline
+    \textbf{Mapeamento manual (\texttt{rs.getXxx()})} & Manual, campo a campo & \textbf{0} (automatizado pelo \texttt{SQLResult}) \\ \hline
+    \textbf{Pontos de montagem e execução via SEOS} & --- & 82 montagens (\texttt{SQLBuilder}) e 62 execuções \\ \hline
+    \textbf{Média de linhas por método} & $\approx 52$ linhas (21.381 linhas / 409 métodos) & \textbf{$\approx 27$ linhas} (1.652 linhas / 62 métodos) \\ \hline
+    \textbf{Arquivos sem registro de \textit{log}} & 41 de 69 arquivos (\textbf{59,4\%}) & \textbf{0 de 9 arquivos} (100\% auditados) \\ \hline
+    \end{tabular}
+    \endgroup
+    \vspace{0.15cm}
+    
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{table}
+
+A redução de \textbf{48\% na média de linhas por método} (de 52 para 27 linhas, já contabilizando regras de negócio) reflete diretamente a eliminação do código repetitivo de infraestrutura. Enquanto um método de consulta simples no padrão legado do \textit{e-commerce} --- como \texttt{ErpIntegracaoDAO.\allowbreak buscarUsuarioPorDocumento} --- consome \textbf{32 linhas} para abrir o \texttt{PreparedStatement}, preencher parâmetros, percorrer o \texttt{ResultSet}, extrair cinco colunas manualmente e capturar exceções com \texttt{printStackTrace}, operações equivalentes nas classes baseadas no SEOS (como \texttt{UsuarioAcessoDAO}) são resolvidas em uma a três linhas encadeadas (\texttt{buildSelect(...).\allowbreak executeQuerySingle(...)}, \texttt{buildInsert(...).\allowbreak executeUpdate(...)} e \texttt{buildUpdate(...,\allowbreak\ "USER\_ID = ?",\allowbreak\ id).\allowbreak executeUpdate(...)}).
+
+Já na segunda frente de avaliação, selecionou-se uma amostra de \textbf{15 métodos do \texttt{ErpIntegracaoDAO}} --- contemplando três operações de \texttt{UPDATE}, um \texttt{INSERT}, seis consultas escalares ou de contagem, duas consultas de lista, duas buscas de registro único e uma consulta em formato de dicionário --- para medir o efeito direto da refatoração com o SEOS. Conforme demonstrado na Tabela~7, a substituição do JDBC manual na amostra proporciona uma redução de \textbf{36,1\% no volume total de linhas de código}, além de extinguir integralmente as concatenações vulneráveis e a manipulação manual de recursos:
+
+\begin{table}[H]
+    \centering
+    \caption{Comparativo antes e depois na refatoração da amostra de 15 métodos do \texttt{ErpIntegracaoDAO}}
+    \label{tab:comparativo-amostra-refatorada}
+    \vspace{0.15cm}
+    \begingroup
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{|p{5.1cm}|p{2.2cm}|p{3.0cm}|p{2.2cm}|}
+    \hline
+    \textbf{Indicador (Soma dos 15 métodos analisados)} & \textbf{Antes do SEOS} & \textbf{Depois do SEOS} & \textbf{Variação Obtida} \\ \hline
+    \textbf{Total de linhas de código} & 363 linhas & $\approx 232$ linhas & \textbf{$-36,1\%$} \\ \hline
+    \textbf{Chamadas manuais a \texttt{prepareStatement}} & 15 & 0 & \textbf{$-100\%$} \\ \hline
+    \textbf{Preenchimento manual de parâmetros (\texttt{setXxx})} & 11 & 0 & \textbf{$-100\%$} \\ \hline
+    \textbf{Extração manual de colunas (\texttt{rs.getXxx})} & 18 & 0 & \textbf{$-100\%$} \\ \hline
+    \textbf{Concatenações diretas de variáveis na SQL} & 8 (em 7 métodos) & 0 (100\% parametrizado) & \textbf{$-100\%$} \\ \hline
+    \textbf{Tratamento inadequado com \texttt{printStackTrace}} & 10 & 0 & \textbf{$-100\%$} \\ \hline
+    \textbf{Fechamentos manuais de recursos (\texttt{.close()})} & 15 & 0 (\texttt{try-with-resources}) & \textbf{$-100\%$} \\ \hline
+    \textbf{Métodos com auditoria de tempo, origem e erro} & 0 de 15 (0\%) & 15 de 15 (100\%) & \textbf{$+100$ p.p.} \\ \hline
+    \end{tabular}
+    \endgroup
+    \vspace{0.15cm}
+    
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{table}
+
 \vspace{0.3cm}
+\subsection{Resultados e Dados Consolidados do Projeto}
 
+A consolidação dos levantamentos realizados nos dois sistemas legados da empresa (\textbf{2.890 métodos de persistência} analisados na Seção~3.2) em conjunto com as medições práticas obtidas no sistema de \textit{e-commerce} (Seção~3.7) comprova a aderência e a eficácia arquitetural do SEOS. No que tange à produtividade e à redução de \textit{boilerplate}, a aplicação real da biblioteca em 9 classes DAO novas --- totalizando 82 pontos de montagem de instruções SQL e 62 execuções operando sobre conexões fornecidas pela própria aplicação via \texttt{ErpConnectionFactory.\allowbreak getConnection()} --- reduziu a média de código de aproximadamente \textbf{52 para 27 linhas por método} ($-48\%$), confirmando a premissa de preservação do controle transacional sem sobrecarga de código manual. Esse ganho é corroborado pela refatoração direta da amostra do \texttt{ErpIntegracaoDAO}, que registrou redução imediata de \textbf{36,1\% no total de linhas} e eliminou integralmente as chamadas manuais a \texttt{PreparedStatement}, \texttt{setXxx()}, \texttt{rs.\allowbreak getXxx()} e \texttt{.close()}.
 
-
+Sob a ótica da segurança cibernética na camada de persistência, tanto nos novos módulos desenvolvidos com o SEOS quanto nos 15 métodos refatorados da amostra legada, a exposição à concatenação direta de variáveis na instrução SQL foi reduzida a \textbf{zero ($-100\%$)}. Todos os filtros e valores persistidos passaram a trafegar obrigatoriamente como parâmetros vinculados ao \texttt{PreparedStatement} e validados previamente pelo \texttt{SQLResult} quanto à correspondência de \textit{placeholders} (\texttt{?}), somados ao bloqueio preventivo de comandos \texttt{UPDATE} desprovidos de cláusula \texttt{WHERE} no \texttt{SQLBuilder}.
+
+Por fim, no eixo de observabilidade e governança operacional, frente a um passivo histórico no qual \textbf{94,4\%} dos métodos do sistema de \textit{e-commerce} (Tabela~2) e \textbf{59,4\%} dos arquivos em JDBC manual não possuíam nenhum registro de \textit{log}, a adoção do SEOS elevou a cobertura de auditoria e o tratamento estruturado de falhas para \textbf{100\%} nos módulos avaliados. Com isso, substituiu-se o uso inadequado de \texttt{printStackTrace} pelo rastreamento automatizado de tempo de execução, contagem de parâmetros e identificação da classe e do método de origem da chamada.
