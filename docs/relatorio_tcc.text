@@ -20,12 +20,12 @@ Evoluir o \textit{microframework} SEOS com base em práticas consolidadas de mer
 \subsubsection{Objetivos específicos}
 
 \begin{itemize}
-    \item \textbf{Automatização de persistência:} implementar um mecanismo automatizado de geração de instruções DML/DQL (\texttt{SQLBuilder}) e de mapeamento objeto-relacional de \texttt{ResultSet} baseado em \textit{annotations} e \textit{reflection};
-    \item \textbf{Segurança contra injeções:} mitigar riscos de \textit{SQL Injection} na camada de persistência por meio da parametrização obrigatória de consultas no \texttt{PreparedStatement} e validação estrutural das operações;
-    \item \textbf{Auditoria e observabilidade:} incorporar recursos para rastreamento de erros, parâmetros e tempo de execução das consultas ao banco de dados;
-    \item \textbf{Esteira \textit{DevSecOps} --- \textit{Continuous Integration/Continuous Delivery} (CI/CD):} estruturar uma \textit{pipeline} de Integração Contínua com execução automatizada de testes, análise de cobertura e qualidade (JaCoCo e SonarCloud), análise estática de segurança --- \textit{Static Application Security Testing} (SAST) com Semgrep ---, notificações via \textit{ChatOps} e Entrega Contínua configurando o GitHub Packages com versionamento semântico da biblioteca;
-    \item \textbf{Avaliação arquitetural:} avaliar a aderência arquitetural do SEOS frente ao cenário corporativo estudado e em comparação com soluções consolidadas de mercado, como Hibernate/\textit{Java Persistence API} (JPA);
-    \item \textbf{Mensuração de resultados:} mensurar os ganhos quantitativos e qualitativos da adoção do SEOS em relação à abordagem tradicional --- \textit{Java Database Connectivity} (JDBC) manual ---, considerando redução de linhas de código, taxa de duplicação e exposição a vulnerabilidades baseadas no \textit{Open Worldwide Application Security Project} (OWASP) \textit{Top} 10.
+    \item Automatizar a geração de instruções DML e DQL e o mapeamento objeto-relacional de consultas por meio de \textit{annotations} e \textit{reflection};
+    \item Mitigar os riscos de \textit{SQL Injection} na camada de persistência mediante a parametrização obrigatória das consultas e a validação estrutural das operações;
+    \item Incorporar mecanismos de auditoria e observabilidade para o rastreamento de erros, parâmetros e tempo de execução das operações no banco de dados;
+    \item Estruturar uma esteira \textit{DevSecOps} de Integração e Entrega Contínua --- \textit{Continuous Integration/Continuous Delivery} (CI/CD) --- contemplando testes automatizados, inspeção de qualidade e cobertura, análise estática de segurança --- \textit{Static Application Security Testing} (SAST) ---, alertas via \textit{ChatOps} e publicação com versionamento semântico;
+    \item Avaliar a aderência arquitetural do SEOS frente às restrições do cenário corporativo estudado em comparação com soluções tradicionais de mercado, como o Hibernate/\textit{Java Persistence API} (JPA);
+    \item Mensurar os ganhos quantitativos e qualitativos da adoção da biblioteca em relação à escrita manual via \textit{Java Database Connectivity} (JDBC), considerando a redução de código, a eliminação de duplicações e a mitigação de vulnerabilidades baseadas no \textit{Open Worldwide Application Security Project} (OWASP) \textit{Top} 10.
 \end{itemize}
 
 \subsection{Justificativa}
@@ -38,18 +38,7 @@ Por meio dessa necessidade nasceu o \textbf{SEOS}, concebido como uma solução 
 \subsection{Problema}
 \label{subsec:problema}
 
-Para dimensionar a criticidade do cenário estudado, o diagnóstico inicial realizado sobre uma classe crítica de persistência do ambiente legado revelou os seguintes indicadores:
-
-\begin{itemize}
-    \item \textbf{21.381} linhas de código;
-    \item \textbf{409} métodos, dos quais \textbf{402} acessam o banco de dados;
-    \item \textbf{19,6\%} de linhas idênticas;
-    \item \textbf{54,4\%} de linhas repetidas;
-    \item Entre \textbf{416} chamadas a \texttt{PreparedStatement}, apenas \textbf{156} utilizam métodos \texttt{setXxx()};
-    \item Aproximadamente \textbf{43\%} dos métodos são potencialmente vulneráveis a \textit{SQL Injection}.
-\end{itemize}
-
-Esses são os números mapeados juntamente com a equipe de Arquitetura da empresa a partir de \textbf{uma única classe de acesso a dados (Objeto de Acesso a Dados --- \textit{Data Access Object} [DAO] / \textit{Repository}) de um único projeto} utilizado no contexto empresarial. Os alertas sobre o desenvolvimento inadequado de métodos de persistência nos projetos, que possibilitam a ocorrência de \textit{SQL Injection}, já haviam sido repassados; contudo, devido à ausência histórica de uma abstração padronizada, à pressão por entregas rápidas e ao fato de os projetos existentes serem catalogados como legados, tornou-se difícil corrigir e padronizar o desenvolvimento manualmente, e é exatamente nesse cenário que o SEOS se encaixa.
+Para dimensionar a criticidade do cenário estudado, um diagnóstico inicial realizado em conjunto com a equipe de Arquitetura sobre uma única classe de acesso a dados --- Objeto de Acesso a Dados, do inglês \textit{Data Access Object} (DAO) / \textit{Repository} --- de um dos projetos legados da empresa revelou um passivo técnico expressivo. Ao todo, o arquivo concentrava \textbf{21.381 linhas de código} distribuídas em \textbf{409 métodos} (dos quais \textbf{402} acessam diretamente o banco de dados), apresentando uma taxa de \textbf{19,6\% de linhas idênticas} e \textbf{54,4\% de linhas repetidas}. Além do alto volume de duplicação, constatou-se que, entre \textbf{416 chamadas} a \texttt{PreparedStatement}, apenas \textbf{156} parametrizavam os valores adequadamente, resultando em aproximadamente \textbf{43\% dos métodos} potencialmente vulneráveis a \textit{SQL Injection}. Os alertas sobre essas falhas na camada de persistência já eram conhecidos internamente; contudo, devido à ausência histórica de uma abstração padronizada, à pressão por entregas rápidas e à complexidade dos sistemas legados, tornou-se inviável corrigir e uniformizar esse desenvolvimento de forma manual --- sendo exatamente nesse cenário que o SEOS se insere.
 
 Embora ele atue como uma biblioteca Java distribuída sob versionamento semântico --- não sendo uma aplicação final em si ---, ele opera no núcleo da camada de persistência dos módulos corporativos que sustentam a operação da empresa. No exemplo citado anteriormente, a presença de aproximadamente \textbf{43\% de métodos suscetíveis a \textit{SQL Injection}} representa um risco operacional crítico ao banco de dados. A exploração de uma vulnerabilidade dessa natureza, ou a indisponibilidade do sistema devido à corrupção de tabelas essenciais ao fluxo operacional, exigiria um tempo estimado de recuperação de múltiplas horas de operação para conter o incidente, auditar os registros afetados e restaurar o ambiente. Nesse intervalo, a paralisação do faturamento e das vendas acarretaria \textbf{prejuízos financeiros diretos} expressivos à organização, além de \textbf{prejuízos indiretos} severos, como perda de clientes e desgaste reputacional. Diante disso, a adoção do SEOS, aliada à esteira \textit{DevSecOps} e ao controle estrito de versões, atua diretamente na mitigação preventiva desses impactos financeiros e operacionais.
 
@@ -113,21 +102,28 @@ No primeiro sistema, responsável pelas automações corporativas (produtivas, l
 Dos \textbf{573 métodos sem \textit{logs}}, \textbf{254} possuem \texttt{try/catch} mas não registram \textit{logs} de erro ou de sucesso, \textbf{58} só aplicam \texttt{System.out} ou \texttt{printStackTrace} e \textbf{28} possuem vulnerabilidades. Já no segundo sistema, responsável pelo \textit{e-commerce}, o cenário mostrou-se ainda mais crítico quanto à exposição a \textit{SQL Injection} e à falta de rastreabilidade, conforme demonstrado na Tabela~\ref{tab:resultados_ecommerce}:
 
 \begin{table}[H]
-\centering
-\caption{Levantamento de métodos de persistência no sistema de \textit{e-commerce}}
-\label{tab:resultados_ecommerce}
-\begin{tabular}{c p{8.5cm} r r}
-\hline
-\textbf{\#} & \textbf{Indicador} & \textbf{Quantidade} & \textbf{\% dos 1.249} \\ \hline
-1 & Métodos que fazem operações no banco & 1.249 & 100\% \\
-2 & Usam JDBC (\texttt{prepareStatement}, \texttt{prepareCall}, \texttt{ResultSet}) & 1.229 & 98,4\% \\
-3 & Não usam JDBC (JPA/Hibernate via \texttt{EntityManager}) & 20 & 1,6\% \\
-4 & Fora das boas práticas (concatenam variáveis na SQL) & \textbf{468} & \textbf{37,5\%} \\
-5 & Vulneráveis a \textit{SQL Injection} & \textbf{299} & \textbf{23,9\%} \\
-6 & Sem auditoria de \textit{logs} & \textbf{1.179} & \textbf{94,4\%} \\ \hline
-\end{tabular}
-\vspace{0.2cm}
-\\ {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+    \centering
+    \caption{Levantamento de métodos de persistência no sistema de \textit{e-commerce}}
+    \label{tab:resultados_ecommerce}
+    \vspace{0.15cm}
+    \begingroup
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{|c|p{7.8cm}|r|r|}
+    \hline
+    \textbf{\#} & \textbf{Indicador} & \textbf{Quantidade} & \textbf{\% dos 1.249} \\ \hline
+    1 & Métodos que fazem operações no banco & 1.249 & 100\% \\ \hline
+    2 & Usam JDBC (\texttt{prepareStatement}, \texttt{prepareCall}, \texttt{ResultSet}) & 1.229 & 98,4\% \\ \hline
+    3 & Não usam JDBC (JPA/Hibernate via \texttt{EntityManager}) & 20 & 1,6\% \\ \hline
+    4 & Fora das boas práticas (concatenam variáveis na SQL) & \textbf{468} & \textbf{37,5\%} \\ \hline
+    5 & Vulneráveis a \textit{SQL Injection} & \textbf{299} & \textbf{23,9\%} \\ \hline
+    6 & Sem auditoria de \textit{logs} & \textbf{1.179} & \textbf{94,4\%} \\ \hline
+    \end{tabular}
+    \endgroup
+    \vspace{0.15cm}
+    
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
 \end{table}
 
 No Quadro~1, apresenta-se um exemplo claro do padrão de código que alimentou os dados desses levantamentos:
@@ -186,7 +182,7 @@ No Quadro~1, apresenta-se um exemplo claro do padrão de código que alimentou o
 \end{minipage}
 \vspace{0.3cm}
 
-Analisando os dados acima e levando em conta o exemplo que os alimenta, reflete-se o quão verboso e vulnerável é o padrão de desenvolvimento aplicado ao longo dos anos de construção desses sistemas, pois, além do volume de código, a concatenação direta de valores na consulta dificulta a padronização e pode permitir \textit{SQL Injection}. A existência de várias implementações semelhantes e a falta de \textit{logs} de auditoria também aumentam o custo de manutenção.
+Analisando os levantamentos apresentados nas Tabelas~\ref{tab:resultados_automacoes} e~\ref{tab:resultados_ecommerce} em conjunto com a estrutura exemplificada no Quadro~1, evidencia-se o quão verboso e vulnerável tornou-se o padrão de desenvolvimento acumulado ao longo dos anos nesses sistemas. Além do elevado volume de código repetitivo, a concatenação direta de variáveis na instrução SQL dificulta a padronização e expõe a aplicação a ataques de \textit{SQL Injection}, enquanto a coexistência de múltiplas implementações semelhantes e a ausência de \textit{logs} de auditoria elevam significativamente o custo de manutenção.
 
 \vspace{0.3cm}
 \subsection{Solução Proposta}
@@ -331,7 +327,7 @@ Já no \textit{builder} de \texttt{UPDATE} (\texttt{buildUpdate}), a ferramenta 
 
 Os comandos DQL e DML construídos, juntamente com a lista ordenada de parâmetros, são encapsulados na classe \texttt{SQLResult}. Nela são centralizados o preenchimento seguro dos valores no \texttt{PreparedStatement} e o mapeamento dos dados retornados pelo \texttt{ResultSet} para as classes configuradas com \texttt{@ColumnDB}, além de ser validado previamente se a quantidade de parâmetros informados corresponde à quantidade de \textit{placeholders} (\texttt{?}) existentes nos comandos SQL.
 
-Nas operações de escrita (\texttt{INSERT} e \texttt{UPDATE}), a execução ocorre principalmente por meio do método \texttt{executeUpdate}, que aplica os parâmetros no banco e retorna a quantidade de registros afetados. Contudo, em inserções nas quais a aplicação precisa utilizar imediatamente o identificador recém-gerado pela \textit{sequence} do Oracle, o método \texttt{executeAndReturnId} aproveita a marcação \texttt{isPrimaryKey = true} da classe para recuperar a chave primária gerada no banco e preenchê-la diretamente no próprio objeto enviado. Já para cenários de alto volume de dados, o método \texttt{executeBatch} processa coleções inteiras de objetos em uma única comunicação em lote com o banco, permitindo que o chamador controle explicitamente o escopo transacional (\texttt{commit} e \texttt{rollback}) sobre os objetos \texttt{newUser} e \texttt{updateUser} exemplificados anteriormente, conforme demonstrado no Quadro~6:
+Nas operações de escrita (\texttt{INSERT} e \texttt{UPDATE}), o \texttt{SQLResult} oferece três formas principais de execução, adaptadas à necessidade de cada rotina: a atualização direta retornando o total de registros afetados, a inserção com recuperação imediata do identificador gerado pela \textit{sequence} do Oracle (preenchendo automaticamente a chave primária no próprio objeto enviado) e o processamento em lote para grandes volumes de dados. Em todas essas modalidades, a conexão JDBC parte sempre do chamador, garantindo que o controle transacional (\texttt{commit} e \texttt{rollback}) permaneça sob domínio exclusivo da aplicação, enquanto a biblioteca se encarrega de fechar internamente os recursos de preparação e leitura, conforme demonstrado no Quadro~6:
 
 \vspace{0.3cm}
 \noindent
@@ -375,11 +371,7 @@ Nas operações de escrita (\texttt{INSERT} e \texttt{UPDATE}), a execução oco
 \end{minipage}
 \vspace{0.3cm}
 
-Como já mencionado, a conexão JDBC necessária para a execução dessas funcionalidades parte sempre do chamador; não é responsabilidade do SEOS fechar, confirmar ou reverter a \texttt{Connection}, sendo encerrados internamente apenas o \texttt{PreparedStatement} e o \texttt{ResultSet}.
-
-Nas operações de leitura (\texttt{SELECT}), um dos principais gargalos observados nos sistemas legados da empresa era a repetição de laços \texttt{while (rs.next())} para extrair manualmente cada coluna do \texttt{ResultSet}, independentemente de a consulta retornar uma lista completa de entidades, um único registro, um agrupamento para relatórios ou apenas um contador numérico. Para eliminar essa repetição sem obrigar a equipe a criar classes DTO para todo tipo de consulta, o \texttt{SQLResult} foi estruturado em diferentes modalidades de leitura.
-
-Quando a consulta envolve entidades mapeadas da aplicação, a leitura pode ser feita diretamente para objetos tipados por meio dos métodos \texttt{executeQuery} e \texttt{executeQuerySingle}. Enquanto o primeiro percorre todo o \texttt{ResultSet} e instancia automaticamente uma lista da classe informada com base nas anotações \texttt{@ColumnDB}, o segundo é voltado a buscas pontuais (como consultas por chave primária), retornando apenas o primeiro registro encontrado ou \texttt{null} quando não há correspondência no banco. Além disso, para facilitar a adoção gradual da biblioteca em métodos legados que ainda manipulam o \texttt{PreparedStatement} manualmente, o método \texttt{mapearResultSet} foi exposto publicamente, permitindo aproveitar o mapeamento automático a partir de um \texttt{ResultSet} já aberto, conforme apresentado no Quadro~7:
+Nas operações de leitura (\texttt{SELECT}), o principal gargalo dos sistemas legados era a repetição de laços manuais para extrair coluna por coluna do \texttt{ResultSet}, independentemente do formato do retorno. Para eliminar esse trabalho repetitivo quando a consulta envolve tabelas mapeadas, o \texttt{SQLResult} converte os registros retornados pelo banco diretamente em uma lista de objetos tipados ou em uma instância única (voltada a buscas pontuais, como consultas por chave primária). Além disso, para facilitar a migração gradual de classes legadas que ainda montam a consulta manualmente, a biblioteca permite reaproveitar apenas o seu motor de mapeamento sobre um resultado já aberto, conforme apresentado no Quadro~7:
 
 \vspace{0.3cm}
 \noindent
@@ -416,7 +408,7 @@ Quando a consulta envolve entidades mapeadas da aplicação, a leitura pode ser 
 \end{minipage}
 \vspace{0.3cm}
 
-Por outro lado, em rotinas de relatórios, totalizadores ou consultas parciais nas quais a criação de um DTO específico seria desnecessária, o \texttt{SQLResult} permite extrair os dados em estruturas dinâmicas do próprio Java. Nesses cenários, os métodos \texttt{executeQueryAsMap} e \texttt{executeQueryAsSingleMap} convertem as linhas retornadas em mapas (\texttt{Map<String, Object>}) indexados pelo nome da coluna em letras maiúsculas. De modo complementar, o método \texttt{executeAsDictionary} transforma consultas de duas colunas diretamente em um dicionário de chave e valor (\texttt{Map<K, V>}), facilitando o carregamento de pares como identificador e nome em memória, enquanto o \texttt{executeScalar} extrai e converte automaticamente o valor da primeira coluna da primeira linha (tratando, inclusive, o retorno \texttt{BigDecimal} padrão do Oracle para tipos como \texttt{Integer} ou \texttt{Long}), conforme ilustrado no Quadro~8:
+Por outro lado, em rotinas de relatórios, totalizadores ou consultas parciais nas quais a criação de uma classe DTO específica seria desnecessária, o \texttt{SQLResult} permite extrair os dados diretamente em estruturas dinâmicas do próprio Java. Nesses cenários, o resultado pode ser retornado como listas ou linhas únicas em formato de mapa (indexadas pelo nome da coluna), como um dicionário de chave e valor a partir de consultas de duas colunas, ou ainda como um valor escalar único já convertido para o tipo numérico ou textual esperado pela aplicação, conforme ilustrado no Quadro~8:
 
 \vspace{0.3cm}
 \noindent
@@ -459,7 +451,7 @@ Por outro lado, em rotinas de relatórios, totalizadores ou consultas parciais n
 \end{minipage}
 \vspace{0.3cm}
 
-Além das instruções DQL e DML tradicionais, o ambiente Oracle 19c integrado ao ERP concentra diversas regras de negócio dentro do próprio banco por meio de \textit{procedures} e \textit{packages} escritas em \textit{Procedural Language/Structured Query Language} (PL/SQL). Na abordagem manual com \texttt{CallableStatement}, a invocação dessas rotinas exigia a montagem da sintaxe \texttt{\{call ...\}}, o controle manual da posição numérica de cada parâmetro e a leitura dos valores de saída também por índice, aumentando a incidência de erros de manutenção. Para padronizar esse fluxo, foi desenvolvida a classe \texttt{SQLCall}, que oferece uma interface fluente para declarar o nome da \textit{procedure} (\texttt{.name()}) e registrar parâmetros de entrada (\texttt{.in()}), de saída (\texttt{.out()}) ou mistos (\texttt{.inOut()}), associando os retornos a apelidos legíveis (\textit{aliases}) que podem ser recuperados de forma tipada após a execução, conforme demonstrado no Quadro~9:
+Além das instruções SQL tradicionais, o banco Oracle 19c integrado ao ERP concentra diversas regras de negócio em \textit{procedures} e \textit{packages} escritas em \textit{Procedural Language/Structured Query Language} (PL/SQL). Na abordagem tradicional do JDBC, a chamada dessas rotinas exigia o controle manual da posição numérica de cada parâmetro de entrada e saída, aumentando a incidência de erros de manutenção. Para simplificar esse fluxo, a classe \texttt{SQLCall} introduz uma escrita fluente na qual os parâmetros são declarados de forma encadeada e associados a apelidos legíveis (\textit{aliases}), permitindo recuperar os valores retornados pela \textit{procedure} pelo nome, e não mais por índices numéricos, conforme demonstrado no Quadro~9:
 
 \vspace{0.3cm}
 \noindent
@@ -488,7 +480,7 @@ Além das instruções DQL e DML tradicionais, o ambiente Oracle 19c integrado a
 \end{minipage}
 \vspace{0.3cm}
 
-Por fim, para solucionar a grave ausência de rastreabilidade apontada na Seção~3.2 --- na qual \textbf{34,9\%} dos métodos do sistema de automações e \textbf{94,4\%} dos métodos do \textit{e-commerce} não possuíam nenhum registro de \textit{log} ---, o SEOS incorporou uma camada transversal de auditoria e observabilidade baseada na interface \textit{Service Provider Interface} (SPI) \texttt{OrmLogger}, gerenciada globalmente pela classe \texttt{OrmConfig}. Por meio dessa estrutura, todas as execuções realizadas pelo \texttt{SQLResult} e pelo \texttt{SQLCall} têm seu tempo de resposta cronometrado automaticamente e inspecionam a pilha de execução da \textit{thread} (\texttt{StackTraceElement}) para identificar exatamente a classe e o método da aplicação que originaram a chamada ao banco. Quando ocorre qualquer exceção SQL ou quando uma operação ultrapassa o limite de tempo configurado --- \textbf{10 segundos} para consultas no \texttt{SQLResult} e \textbf{3 segundos} para chamadas PL/SQL no \texttt{SQLCall} ---, a biblioteca registra automaticamente o alerta com a origem da chamada, o tempo decorrido e a quantidade de parâmetros enviados, permitindo que os sistemas legados conectem seu próprio mecanismo de \textit{logs} na inicialização da aplicação, conforme exemplificado no Quadro~10:
+Por fim, para solucionar a grave ausência de rastreabilidade apontada na Seção~3.2 --- na qual \textbf{34,9\%} dos métodos do sistema de automações e \textbf{94,4\%} dos métodos do \textit{e-commerce} não possuíam nenhum registro de \textit{log} ---, o SEOS incorporou uma camada transversal de auditoria baseada na interface \textit{Service Provider Interface} (SPI) \texttt{OrmLogger}, gerenciada pela classe \texttt{OrmConfig}. Por meio dessa estrutura, todas as operações executadas pela biblioteca têm seu tempo de resposta cronometrado e identificam automaticamente a classe e o método da aplicação que originaram a chamada ao banco. Sempre que ocorre uma falha SQL ou quando uma operação ultrapassa o limite de tempo configurado --- \textbf{10 segundos} para consultas e \textbf{3 segundos} para chamadas PL/SQL ---, um alerta padronizado é emitido com a origem, a duração e a contagem de parâmetros, permitindo que a aplicação conecte seu próprio sistema de \textit{logs} na inicialização, conforme exemplificado no Quadro~10:
 
 \vspace{0.3cm}
 \noindent
@@ -648,7 +640,7 @@ Concluída a fase de testes, a esteira envia os resultados e o relatório de cob
 \end{minipage}
 \vspace{0.3cm}
 
-Na sequência, aplica-se a prática de Segurança Antecipada (\textit{Shift-Left Security}) por meio do Semgrep, que realiza a varredura SAST no código Java do SEOS com base nas categorias do OWASP \textit{Top} 10. Para proteger o ambiente de \textit{build}, a instalação da ferramenta restringe pacotes binários desconhecidos por meio do parâmetro \texttt{--only-binary :all:}, e o resultado da análise é exportado no padrão \textit{Static Analysis Results Interchange Format} (SARIF) diretamente para a aba \textit{GitHub Security} do repositório (Figura~4):
+Na sequência, aplica-se a prática de Segurança Antecipada (\textit{Shift-Left Security}) por meio do Semgrep, que realiza a varredura SAST no código Java do SEOS com base nas categorias do OWASP \textit{Top} 10. Para proteger o próprio ambiente de \textit{build}, a instalação da ferramenta bloqueia a execução de pacotes binários desconhecidos, e o laudo final da análise é exportado no padrão \textit{Static Analysis Results Interchange Format} (SARIF) diretamente para a aba de segurança do repositório no GitHub (Figura~4):
 
 \vspace{0.3cm}
 \noindent
@@ -664,7 +656,7 @@ Na sequência, aplica-se a prática de Segurança Antecipada (\textit{Shift-Left
 \end{minipage}
 \vspace{0.3cm}
 
-Para garantir resposta rápida caso qualquer validação anterior apresente falha, os dois \textit{workflows} contam com um mecanismo assíncrono de observabilidade e \textit{ChatOps} (\texttt{if: failure()}) que aciona um alerta via \textit{Webhook} integrado ao Microsoft Teams. A notificação é renderizada em formato \textit{Adaptive Card} e informa em tempo real a esteira afetada, o repositório, a \textit{branch} ou versão, o motivo da falha e o atalho direto para os \textit{logs} da execução, reduzindo o Tempo Médio de Recuperação --- \textit{Mean Time to Recovery} (MTTR) --- durante o ciclo de desenvolvimento (Figura~5):
+Para garantir resposta rápida caso qualquer validação anterior apresente erro, os dois fluxos contam com um mecanismo automatizado de observabilidade e \textit{ChatOps} que dispara um alerta via \textit{Webhook} para o Microsoft Teams sempre que uma etapa falha. A notificação é exibida em formato \textit{Adaptive Card} e informa em tempo real a esteira afetada, o repositório, a \textit{branch} ou versão, o motivo da falha e o atalho direto para os \textit{logs} da execução, reduzindo o Tempo Médio de Recuperação --- \textit{Mean Time to Recovery} (MTTR) --- durante o desenvolvimento (Figura~5):
 
 \vspace{0.3cm}
 \noindent
@@ -680,7 +672,7 @@ Para garantir resposta rápida caso qualquer validação anterior apresente falh
 \end{minipage}
 \vspace{0.3cm}
 
-Por sua vez, a disponibilização oficial da biblioteca ocorre na esteira de Entrega Contínua --- \textit{Continuous Delivery} (CD) --- definida em \texttt{cd\_entrega\_continua.yml}, disparada exclusivamente quando uma \textit{tag} de versionamento semântico (\texttt{v*.*.*}) é enviada ao repositório. Nessa etapa, a \textit{pipeline} extrai o número da \textit{tag}, atualiza dinamicamente a versão no \texttt{pom.xml} (\texttt{mvn versions:set}) e executa a publicação autenticada (\texttt{mvn deploy}) no \textit{GitHub Packages}, disponibilizando o artefato \texttt{.jar} pronto para ser importado como dependência Maven por projetos externos (Figuras~6 e~7):
+Por sua vez, a disponibilização oficial da biblioteca ocorre na esteira de Entrega Contínua --- \textit{Continuous Delivery} (CD) ---, acionada exclusivamente quando uma nova \textit{tag} de versionamento semântico é publicada no repositório. Nessa etapa, a \textit{pipeline} extrai automaticamente o identificador da versão, atualiza o descritor do projeto Maven e realiza a publicação autenticada no \textit{GitHub Packages}, disponibilizando o pacote \texttt{.jar} pronto para ser importado como dependência por projetos externos (Figuras~6 e~7):
 
 \vspace{0.3cm}
 \noindent
@@ -740,7 +732,7 @@ Por fim, a Tabela~5 apresenta o plano e cronograma estruturado para o desenvolvi
 \vspace{0.3cm}
 \subsection{Quadro de Respostas --- Antes e Depois}
 
-Para mensurar de forma concreta os ganhos da adoção do SEOS frente ao cenário diagnosticado nas Seções~1.3 e~3.2, a avaliação comparativa foi conduzida em duas frentes complementares dentro do \textbf{sistema de \textit{e-commerce}} da empresa: (i) a análise de \textbf{9 classes DAO recém-desenvolvidas já utilizando o SEOS} em novos módulos operacionais integrados à plataforma, contrastadas com os demais 69 arquivos de persistência em JDBC manual do mesmo repositório; e (ii) a \textbf{refatoração de uma amostra representativa de 15 métodos críticos da classe legada \texttt{ErpIntegracaoDAO}} (o arquivo-base de 21.381 linhas e 416 chamadas a \texttt{PreparedStatement} apresentado na Seção~1.3), permitindo aferir diretamente o comportamento antes e depois da biblioteca sobre o mesmo código.
+Para mensurar de forma concreta os ganhos da adoção do SEOS frente ao cenário diagnosticado nas Seções~1.3 e~3.2, a avaliação comparativa foi conduzida em duas frentes complementares dentro do \textbf{sistema de \textit{e-commerce}} da empresa. A primeira consistiu na análise de \textbf{9 classes DAO recém-desenvolvidas já utilizando o SEOS} em novos módulos operacionais integrados à plataforma, contrastadas com os demais 69 arquivos de persistência em JDBC manual do mesmo repositório; a segunda abrangeu a \textbf{refatoração de uma amostra representativa de 15 métodos críticos da classe legada \texttt{ErpIntegracaoDAO}} (o arquivo-base de 21.381 linhas e 416 chamadas a \texttt{PreparedStatement} apresentado na Seção~1.3), permitindo aferir diretamente o comportamento antes e depois da biblioteca sobre o mesmo código.
 
 Na primeira frente, apresentada na Tabela~6, observa-se o impacto da adoção nativa do SEOS nos novos módulos do \textit{e-commerce} em comparação com o padrão histórico de escrita manual do repositório:
 
@@ -769,7 +761,7 @@ Na primeira frente, apresentada na Tabela~6, observa-se o impacto da adoção na
     {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
 \end{table}
 
-A redução de \textbf{48\% na média de linhas por método} (de 52 para 27 linhas, já contabilizando regras de negócio) reflete diretamente a eliminação do código repetitivo de infraestrutura. Enquanto um método de consulta simples no padrão legado do \textit{e-commerce} --- como \texttt{ErpIntegracaoDAO.\allowbreak buscarUsuarioPorDocumento} --- consome \textbf{32 linhas} para abrir o \texttt{PreparedStatement}, preencher parâmetros, percorrer o \texttt{ResultSet}, extrair cinco colunas manualmente e capturar exceções com \texttt{printStackTrace}, operações equivalentes nas classes baseadas no SEOS (como \texttt{UsuarioAcessoDAO}) são resolvidas em uma a três linhas encadeadas (\texttt{buildSelect(...).\allowbreak executeQuerySingle(...)}, \texttt{buildInsert(...).\allowbreak executeUpdate(...)} e \texttt{buildUpdate(...,\allowbreak\ "USER\_ID = ?",\allowbreak\ id).\allowbreak executeUpdate(...)}).
+A redução de \textbf{48\% na média de linhas por método} (de 52 para 27 linhas, já contabilizando regras de negócio) reflete diretamente a eliminação do código repetitivo de infraestrutura. Enquanto um método de consulta simples no padrão legado do \textit{e-commerce} --- como a busca de usuário por documento na classe \texttt{ErpIntegracaoDAO} --- consome \textbf{32 linhas} para preparar a instrução, preencher parâmetros, percorrer o resultado, extrair cinco colunas manualmente e capturar exceções de forma inadequada, operações equivalentes nas classes baseadas no SEOS (como \texttt{UsuarioAcessoDAO}) são resolvidas em uma a três linhas encadeadas por meio dos construtores e executores da biblioteca.
 
 Já na segunda frente de avaliação, selecionou-se uma amostra de \textbf{15 métodos do \texttt{ErpIntegracaoDAO}} --- contemplando três operações de \texttt{UPDATE}, um \texttt{INSERT}, seis consultas escalares ou de contagem, duas consultas de lista, duas buscas de registro único e uma consulta em formato de dicionário --- para medir o efeito direto da refatoração com o SEOS. Conforme demonstrado na Tabela~7, a substituição do JDBC manual na amostra proporciona uma redução de \textbf{36,1\% no volume total de linhas de código}, além de extinguir integralmente as concatenações vulneráveis e a manipulação manual de recursos:
 
@@ -803,8 +795,18 @@ Já na segunda frente de avaliação, selecionou-se uma amostra de \textbf{15 m�
 \vspace{0.3cm}
 \subsection{Resultados e Dados Consolidados do Projeto}
 
-A consolidação dos levantamentos realizados nos dois sistemas legados da empresa (\textbf{2.890 métodos de persistência} analisados na Seção~3.2) em conjunto com as medições práticas obtidas no sistema de \textit{e-commerce} (Seção~3.7) comprova a aderência e a eficácia arquitetural do SEOS. No que tange à produtividade e à redução de \textit{boilerplate}, a aplicação real da biblioteca em 9 classes DAO novas --- totalizando 82 pontos de montagem de instruções SQL e 62 execuções operando sobre conexões fornecidas pela própria aplicação via \texttt{ErpConnectionFactory.\allowbreak getConnection()} --- reduziu a média de código de aproximadamente \textbf{52 para 27 linhas por método} ($-48\%$), confirmando a premissa de preservação do controle transacional sem sobrecarga de código manual. Esse ganho é corroborado pela refatoração direta da amostra do \texttt{ErpIntegracaoDAO}, que registrou redução imediata de \textbf{36,1\% no total de linhas} e eliminou integralmente as chamadas manuais a \texttt{PreparedStatement}, \texttt{setXxx()}, \texttt{rs.\allowbreak getXxx()} e \texttt{.close()}.
+A consolidação dos levantamentos realizados nos dois sistemas legados da empresa (\textbf{2.890 métodos de persistência} analisados na Seção~3.2) em conjunto com as medições práticas obtidas no sistema de \textit{e-commerce} (Seção~3.7) comprova a aderência e a eficácia arquitetural do SEOS. No que tange à produtividade e à redução de \textit{boilerplate}, a aplicação real da biblioteca em 9 classes DAO novas --- totalizando 82 pontos de montagem de instruções SQL e 62 execuções operando sobre conexões fornecidas pela própria aplicação --- reduziu a média de código de aproximadamente \textbf{52 para 27 linhas por método} ($-48\%$), confirmando a preservação do controle transacional sem sobrecarga de escrita manual. Esse ganho é corroborado pela refatoração direta da amostra de 15 métodos da classe \texttt{ErpIntegracaoDAO}, que registrou redução imediata de \textbf{36,1\% no total de linhas} (de 363 para cerca de 232 linhas) e extinguiu todas as manipulações manuais de preparação, leitura e fechamento de recursos.
 
-Sob a ótica da segurança cibernética na camada de persistência, tanto nos novos módulos desenvolvidos com o SEOS quanto nos 15 métodos refatorados da amostra legada, a exposição à concatenação direta de variáveis na instrução SQL foi reduzida a \textbf{zero ($-100\%$)}. Todos os filtros e valores persistidos passaram a trafegar obrigatoriamente como parâmetros vinculados ao \texttt{PreparedStatement} e validados previamente pelo \texttt{SQLResult} quanto à correspondência de \textit{placeholders} (\texttt{?}), somados ao bloqueio preventivo de comandos \texttt{UPDATE} desprovidos de cláusula \texttt{WHERE} no \texttt{SQLBuilder}.
+Sob a ótica da segurança cibernética na camada de persistência, tanto nos novos módulos desenvolvidos com o SEOS quanto nos 15 métodos refatorados da amostra legada, a exposição à concatenação direta de variáveis na instrução SQL foi reduzida a \textbf{zero ($-100\%$)}. Todos os filtros e valores persistidos passaram a trafegar obrigatoriamente de forma parametrizada e validada quanto à correspondência de parâmetros antes da execução, somados ao bloqueio preventivo de atualizações desprovidas de cláusula de filtro.
 
-Por fim, no eixo de observabilidade e governança operacional, frente a um passivo histórico no qual \textbf{94,4\%} dos métodos do sistema de \textit{e-commerce} (Tabela~2) e \textbf{59,4\%} dos arquivos em JDBC manual não possuíam nenhum registro de \textit{log}, a adoção do SEOS elevou a cobertura de auditoria e o tratamento estruturado de falhas para \textbf{100\%} nos módulos avaliados. Com isso, substituiu-se o uso inadequado de \texttt{printStackTrace} pelo rastreamento automatizado de tempo de execução, contagem de parâmetros e identificação da classe e do método de origem da chamada.
+Por fim, no eixo de observabilidade e governança operacional, frente a um passivo histórico no qual \textbf{94,4\%} dos métodos do sistema de \textit{e-commerce} (Tabela~2) e \textbf{59,4\%} dos arquivos em JDBC manual não possuíam nenhum registro de \textit{log}, a adoção do SEOS elevou a cobertura de auditoria e o tratamento estruturado de falhas para \textbf{100\%} nos módulos avaliados, garantindo o rastreamento automatizado do tempo de execução, da contagem de parâmetros e da classe e método de origem de cada operação.
+
+\section{Conclusão}
+\label{sec:conclusao}
+
+O desenvolvimento deste trabalho partiu de um desafio real na manutenção de sistemas corporativos legados: lidar com uma camada de persistência extensa, repetitiva e historicamente exposta a falhas de segurança, mas que, pelas regras de integração com o ERP, exigia que o controle sobre conexões e transações permanecesse sob domínio direto da aplicação. A evolução do \textbf{SEOS} (\textit{Software Endurance Orchestration System}) aliada à cultura \textit{DevSecOps} comprovou que é possível equilibrar essas duas necessidades, oferecendo uma abordagem híbrida que automatiza o trabalho mecânico do JDBC sem impor a complexidade e a sobrecarga de um ORM tradicional de mercado.
+
+Os resultados alcançados no estudo de caso confirmam, na prática, os pilares de padronização, simplificação, proteção e reutilização que nortearam o projeto. A adoção da biblioteca reduziu quase pela metade a média de linhas por método nos novos módulos do \textit{e-commerce} ($-48\%$) e enxugou em $36,1\%$ o volume de código na amostra legada refatorada, além de eliminar integralmente ($-100\%$) as concatenações diretas suscetíveis a \textit{SQL Injection} e elevar para $100\%$ a cobertura de auditoria e rastreamento de falhas nas rotinas avaliadas. Em conjunto com esses ganhos na aplicação, a construção da esteira automatizada de integração, análise de qualidade, verificação estática de segurança, alertas em tempo real e entrega contínua assegurou que a própria biblioteca seja evoluída e distribuída com alto rigor de confiabilidade.
+
+Por fim, respeitando a proposta enxuta que caracteriza o \textit{microframework}, identificam-se caminhos naturais para a sua evolução contínua. Como trabalhos futuros, pretende-se expandir gradualmente seus recursos para suportar o reaproveitamento de mapeamentos por herança entre classes, permitir a gravação intencional de valores nulos em atualizações específicas, flexibilizar as inserções em lote para objetos com diferentes combinações de campos e oferecer suporte auxiliar à montagem de consultas com múltiplos relacionamentos, preservando sempre a simplicidade e a previsibilidade que motivaram a sua criação.
+
