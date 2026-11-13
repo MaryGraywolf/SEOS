@@ -40,7 +40,7 @@ jobs:
 
       - name: Instalar Semgrep
         run: |
-          python -m pip install --only-binary :all: semgrep==1.90.0
+          python -m pip install --only-binary :all: semgrep==1.90.0 "setuptools<81"
 
       - name: Executar varredura (OWASP Top 10 + Java)
         run: |
