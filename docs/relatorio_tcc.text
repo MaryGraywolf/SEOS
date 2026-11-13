@@ -87,7 +87,7 @@ No primeiro sistema, voltado às automações corporativas (produtivas, logísti
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
     \footnotesize
-    \begin{tabular}{|c|p{7.8cm}|r|r|}
+    \begin{tabular}{|c|>{\raggedright\arraybackslash}p{7.8cm}|r|r|}
     \hline
     \textbf{\#} & \textbf{Indicador} & \textbf{Quantidade} & \textbf{\% dos 1.641} \\ \hline
     1 & Métodos que realizam funções no banco & 1.641 & 100\% \\ \hline
@@ -114,7 +114,7 @@ Dos \textbf{573 métodos sem \textit{logs}}, \textbf{254} possuem \texttt{try/ca
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
     \footnotesize
-    \begin{tabular}{|c|p{7.8cm}|r|r|}
+    \begin{tabular}{|c|>{\raggedright\arraybackslash}p{7.8cm}|r|r|}
     \hline
     \textbf{\#} & \textbf{Indicador} & \textbf{Quantidade} & \textbf{\% dos 1.249} \\ \hline
     1 & Métodos que fazem operações no banco & 1.249 & 100\% \\ \hline
@@ -537,7 +537,7 @@ Para fundamentar a construção de uma biblioteca híbrida própria em vez da ad
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
     \footnotesize
-    \begin{tabular}{|p{2.5cm}|p{3.3cm}|p{3.3cm}|p{3.4cm}|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}p{3.8cm}|}
     \hline
     \textbf{Requisito do projeto} & \textbf{Hibernate / JPA} & \textbf{SEOS híbrido JDBC} & \textbf{Adequação ao cenário atual} \\ \hline
     Integração com conexões ERP & Requer configurar e integrar o contexto de persistência ao ciclo da plataforma. & Recebe diretamente a \texttt{Connection} já fornecida pela aplicação. & O SEOS preserva o modelo operacional existente. \\ \hline
@@ -579,7 +579,7 @@ Embora tenha partido de problemas observados no ambiente corporativo estudado, o
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
     \footnotesize
-    \begin{tabular}{|p{2.5cm}|p{2.4cm}|p{2.5cm}|p{6.3cm}|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{6.6cm}|}
     \hline
     \textbf{Categoria} & \textbf{Ferramenta Adotada} & \textbf{Principais Concorrentes} & \textbf{Justificativa Técnica da Decisão} \\ \hline
    \textbf{Orquestração (CI/CD)} & GitHub Actions & Jenkins, GitLab CI & O Jenkins exige provisionamento, hospedagem e manutenção contínua de servidores e \textit{plugins}. O GitLab CI exigiria manter a biblioteca fora do ecossistema onde o repositório já está hospedado. O GitHub Actions oferece execução nativa e efêmera diretamente no repositório do projeto, sem custo de infraestrutura. \\ \hline
@@ -718,7 +718,7 @@ Por fim, a Tabela~5 apresenta o plano e cronograma estruturado para o desenvolvi
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
     \footnotesize
-    \begin{tabular}{|p{1.2cm}|p{1.3cm}|p{3.2cm}|p{6.8cm}|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{1.3cm}|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{3.4cm}|>{\raggedright\arraybackslash}p{8.0cm}|}
     \hline
     \textbf{Fase} & \textbf{Período} & \textbf{Etapa do Plano} & \textbf{Entregável e Objetivo Técnico} \\ \hline
     \textbf{Fase 1} & Mês 1 & Diagnóstico e Concepção do SEOS & Levantamento do cenário legado e implementação autoral do núcleo em Java puro/JDBC (\texttt{@TableDB}, \texttt{@ColumnDB}, \texttt{SQLBuilder}, \texttt{SQLResult}, \texttt{SQLCall} e \texttt{OrmLogger}). \\ \hline
@@ -749,7 +749,7 @@ Na primeira frente, apresentada na Tabela~6, compara-se a adoção nativa do SEO
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
     \footnotesize
-    \begin{tabular}{|p{4.2cm}|p{4.1cm}|p{4.4cm}|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{4.6cm}|>{\raggedright\arraybackslash}p{4.8cm}|>{\raggedright\arraybackslash}p{4.8cm}|}
     \hline
     \textbf{Critério Avaliado} & \textbf{Padrão Legado (JDBC Manual)} & \textbf{Módulos com SEOS (9 DAOs)} \\ \hline
     \textbf{Arquivos analisados} & 69 classes com \texttt{prepareStatement} & 9 DAOs e 11 DTOs anotados com \texttt{@TableDB} \\ \hline
@@ -778,16 +778,16 @@ Na segunda frente de avaliação, foi selecionada uma amostra de \textbf{15 mét
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
     \footnotesize
-    \begin{tabular}{|p{5.1cm}|p{2.2cm}|p{3.0cm}|p{2.2cm}|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{5.4cm}|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}p{2.4cm}|}
     \hline
     \textbf{Indicador (Soma dos 15 métodos analisados)} & \textbf{Antes do SEOS} & \textbf{Depois do SEOS} & \textbf{Variação Obtida} \\ \hline
-    \textbf{Total de linhas de código} & 363 linhas & $\approx 232$ linhas & \textbf{$-36,1\%$} \\ \hline
+    \textbf{Total de linhas de código} & 363 linhas & $\approx 232$ linhas & \textbf{$-36{,}1\%$} \\ \hline
     \textbf{Chamadas manuais a \texttt{prepareStatement}} & 15 & 0 & \textbf{$-100\%$} \\ \hline
     \textbf{Preenchimento manual de parâmetros (\texttt{setXxx})} & 11 & 0 & \textbf{$-100\%$} \\ \hline
     \textbf{Extração manual de colunas (\texttt{rs.getXxx})} & 18 & 0 & \textbf{$-100\%$} \\ \hline
     \textbf{Concatenações diretas de variáveis na SQL} & 8 (em 7 métodos) & 0 (100\% parametrizado) & \textbf{$-100\%$} \\ \hline
     \textbf{Tratamento inadequado com \texttt{printStackTrace}} & 10 & 0 & \textbf{$-100\%$} \\ \hline
-    \textbf{Fechamentos manuais de recursos (\texttt{.close()})} & 15 & 0 (\texttt{try-with-resources}) & \textbf{$-100\%$} \\ \hline
+    \textbf{Fechamentos manuais de recursos (\texttt{.close()})} & 15 & 0 (\texttt{try-with-\allowbreak resources}) & \textbf{$-100\%$} \\ \hline
     \textbf{Métodos com auditoria de tempo, origem e erro} & 0 de 15 (0\%) & 15 de 15 (100\%) & \textbf{$+100$ p.p.} \\ \hline
     \end{tabular}
     \endgroup
