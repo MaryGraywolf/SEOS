@@ -488,7 +488,7 @@ Este trabalho partiu de uma necessidade prática na manutenção de sistemas cor
 
 Os resultados obtidos no estudo de caso confirmam, na prática, os objetivos de padronização, simplificação, proteção e reutilização definidos para o projeto. O uso da biblioteca reduziu quase pela metade a média de linhas por método nos novos módulos do _e-commerce_ ($-48\%$) e diminuiu em $36,1\%$ o volume de código na amostra legada refatorada, além de eliminar ($-100\%$) as concatenações diretas suscetíveis a _SQL Injection_ e levar a $100\%$ a cobertura de auditoria e rastreamento de falhas nas rotinas avaliadas. Esses números foram confirmados, no dia a dia de desenvolvimento, pelo relato de uma pessoa desenvolvedora da empresa que utilizou a biblioteca em uma demanda real, destacando a redução de código, a manutenção do controle sobre as instruções SQL e a segurança na montagem de filtros dinâmicos. Somado a esses ganhos na aplicação, o funcionamento da esteira automatizada de integração, análise de qualidade, verificação estática de segurança, alertas em tempo real e entrega contínua garantiu um processo confiável para evoluir e publicar novas versões da própria biblioteca.
 
-Por fim, mantendo a proposta enxuta do _microframework_, abrem-se caminhos claros para os próximos passos da ferramenta. Como trabalhos futuros, pretende-se expandir gradualmente seus recursos para suportar o reaproveitamento de mapeamentos por herança entre classes, permitir a gravação intencional de valores nulos em atualizações específicas, flexibilizar as inserções em lote para objetos com diferentes combinações de campos e oferecer suporte auxiliar à montagem de consultas com múltiplos relacionamentos, preservando a simplicidade e a previsibilidade que motivaram a sua criação.
+Por fim, mantendo a proposta enxuta do _microframework_, abrem-se caminhos claros para os próximos passos da ferramenta. Como trabalhos futuros, pretende-se expandir gradualmente seus recursos para suportar o reaproveitamento de mapeamentos por herança entre classes, permitir a gravação intencional de valores nulos em atualizações específicas, flexibilizar as inserções em lote para objetos com diferentes combinações de campos e oferecer suporte auxiliar à montagem de consultas com múltiplos relacionamentos, preservando a simplicidade e a previsibilidade que motivaram a sua criação. Na dimensão de segurança, a análise do Apêndice B também aponta melhorias no próprio código da biblioteca: a validação ou substituição da cláusula `WHERE` informada como texto livre por uma API de condições, que hoje permanece sob responsabilidade do desenvolvedor; o mascaramento opcional de colunas sensíveis antes que os parâmetros cheguem ao `OrmLogger`; a adoção de uma exceção própria da biblioteca em lugar de `RuntimeException` genéricas; e testes de segurança explícitos que comprovem que nenhum valor é concatenado ao SQL gerado.
 
 ## 5. Referências
 
@@ -505,68 +505,97 @@ Por fim, mantendo a proposta enxuta do _microframework_, abrem-se caminhos claro
 - RICHARDS, Mark; FORD, Neal. **Fundamentos da arquitetura de software**: uma abordagem de engenharia. Rio de Janeiro: Alta Books, 2020.
 - SANTOS, Victor Costa. **DevSecOps**: como usar a abordagem que prioriza a segurança. São Paulo: Alura, 20 ago. 2024. Disponível em: https://www.alura.com.br/artigos/devsecops. Acesso em: 12 nov. 2026.
 
-## 6. Anexos
+## 6. Apêndices
 
-### Anexo A — Questionário baseado no OWASP Top 10
+### Apêndice A — Questionário baseado no OWASP Top 10 aplicado ao SEOS
 
-## Questionário de Maturidade por Categoria
+Este questionário foi respondido pela autora a partir das evidências disponíveis no repositório do SEOS (código-fonte, testes, descritor Maven e _workflows_ do GitHub Actions). Como o SEOS é uma biblioteca de persistência e não uma aplicação _web_, cada categoria do OWASP _Top_ 10:2021 é avaliada por três perguntas:
 
-### A01:2021 – Quebra de Controle de Acesso (*Broken Access Control*)
-*   **Cenário ANTES:** Como os privilégios e permissões de usuários eram validados nas rotas e APIs? Havia testes manuais ou revisões pontuais de código para garantir que um usuário comum não acessasse dados confidenciais ou funções de administrador?
-*   **Cenário DEPOIS (DevSecOps):** Existem testes automatizados de comportamento/integração (como BDD) integrados ao pipeline que tentam simular a quebra de privilégios? Há ferramentas varrendo as definições de rotas de API em busca de endpoints expostos incorretamente?
+1. **Aplicabilidade:** o risco da categoria se aplica a uma biblioteca de persistência Java/JDBC?
+2. **Controle:** que controle existe no código ou na esteira e onde ele pode ser verificado?
+3. **Verificação:** como o controle foi confirmado e qual limitação permanece?
 
-### A02:2021 – Falhas Criptográficas (*Cryptographic Failures*)
-*   **Cenário ANTES:** Como era verificado se dados sensíveis (senhas, cartões, tokens) estavam criptografados no banco de dados e em trânsito (HTTPS)? A checagem da validade de certificados e algoritmos dependia de auditoria manual?
-*   **Cenário DEPOIS (DevSecOps):** A esteira de CI/CD utiliza ferramentas de **SAST** (Static Application Security Testing) para detectar o uso de chaves criptográficas fracas ou segredos expostos no código (*Hardcoded Secrets*) antes do merge?
+Os cenários comparados correspondem a pontos do histórico do repositório: **ANTES** é o _commit_ `6982a7d` (núcleo da biblioteca e testes unitários, sem esteira _DevSecOps_) e **DEPOIS** é a _tag_ `v1.1.0` (com integração contínua, SAST, entrega contínua e alertas no Microsoft Teams). Após a análise deste questionário, a esteira recebeu melhorias que corrigem lacunas identificadas, e esse estado é tratado como **ESTEIRA EVOLUÍDA**, aplicado nas versões publicadas depois da `v1.1.0`: ambiente Python fixado e dependência do Semgrep corrigida no CI, regras `p/owasp-top-ten` no SAST, monitoramento de dependências pelo Dependabot, exigência de CI aprovado e execução dos testes na entrega contínua, e atestado de proveniência do `.jar`.
 
-### A03:2021 – Injeção (*Injection*)
-*   **Cenário ANTES:** A validação, filtragem e sanitização de dados inseridos pelos usuários (*inputs*) dependiam exclusivamente da disciplina e da revisão manual feita pelos desenvolvedores?
-*   **Cenário DEPOIS (DevSecOps):** Ferramentas de SAST barram o *build* se identificarem strings concatenadas em consultas de banco de dados? Existe alguma etapa de análise dinâmica (**DAST**) ou testes automatizados simulando payloads de injeção em ambiente de homologação?
+#### A01:2021 — Quebra de Controle de Acesso (_Broken Access Control_)
 
-### A04:2021 – Design Inseguro (*Insecure Design*)
-*   **Cenário ANTES:** A segurança foi debatida ou planejada durante o desenho da arquitetura da aplicação, ou as correções de vulnerabilidades eram feitas de forma reativa após o código estar pronto?
-*   **Cenário DEPOIS (DevSecOps):** Foram adotados padrões arquiteturais seguros desde o início (ex: autenticação centralizada, APIs com *Rate Limiting*) e modelagem de ameaças integrada ao planejamento das sprints?
+- **Aplicabilidade:** não se aplica. O SEOS não expõe rotas, perfis ou funções de usuário; a autorização permanece na aplicação que o importa.
+- **Controle:** não aplicável.
+- **Verificação:** não aplicável.
 
-### A05:2021 – Configuração Incorreta de Segurança (*Security Misconfiguration*)
-*   **Cenário ANTES:** O endurecimento (*hardening*) de servidores, gerenciamento de permissões de nuvem e cabeçalhos HTTP de segurança (CSP, HSTS) eram configurados manualmente direto nos ambientes?
-*   **Cenário DEPOIS (DevSecOps):** A infraestrutura é gerenciada como código (**IaC**)? Existem ferramentas no pipeline (como Checkov, TFLint) para escanear os arquivos de configuração de infraestrutura antes do provisionamento?
+#### A02:2021 — Falhas Criptográficas (_Cryptographic Failures_)
 
-### A06:2021 – Componentes Vulneráveis e Desatualizados (*Vulnerable and Outdated Components*)
-*   **Cenário ANTES:** Como a equipe descobria se uma biblioteca de terceiros (pacotes npm, pip, NuGet, Maven) continha uma vulnerabilidade crítica conhecida? Havia controle por planilha ou varreduras esporádicas?
-*   **Cenário DEPOIS (DevSecOps):** Foi implementada uma ferramenta de **SCA** (Software Composition Analysis), como *Snyk* ou *Dependency-Check*, que interrompe o pipeline automaticamente caso uma dependência insegura seja introduzida?
+- **Aplicabilidade:** parcial. A biblioteca não implementa criptografia, nem armazena ou transmite dados sensíveis; as credenciais e a conexão com o banco são fornecidas pela aplicação. O risco recai sobre o código da esteira e sobre o registro de parâmetros em _logs_.
+- **Controle:** o _logger_ padrão (`OrmConfig.DefaultConsoleLogger`) imprime apenas a origem, o código e a mensagem, sem os valores dos parâmetros. Na esteira, os _tokens_ (`SONAR_TOKEN`, `TEAMS_WEBHOOK`, `PACKAGES_TOKEN`) são lidos de `secrets` e o `settings-security.xml` usa variáveis de ambiente, sem credenciais no repositório.
+- **Verificação:** leitura do código e dos _workflows_. **Limitação:** um `OrmLogger` customizado recebe os parâmetros e pode registrá-los; não há ferramenta dedicada à detecção de segredos na esteira.
 
-### A07:2021 – Falhas de Identificação e Autenticação (*Identification and Authentication Failures*)
-*   **Cenário ANTES:** A aplicação permitia ataques de força bruta nas telas de login? O gerenciamento de sessões (como tokens JWT) possuía validação estritamente manual quanto ao tempo de expiração e rotação?
-*   **Cenário DEPOIS (DevSecOps):** Cenários automatizados de testes cobrem e validam a robustez do fluxo de autenticação, políticas de bloqueio de conta e obrigatoriedade de segundo fator (MFA)?
+#### A03:2021 — Injeção (_Injection_)
 
-### A08:2021 – Falhas de Integridade de Dados e Software (*Software and Data Integrity Failures*)
-*   **Cenário ANTES:** O processo de build e deploy dependia de ações manuais (ex: gerar o zip da aplicação e enviar via FTP/SSH), gerando riscos de adulteração e falta de rastreabilidade do artefato?
-*   **Cenário DEPOIS (DevSecOps):** O pipeline CI/CD garante a assinatura dos artefatos (imagens Docker, pacotes)? As imagens de container sofrem varredura automatizada de vulnerabilidades (ex: *Trivy*) antes de irem para o registro oficial?
+- **Aplicabilidade:** sim. É o principal risco da camada de persistência e o motivador do trabalho (Tabelas 1 e 2).
+- **Controle:** todos os valores são enviados por `PreparedStatement` com `setObject` (`SQLResult.java:455-458`), o `SQLBuilder` gera apenas marcadores `?` e recusa `UPDATE` sem cláusula `WHERE` (`SQLBuilder.java:386`). Os nomes de tabela e coluna vêm das anotações `@TableDB` e `@ColumnDB`, e não de entrada do usuário.
+- **Verificação:** varredura com o Semgrep 1.90.0 (regras `p/owasp-top-ten` e `p/java`) sobre `src/main`, resultando em **0 achados nos dois cenários** (6 arquivos no ANTES e 7 no DEPOIS), executada pelo _workflow_ auxiliar `comparativo_owasp_semgrep.yml`. Na esteira evoluída, o CI passou a aplicar também o conjunto `p/owasp-top-ten` a cada _push_ e _Pull Request_. **Limitação:** a cláusula `WHERE` e o SQL manual informados pelo desenvolvedor continuam sob sua responsabilidade, e a ausência de achados indica que as regras não encontraram padrões vulneráveis, e não que nenhum uso inseguro seja possível.
 
-### A09:2021 – Falhas de Log e Monitoramento (*Security Logging and Monitoring Failures*)
-*   **Cenário ANTES:** Onde os erros críticos e possíveis tentativas de invasão eram registrados? O diagnóstico de incidentes dependia de o desenvolvedor acessar arquivos locais de log no servidor após o problema acontecer?
-*   **Cenário DEPOIS (DevSecOps):** Os logs de segurança estão centralizados de forma estruturada (ex: ELK Stack, Splunk) e integrados a alertas em tempo real que notificam o time sobre anomalias no ambiente de produção?
+#### A04:2021 — Design Inseguro (_Insecure Design_)
 
-### A10:2021 – Falsificação de Requisição do Lado do Servidor (*SSRF*)
-*   **Cenário ANTES:** A aplicação consome URLs fornecidas por usuários? Como era garantido manualmente que o servidor não realizaria requisições maliciosas para dentro da própria rede interna?
-*   **Cenário DEPOIS (DevSecOps):** Regras de isolamento de rede e políticas de saída (*egress*) são validadas de forma automatizada via IaC, e funções de requisição externa no código-fonte passam por políticas rígidas de validação do SAST?
+- **Aplicabilidade:** sim.
+- **Controle:** o projeto adota falha rápida (`IllegalArgumentException` e `IllegalStateException` para parâmetros inconsistentes, `UPDATE` sem `WHERE` e `INSERT` sem campos), mapeamento declarativo por anotações e controle transacional mantido com a aplicação. As decisões estão documentadas nas Seções 3.3 e 3.4.
+- **Verificação:** testes unitários (JUnit 5 e Mockito) e _Quality Gate_ do SonarCloud na esteira. **Limitação:** não houve modelagem formal de ameaças.
 
----
+#### A05:2021 — Configuração Incorreta de Segurança (_Security Misconfiguration_)
 
-## 3. Matriz Comparativa de Evidências
-Preencha a tabela abaixo com o resumo prático do que foi constatado na sua aplicação.
+- **Aplicabilidade:** parcial. A biblioteca não configura servidores; o risco está na configuração da esteira.
+- **Controle:** os _workflows_ declaram `permissions: contents: read` e elevam o escopo apenas nos _jobs_ que precisam (`security-events: write` no SAST e `packages: write` na publicação).
+- **Verificação:** leitura dos arquivos `ci_integracao_e_qualidade.yml` e `cd_entrega_continua.yml`. **Limitação:** regras de proteção de _branch_ e demais configurações do repositório não são verificáveis a partir do código.
 
-| Categoria OWASP | Cenário ANTES (Processo Manual / Risco) | Prática/Ferramenta DevSecOps Adotada | Cenário DEPOIS (Mitigação / Automação) |
-| :--- | :--- | :--- | :--- |
-| **A01: Quebra de Controle de Acesso** | *Ex: Teste manual de rotas.* | *Ex: Testes de integração automatizados.* | *Ex: Cobertura de testes valida privilégios a cada deploy.* |
-| **A02: Falhas Criptográficas** | | | |
-| **A03: Injeção** | | | |
-| **A04: Design Inseguro** | | | |
-| **A05: Configuração Incorreta** | | | |
-| **A06: Componentes Vulneráveis** | | | |
-| **A07: Falhas de Autenticação** | | | |
-| **A08: Integridade de Dados** | | | |
-| **A09: Falhas de Log/Monitoramento** | | | |
-| **A10: SSRF** | | | |
+#### A06:2021 — Componentes Vulneráveis e Desatualizados (_Vulnerable and Outdated Components_)
 
----
+- **Aplicabilidade:** sim.
+- **Controle:** o `pom.xml` não declara nenhuma dependência de _runtime_: Lombok tem escopo `provided` e JUnit e Mockito têm escopo `test`. O pacote publicado não carrega bibliotecas de terceiros para as aplicações consumidoras. Na esteira evoluída, o arquivo `.github/dependabot.yml` configura verificações semanais de atualização das dependências Maven e das _actions_ do GitHub Actions.
+- **Verificação:** leitura do `pom.xml` e do `dependabot.yml`. **Limitação:** nos cenários ANTES e DEPOIS **não havia ferramenta de análise de composição de _software_ (SCA)**, e as versões de desenvolvimento e teste não eram monitoradas. Na esteira evoluída, o Dependabot cobre essa lacuna parcialmente: ele propõe atualizações, mas não interrompe a esteira ao detectar uma dependência vulnerável.
+
+#### A07:2021 — Falhas de Identificação e Autenticação (_Identification and Authentication Failures_)
+
+- **Aplicabilidade:** não se aplica. A biblioteca não autentica usuários nem gerencia sessões.
+- **Controle:** não aplicável.
+- **Verificação:** não aplicável.
+
+#### A08:2021 — Falhas de Integridade de Dados e Software (_Software and Data Integrity Failures_)
+
+- **Aplicabilidade:** sim, pois o SEOS é distribuído como dependência para outros sistemas.
+- **Controle:** no DEPOIS, as _actions_ externas são fixadas por _hash_ de _commit_, a versão do Semgrep é fixada, a instalação usa `--only-binary`, e a publicação ocorre somente por _tag_ semântica (`v*.*.*`) via GitHub Packages, com histórico rastreável no repositório. No ANTES, o empacotamento dependia de execução local. Na esteira evoluída, o fluxo de entrega contínua passou a exigir, por meio do _job_ `verificar_ci`, uma execução aprovada do CI para o _commit_ da _tag_, executa os testes durante o `mvn deploy` (sem `-DskipTests`) e gera, ao final, um atestado de proveniência do `.jar` com a _action_ `actions/attest-build-provenance`, verificável com `gh attestation verify`.
+- **Verificação:** leitura dos _workflows_ e da _tag_ `v1.1.0`. **Limitações:** na `v1.1.0`, o fluxo de entrega contínua era acionado pela _tag_ sem depender da aprovação do CI, executava com `-DskipTests`, e o `.jar` não possuía assinatura ou atestado. Na esteira evoluída, essas três limitações foram tratadas, mas permanecem a ausência de uma lista de componentes (SBOM) e o fato de que apenas o Semgrep tem versão fixada: ao executar o fluxo comparativo, suas dependências transitivas não fixadas exigiram a escolha do Python 3.12 e do `setuptools<81` para a instalação funcionar.
+
+#### A09:2021 — Falhas de Log e Monitoramento (_Security Logging and Monitoring Failures_)
+
+- **Aplicabilidade:** sim. Foi a lacuna mais grave encontrada nos sistemas legados: 34,9% e 94,4% dos métodos sem registro de _log_ (Tabelas 1 e 2).
+- **Controle:** os executores do `SQLResult` registram a duração e as falhas de cada operação por meio do método `auditarPerformance`, e o `OrmLogger` pode ser substituído pela aplicação via `OrmConfig.setLogger`, permitindo integrar o registro ao mecanismo de _logs_ da empresa. Nos módulos avaliados, a cobertura de auditoria foi de 100% (Seção 3.8). Na esteira, qualquer falha de _build_, teste, qualidade ou SAST dispara um alerta no Microsoft Teams com o _link_ para os _logs_ da execução.
+- **Verificação:** leitura do código, testes unitários e as Tabelas 6 e 7. **Limitação:** o _logger_ padrão escreve apenas no console, e a centralização e o monitoramento em tempo real dependem da aplicação consumidora.
+
+#### A10:2021 — Falsificação de Requisição do Lado do Servidor (_Server-Side Request Forgery_)
+
+- **Aplicabilidade:** não se aplica. A biblioteca não realiza requisições HTTP nem consome URLs informadas por usuários.
+- **Controle:** não aplicável.
+- **Verificação:** não aplicável.
+
+### Apêndice B — Matriz comparativa de evidências (antes e depois da esteira _DevSecOps_)
+
+A Tabela B1 resume as respostas do Apêndice A. As colunas _ANTES_ e _DEPOIS_ correspondem ao _commit_ `6982a7d` e à _tag_ `v1.1.0` do repositório do SEOS, respectivamente, e a coluna _ESTEIRA EVOLUÍDA_ apresenta as melhorias aplicadas depois da análise do questionário. A coluna _Situação_ refere-se ao estado mais recente.
+
+#### Tabela B1 — Matriz comparativa do SEOS frente ao OWASP Top 10:2021
+
+| Categoria OWASP | Cenário ANTES (`6982a7d`) | Prática/Ferramenta DevSecOps adotada | Cenário DEPOIS (`v1.1.0`) | Esteira evoluída | Situação |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **A01: Quebra de Controle de Acesso** | Não se aplica | — | Não se aplica | Não se aplica | Não aplicável |
+| **A02: Falhas Criptográficas** | _Logger_ padrão sem valores de parâmetros; sem esteira | `secrets` do GitHub e variáveis de ambiente no Maven | Segredos fora do código; sem detecção dedicada de segredos | Sem alteração | Parcial |
+| **A03: Injeção** | Valores parametrizados no código; sem varredura automática | Semgrep (`p/java`) a cada _push_ e _Pull Request_, com laudo SARIF | 0 achados, nos 7 arquivos varridos, e varredura repetida a cada alteração | CI com `p/java` e `p/owasp-top-ten` | Mitigado |
+| **A04: Design Inseguro** | Falha rápida e validações no código | Testes unitários e _Quality Gate_ (SonarCloud) | Mesmos controles verificados automaticamente a cada integração | Testes também executados na entrega contínua | Parcial |
+| **A05: Configuração Incorreta** | Sem esteira para configurar | Permissões mínimas por _job_ no GitHub Actions | `contents: read` como padrão e escopos elevados apenas onde necessário | Sem alteração | Parcial |
+| **A06: Componentes Vulneráveis** | Sem dependências de _runtime_; sem monitoramento | Dependabot (Maven e _actions_) | Sem dependências de _runtime_; **sem SCA** | Verificação semanal de dependências pelo Dependabot | Parcial |
+| **A07: Falhas de Autenticação** | Não se aplica | — | Não se aplica | Não se aplica | Não aplicável |
+| **A08: Integridade de Dados e Software** | Empacotamento local, sem rastreabilidade | _Actions_ fixadas por _hash_, GitHub Packages por _tag_, atestado de proveniência | Publicação rastreável; CD sem dependência do CI e `.jar` não assinado | CD exige CI aprovado, executa testes e atesta o `.jar`; sem SBOM | Parcial |
+| **A09: Falhas de Log/Monitoramento** | Auditoria no código, sem alerta de falhas de _build_ | `OrmLogger` plugável e alertas via _Webhook_ no Microsoft Teams | Auditoria nas operações e alerta em tempo real das falhas da esteira | Alerta do Teams passa a cobrir também a verificação do CI na entrega | Mitigado |
+| **A10: SSRF** | Não se aplica | — | Não se aplica | Não se aplica | Não aplicável |
+
+**Fonte:** Elaborada pela autora (2026).
+
+Das dez categorias, três não se aplicam a uma biblioteca de persistência (A01, A07 e A10), duas são mitigadas diretamente (A03 e A09) e cinco são mitigadas parcialmente (A02, A04, A05, A06 e A08). A varredura do Semgrep não apresentou diferença entre os cenários ANTES e DEPOIS (0 achados em ambos), pois o código-fonte pouco mudou entre eles, e o ganho da esteira concentra-se na automação da verificação, na rastreabilidade da publicação e na resposta a falhas. As melhorias da esteira evoluída reduziram as lacunas identificadas em A06 (monitoramento de dependências) e A08 (dependência entre CI e CD, execução de testes na entrega e atestado de proveniência). Permanecem como trabalhos futuros a geração de uma lista de componentes (SBOM), a fixação completa das dependências do Semgrep, a detecção dedicada de segredos e a proteção da _branch_ principal.

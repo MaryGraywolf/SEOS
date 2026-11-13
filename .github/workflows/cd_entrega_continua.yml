@@ -6,12 +6,39 @@ on:
       - "v*.*.*"
 
 jobs:
+  verificar_ci:
+    name: Exigir CI aprovado para o commit da tag
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Verificar execução bem-sucedida do CI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          aprovadas=$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow ci_integracao_e_qualidade.yml \
+            --commit "$GITHUB_SHA" \
+            --status success \
+            --json databaseId \
+            --jq 'length')
+          if [ "$aprovadas" -eq 0 ]; then
+            echo "Nenhuma execução aprovada do CI para o commit $GITHUB_SHA. Publicação bloqueada."
+            exit 1
+          fi
+          echo "CI aprovado para o commit $GITHUB_SHA."
+
   publish_package:
     name: Publicar Release no GitHub Packages
+    needs: [verificar_ci]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout do código
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -25,13 +52,18 @@ jobs:
           server-password: GITHUB_TOKEN
 
       - name: Publicar Pacote (Deploy)
-        run: mvn versions:set -DnewVersion="${GITHUB_REF_NAME#v}" -DgenerateBackupPoms=false && mvn deploy -s .github/settings-security.xml -DskipTests
+        run: mvn versions:set -DnewVersion="${GITHUB_REF_NAME#v}" -DgenerateBackupPoms=false && mvn deploy -s .github/settings-security.xml
         env:
           GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
           GITHUB_ACTOR: ${{github.actor}}
 
+      - name: Atestar proveniência do pacote
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f
+        with:
+          subject-path: target/*.jar
+
   notify_failure_cd:
-    needs: [publish_package]
+    needs: [verificar_ci, publish_package]
     runs-on: ubuntu-latest
     if: failure()
 
