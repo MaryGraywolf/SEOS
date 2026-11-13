@@ -34,7 +34,8 @@ jobs:
           ref: ${{ matrix.ref }}
 
       - name: Instalar Semgrep
-        run: python -m pip install --only-binary :all: semgrep==1.90.0
+        run: |
+          python -m pip install --only-binary :all: semgrep==1.90.0
 
       - name: Executar varredura (OWASP Top 10 + Java)
         run: |
