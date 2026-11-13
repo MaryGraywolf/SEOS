@@ -26,7 +26,7 @@ jobs:
           - cenario: ANTES
             ref: 6982a7da87509b96ef82e66c7958a39f159cf99b
           - cenario: DEPOIS
-            ref: v1.1.0
+            ref: 6d46c00d9918c96feae1bde8d808808f6155a59e
     steps:
       - name: Checkout do código (${{ matrix.cenario }})
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
