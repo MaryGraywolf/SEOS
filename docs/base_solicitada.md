@@ -45,3 +45,13 @@ Volume de trabalho
 4 - Conclusão
 5 - Referências
 6 - Anexos (Questionário)
+
+pontos de melhoria:
+
+Incluir um diagrama de classes ou componentes da biblioteca e um diagrama de sequência de uma execução, do DTO até o banco e o registro do log (aqui a ideia é as pessoas terem noção do tempo de um trabalho destes)	3 e 4	até +0,45
+Escrever uma seção sobre as limitações da avaliação (amostra, testes só com simulações, um único depoimento, desempenho não medido) e discutir a brecha da cláusula where, com a forma de mitigar	4 e 6	até +0,40
+Criar uma tabela de requisitos funcionais e não funcionais, com uma meta de desempenho, ligando cada requisito à sua evidência	3	até +0,30
+Colocar datas em cada fase do cronograma e dizer se a Fase 5 foi executada	2	até +0,25
+Recalcular a Tabela 6 com a média real dos 69 arquivos, explicar como os 15 métodos foram escolhidos e trocar "≈232" pelo número exato	5	até +0,20
+Discutir a LGPD nos logs (o que pode ser registrado e por quanto tempo) e estimar o custo de um incidente de SQL Injection	8	até +0,20
+Deixar o texto em voz impessoal, incluir um resumo, trocar os artigos da Alura por fontes primárias e usar o OWASP Top 10:2025 até +0,15
