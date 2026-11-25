@@ -10,13 +10,17 @@
 
 ## 1. Introdução
 
-Atualmente, na empresa onde trabalho, os métodos de consulta utilizados em nossos projetos são muito verbosos. Para realizar uma consulta, é necessário escrevê-la manualmente, armazená-la em uma variável, mapear os parâmetros do `PreparedStatement` e, logo em seguida, mapear o `ResultSet`, campo a campo.
+Na empresa estudada, os métodos de consulta usados nos projetos são longos e verbosos. Para realizar uma consulta, é necessário escrevê-la manualmente, armazená-la em uma variável, mapear os parâmetros do `PreparedStatement` e, logo em seguida, mapear o `ResultSet`, campo a campo.
 
 Em alguns casos, as consultas não possuem parâmetros. Em outros, os valores são concatenados diretamente na instrução _Structured Query Language_ (SQL), o que cria uma brecha significativa para _SQL Injection_. Além disso, existem diversas versões de operações como `INSERT`, `UPDATE` e consultas para uma mesma tabela. Isso ocorre porque determinadas implementações precisam de estruturas específicas que não podem ser modificadas, resultando na duplicação de operações semelhantes.
 
-Nesse contexto, foi desenvolvido o **SEOS** (_Software Endurance Orchestration System_), um _microframework_ de Mapeamento Objeto-Relacional (ORM, do inglês _Object-Relational Mapping_) criado para atender às necessidades específicas da empresa. O _framework_ mapeia tabelas, campos e _sequences_ por meio de _annotations_ e constrói estruturas _Data Manipulation Language_ (DML) e _Data Query Language_ (DQL) com base nesses mapeamentos. Dessa forma, busca tornar o acesso ao banco de dados mais padronizado e seguro, além de retornar as classes com os valores já mapeados e prontos para serem utilizados pelas implementações.
+Nesse contexto, foi desenvolvido o **SEOS** (_Software Endurance Orchestration System_), um _microframework_ de Mapeamento Objeto-Relacional (ORM, do inglês _Object-Relational Mapping_) criado para atender às necessidades específicas da empresa. O SEOS mapeia tabelas, campos e _sequences_ por meio de _annotations_ e constrói estruturas _Data Manipulation Language_ (DML) e _Data Query Language_ (DQL) com base nesses mapeamentos. Dessa forma, busca tornar o acesso ao banco de dados mais padronizado e seguro, além de retornar as classes com os valores já mapeados e prontos para serem utilizados pelas implementações. Neste trabalho, o SEOS é caracterizado como um _microframework_ quanto à sua proposta e referido como biblioteca quanto à sua forma de distribuição, um pacote `.jar` importado como dependência pelas aplicações.
 
-### 1.1 Objetivo
+### 1.1 Resumo
+
+Os sistemas legados da empresa estudada, uma indústria do setor têxtil, acessam o banco de dados com consultas escritas à mão via JDBC. Com o passar dos anos, isso gerou muito código repetido, poucos registros de _log_ e consultas expostas a _SQL Injection_: dos 2.890 métodos de persistência analisados nos dois sistemas principais, 582 foram classificados como vulneráveis. Para enfrentar esse problema, foi evoluído o SEOS, um _microframework_ em Java que monta as consultas de forma parametrizada a partir de _annotations_, converte os resultados em objetos automaticamente e registra cada execução, sem tirar da aplicação o controle sobre conexões e transações. O desenvolvimento da biblioteca seguiu a cultura _DevSecOps_, com testes automatizados, análise de qualidade e de segurança a cada alteração, alertas no Microsoft Teams e publicação versionada. Nos testes feitos no sistema de _e-commerce_, os métodos escritos com o SEOS ficaram, em média, 48% menores, e a refatoração de 15 métodos legados reduziu o código em 36,1%. Nas rotinas avaliadas, nenhuma consulta voltou a concatenar valores e todas passaram a gerar registro de auditoria. A esteira chegou a 90,3% de cobertura de testes, sem nenhuma vulnerabilidade apontada pela análise estática. Os resultados mostram que é possível deixar a camada de persistência mais segura e enxuta sem adotar um ORM completo, o que se encaixa bem em cenários nos quais a aplicação precisa manter o controle das transações.
+
+### 1.2 Objetivo
 
 #### Objetivo geral
 
@@ -25,19 +29,19 @@ Evoluir o _microframework_ SEOS com base em práticas consolidadas de mercado e 
 #### Objetivos específicos
 
 - Automatizar a geração de instruções DML e DQL e o mapeamento objeto-relacional de consultas por meio de _annotations_ e _reflection_;
-- Mitigar os riscos de _SQL Injection_ na camada de persistência mediante a parametrização obrigatória das consultas e a validação estrutural das operações;
+- Mitigar os riscos de _SQL Injection_ na camada de persistência mediante a parametrização obrigatória dos valores e a validação estrutural das operações;
 - Incorporar mecanismos de auditoria e observabilidade para o rastreamento de erros, parâmetros e tempo de execução das operações no banco de dados;
 - Estruturar uma esteira _DevSecOps_ de Integração e Entrega Contínua (CI/CD, do inglês _Continuous Integration/Continuous Delivery_), contemplando testes automatizados, inspeção de qualidade e cobertura, análise estática de segurança (SAST, do inglês _Static Application Security Testing_), alertas via _ChatOps_ e publicação com versionamento semântico;
 - Avaliar a aderência arquitetural do SEOS frente às restrições do cenário corporativo estudado em comparação com soluções tradicionais de mercado, como o Hibernate/_Java Persistence API_ (JPA);
 - Mensurar os ganhos quantitativos e qualitativos da adoção da biblioteca em relação à escrita manual via _Java Database Connectivity_ (JDBC), considerando a redução de código, a eliminação de duplicações e a mitigação de vulnerabilidades baseadas no _Open Worldwide Application Security Project_ (OWASP) _Top_ 10.
 
-### 1.2 Justificativa
+### 1.3 Justificativa
 
-Ao criar uma implementação para atender a uma demanda e perceber que não poderia reutilizar o mesmo método de persistência no banco de dados, a primeira coisa que pensei foi: _“Por que criar mais uma versão de um `UPDATE` com as mesmas condições?”_. Foi nesse momento que percebi que a **falta de padronização**, a **baixa qualidade do código** e os **problemas de segurança nas consultas** eram fatores que precisavam ser tratados.
+Durante o desenvolvimento de uma demanda, o método de persistência que já existia não pôde ser reaproveitado, e a única saída seria criar mais uma versão de um `UPDATE` com as mesmas condições. Daí surgiu a pergunta: _“por que duplicar algo que já existe?”_. Essa situação deixou claro que a **falta de padronização**, a **baixa qualidade do código** e os **problemas de segurança nas consultas** precisavam ser resolvidos.
 
-Por meio dessa necessidade nasceu o **SEOS**, criado para ser uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de _SQL Injection_, <u>sem retirar da equipe o controle</u> sobre as consultas, conexões e transações de persistência.
+O **SEOS** nasceu dessa necessidade, como uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de _SQL Injection_, **sem retirar da equipe o controle** sobre as consultas, conexões e transações de persistência.
 
-### 1.3 Problema
+### 1.4 Problema
 
 Em um diagnóstico inicial realizado junto à equipe de Arquitetura sobre uma única classe de acesso a dados (DAO, do inglês _Data Access Object_, também chamada de _Repository_) de um dos projetos legados da empresa, identificou-se um volume alto de retrabalho e vulnerabilidades. Ao todo, o arquivo concentrava **21.381 linhas de código** distribuídas em **409 métodos** (dos quais **402** acessam diretamente o banco de dados), com uma taxa de **19,6% de linhas idênticas** e **54,4% de linhas repetidas**. Além da duplicação, constatou-se que, entre **416 chamadas** a `PreparedStatement`, apenas **156** parametrizavam os valores adequadamente. Considerando os **402 métodos** que acessam o banco de dados, aproximadamente **43%** deles mostraram-se potencialmente vulneráveis a _SQL Injection_. Os alertas sobre essas falhas na camada de persistência já eram conhecidos internamente, mas a falta de uma abstração padronizada, a pressão por entregas rápidas e o tamanho dos sistemas legados inviabilizaram a correção manual desse código, cenário no qual o SEOS se insere.
 
@@ -83,7 +87,7 @@ Como esses sistemas evoluíram por vários anos passando por diferentes desenvol
 
 ### 3.2 Situação Atual
 
-Antes do SEOS, não havia padronização na camada de persistência dos dois sistemas. O desenvolvedor precisava escrever cada instrução SQL manualmente, definir os parâmetros via `PreparedStatement` ou por concatenação, percorrer o `ResultSet` campo a campo e tratar possíveis erros por conta própria. Muitas vezes, métodos parecidos eram copiados e adaptados para acelerar uma entrega, replicando falhas já existentes no código. Para medir o alcance desse problema na totalidade dos dois projetos legados, ampliando o diagnóstico inicial daquele arquivo isolado apresentado na Seção 1.3, foi feito um levantamento junto à equipe de Arquitetura sobre todos os métodos que interagem com o banco de dados, totalizando **2.890 métodos** entre as duas aplicações.
+Antes do SEOS, não havia padronização na camada de persistência dos dois sistemas. O desenvolvedor precisava escrever cada instrução SQL manualmente, definir os parâmetros via `PreparedStatement` ou por concatenação, percorrer o `ResultSet` campo a campo e tratar possíveis erros por conta própria. Muitas vezes, métodos parecidos eram copiados e adaptados para acelerar uma entrega, replicando falhas já existentes no código. Para medir o alcance desse problema na totalidade dos dois projetos legados, ampliando o diagnóstico inicial daquele arquivo isolado apresentado na Seção 1.4, foi feito um levantamento junto à equipe de Arquitetura sobre todos os métodos que interagem com o banco de dados, totalizando **2.890 métodos** entre as duas aplicações.
 
 No primeiro sistema, voltado às automações corporativas (produtivas, logísticas e contábeis), foram analisados **1.641 métodos** de acesso ao banco, conforme apresentado na Tabela 1:
 
@@ -324,7 +328,7 @@ Long idGerado = resultado.getLong("ID_GERADO");
 String statusFinal = resultado.getString("STATUS_ATUAL");
 ```
 
-Por fim, para resolver a falta de rastreabilidade apontada na Seção 3.2, na qual **34,9%** dos métodos do sistema de automações e **94,4%** dos métodos do _e-commerce_ não possuíam nenhum registro de _log_, o SEOS incorporou uma camada transversal de auditoria baseada na interface _Service Provider Interface_ (SPI) `OrmLogger`, gerenciada pela classe `OrmConfig`. Com essa estrutura, todas as operações executadas pela biblioteca têm seu tempo de resposta medido e identificam automaticamente a classe e o método da aplicação que originaram a chamada ao banco. Sempre que ocorre uma falha SQL ou quando uma operação ultrapassa o limite de tempo configurado (**10 segundos** para consultas e **3 segundos** para chamadas PL/SQL), um alerta padronizado é emitido com a origem, a duração e a contagem de parâmetros, permitindo que a aplicação conecte seu próprio sistema de _logs_ na inicialização:
+Por fim, para resolver a falta de rastreabilidade apontada na Seção 3.2, na qual **34,9%** dos métodos do sistema de automações e **94,4%** dos métodos do _e-commerce_ não possuíam nenhum registro de _log_, o SEOS incorporou uma camada transversal de auditoria baseada na interface _Service Provider Interface_ (SPI) `OrmLogger`, gerenciada pela classe `OrmConfig`. Com essa estrutura, todas as operações executadas pela biblioteca têm seu tempo de resposta medido e identificam automaticamente a classe e o método da aplicação que originaram a chamada ao banco. Cada execução gera um registro padronizado com a origem, a duração e a contagem de parâmetros: informativo em caso de sucesso, de alerta quando a operação ultrapassa o limite de tempo configurado (**10 segundos** para consultas e **5 segundos** para chamadas PL/SQL) e de erro em caso de falha SQL, permitindo que a aplicação conecte seu próprio sistema de _logs_ na inicialização:
 
 ```java
 // Integração opcional do logger da aplicação com a auditoria automática do SEOS:
@@ -346,18 +350,138 @@ OrmConfig.setLogger(new OrmLogger() {
 });
 ```
 
-### 3.4 Comparação com Hibernate/JPA
+### 3.4 Arquitetura e Requisitos
 
-Para fundamentar a construção de uma biblioteca híbrida própria em vez da adoção direta de uma ferramenta tradicional de mercado no cenário estudado, foi realizada uma comparação arquitetural com o Hibernate, uma das soluções ORM mais utilizadas no ecossistema Java, conforme sintetizado na Tabela 3:
+A Figura 1 apresenta os componentes do SEOS e as dependências entre eles. A aplicação cliente fornece o DTO anotado e a `Connection` JDBC. O `SQLBuilder` interpreta as _annotations_ por meio de _reflection_ e produz um `SQLResult`, que executa o comando, mapeia o retorno e aciona a auditoria. O `SQLCall` desempenha função análoga para procedimentos PL/SQL. Ambos registram eventos pela interface `OrmLogger`, configurada na classe `OrmConfig`.
 
-#### Tabela 3 — Comparação arquitetural entre o Hibernate/JPA e o SEOS
+#### Figura 1 — Diagrama de componentes do SEOS
+
+```mermaid
+flowchart TB
+    appCliente["Aplicação cliente<br/>(DAO / Repository)"]
+    dtoAnotado["DTO anotado<br/>@TableDB, @ColumnDB"]
+    sqlBuilder["SQLBuilder"]
+    sqlCall["SQLCall<br/>(PL/SQL)"]
+    sqlResult["SQLResult<br/>(Batch)"]
+    ormConfig["OrmConfig"]
+    ormLogger["OrmLogger (SPI)"]
+    bancoJdbc[("JDBC / Oracle")]
+
+    appCliente --> sqlBuilder
+    appCliente --> sqlCall
+    appCliente --> dtoAnotado
+    sqlBuilder -.->|lê annotations| dtoAnotado
+    sqlBuilder --> sqlResult
+    sqlResult --> bancoJdbc
+    sqlCall --> bancoJdbc
+    sqlResult -.->|audita| ormConfig
+    sqlCall -.->|audita| ormConfig
+    ormConfig --> ormLogger
+```
+
+**Fonte:** Elaborada pela autora (2026).
+
+A Figura 2 detalha, em ordem cronológica, uma execução completa de `UPDATE`, do DTO preenchido pela aplicação até o banco de dados e o registro do evento de auditoria. O fluxo mostra em que momento cada validação acontece: a ausência de campos preenchidos ou de cláusula `WHERE` interrompe a montagem ainda no `SQLBuilder`, e a divergência entre marcadores `?` e parâmetros é barrada na criação do `SQLResult`, antes de qualquer acesso ao banco. Depois da execução, o evento é classificado como sucesso, lentidão ou falha, e o controle da transação volta à aplicação.
+
+#### Figura 2 — Diagrama de sequência de uma operação `UPDATE` com o SEOS
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as DAO da aplicação
+    participant B as SQLBuilder
+    participant DTO as UserDTO
+    participant R as SQLResult
+    participant DB as JDBC / Oracle
+    participant L as OrmLogger
+
+    App->>B: buildUpdate(updateUser, "USER_ID = ?", idUser)
+    B->>DTO: reflection: lê @TableDB, @ColumnDB e valores
+    DTO-->>B: TB_USER e campos não nulos (name, age)
+    alt nenhum campo preenchido ou WHERE ausente
+        B-->>App: IllegalStateException / IllegalArgumentException
+    end
+    B->>R: new SQLResult(sql, [name, age, idUser])
+    R->>R: validarParametros: 3 marcadores = 3 parâmetros
+    R-->>App: SQLResult pronto para execução
+    App->>R: executeUpdate(conn)
+    R->>DB: prepareStatement(sql)
+    R->>DB: setObject(1..3, valores)
+    R->>DB: executeUpdate()
+    alt sucesso em até 10 s
+        DB-->>R: linhas afetadas
+        R->>L: info SQL-INFO-001 (origem, tempo, qtd. de parâmetros)
+        R-->>App: linhas afetadas
+    else sucesso acima de 10 s
+        DB-->>R: linhas afetadas
+        R->>L: warn SQL-WARN-001 (consulta lenta)
+        R-->>App: linhas afetadas
+    else falha SQL
+        DB-->>R: SQLException
+        R->>L: error SQL-ERR-001 (com a exceção)
+        R-->>App: relança a exceção
+    end
+    App->>DB: commit() ou rollback()
+```
+
+**Fonte:** Elaborada pela autora (2026).
+
+Os requisitos funcionais (RF) e não funcionais (RNF) do SEOS são apresentados nas Tabelas 3 e 4, cada um associado à evidência que o sustenta e, no caso dos não funcionais, a uma meta. O desempenho sob carga não foi medido neste trabalho; as metas correspondentes referem-se aos limites configurados na biblioteca, e sua validação empírica permanece como proposta de trabalho futuro.
+
+#### Tabela 3 — Requisitos funcionais do SEOS
+
+| ID | Requisito | Evidência |
+| :--- | :--- | :--- |
+| RF01 | Mapear tabelas, colunas, _primary key_ e _sequences_ por _annotations_ no DTO. | `@TableDB` e `@ColumnDB` (Quadro 2). |
+| RF02 | Gerar `SELECT` com todos os campos ou campos específicos, com filtro parametrizado. | `buildSelect` e `select().campos().where()` (Quadro 3); `SQLBuilderTest`. |
+| RF03 | Gerar `INSERT` e `UPDATE` apenas com os atributos preenchidos (_Anti-Null_), usando a _sequence_ quando a _primary key_ é omitida. | `buildInsert` e `buildUpdate` (Quadros 4 e 5); `SQLBuilderTest`. |
+| RF04 | Permitir a inserção em lote. | `buildInsertBatch` e `Batch.executeBatch` (Quadro 6). |
+| RF05 | Preencher o `PreparedStatement` e validar que a quantidade de parâmetros corresponde à de _placeholders_. | `SQLResult.validarParametros` e `setParameters`; `SQLResultTest`. |
+| RF06 | Devolver o resultado como lista de DTOs, objeto único, escalar, mapa ou dicionário. | `executeQuery`, `executeQuerySingle`, `executeScalar`, `executeQueryAsMap`, `executeAsDictionary` (Quadro 7). |
+| RF07 | Retornar o número de linhas afetadas e o ID gerado pela _sequence_. | `executeUpdate` e `executeAndReturnId` (Quadro 6). |
+| RF08 | Chamar procedimentos PL/SQL com parâmetros de entrada, saída e entrada/saída. | `SQLCall.in`, `out`, `inOut` e `execute`; `SQLCallTest`. |
+| RF09 | Utilizar a conexão e o controle transacional da aplicação, sem abri-la nem encerrá-la. | Métodos `execute*(Connection)`; Quadro 6. |
+| RF10 | Registrar cada execução, inclusive em lote, com origem, duração e quantidade de parâmetros, classificando-a como sucesso, lentidão ou falha, e permitir substituir o _logger_. | `auditarPerformance`, `OrmLogger` e `OrmConfig.setLogger` (Quadro 10). |
+
+**Fonte:** Elaborada pela autora (2026).
+
+#### Tabela 4 — Requisitos não funcionais do SEOS
+
+| ID | Requisito | Meta | Evidência |
+| :--- | :--- | :--- | :--- |
+| RNF01 | Segurança: valores nunca concatenados à instrução SQL. | Nenhum achado de _SQL Injection_ no código do SEOS. A cláusula `WHERE`, recebida como texto, é segura apenas quando a aplicação utiliza marcadores `?`. | Uso exclusivo de _placeholders_; varredura do Semgrep sem achados e matriz OWASP A03 (Tabela 10). |
+| RNF02 | Rastreabilidade: auditoria de todas as operações. | Registro em 100% das operações (sucesso, lentidão e falha). | `auditarPerformance`, eventos `info`, `warn` e `error`, e cobertura de auditoria dos módulos avaliados (Seção 3.11). |
+| RNF03 | Desempenho: alerta de lentidão. | Aviso acima de 10 s (consultas) e 5 s (PL/SQL). | `auditarPerformance`; desempenho sob carga não avaliado. |
+| RNF04 | Confidencialidade dos _logs_. | Valores dos parâmetros ausentes dos eventos emitidos, inclusive os de sucesso. | `OrmConfig.DefaultConsoleLogger` (A09 da Tabela 10). |
+| RNF05 | Compatibilidade: ausência de contêiner ou _runtime_ adicional. | Dependência apenas do JDBC; distribuição em `.jar`. | Tabela 5. |
+| RNF06 | Manutenibilidade: qualidade verificada na esteira. | Aprovação em _build_, testes, SonarQube e SAST a cada _commit_. | Tabela 6; Seção 3.11. |
+
+**Fonte:** Elaborada pela autora (2026).
+
+### 3.5 Registro de Eventos e LGPD
+
+O SEOS não armazena registros em seu código-fonte: os eventos são emitidos por meio da interface `OrmLogger` e repassados à aplicação que importa a biblioteca, a qual os grava no servidor conforme a configuração adotada. Na ausência de um _logger_ configurado, o SEOS utiliza um mecanismo de contingência que escreve no console, cujo destino também depende do servidor.
+
+Os eventos emitidos (sucesso, lentidão e falha) contêm apenas a origem da chamada, o tempo de execução e a quantidade de parâmetros (e o nome da _procedure_, nas chamadas PL/SQL), sem os valores dos parâmetros. Esse conteúdo está alinhado ao princípio da necessidade da Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018, art. 6º, III), por restringir o registro ao mínimo necessário para auditoria e diagnóstico, de modo que os dados pessoais não são registrados pela biblioteca.
+
+Permanece, contudo, a possibilidade de que a mensagem da exceção repassada ao _logger_ contenha trechos da instrução ou de dados, a depender do _driver_ do banco. Recomenda-se que a aplicação filtre ou mascare essa mensagem, restrinja o acesso aos arquivos de _log_ e defina o prazo de retenção segundo a política de segurança da empresa.
+
+### 3.6 Impacto de um Incidente de _SQL Injection_
+
+O impacto de um incidente de _SQL Injection_ pode ser descrito por suas categorias de custo. O custo direto decorre da paralisação do faturamento e das vendas durante a contenção do incidente, a auditoria dos registros afetados e a restauração do ambiente, etapas que, conforme o diagnóstico apresentado na Seção 1.4, exigiriam várias horas de trabalho. O custo indireto compreende a perda de clientes, o desgaste reputacional e o impacto no atendimento. Havendo exposição de dados pessoais, soma-se ainda o risco de sanções administrativas previstas na LGPD (Lei nº 13.709/2018, art. 52). Em contrapartida, a redução da exposição a esse tipo de ataque, pelo uso de parâmetros nas instruções, tem custo de implantação restrito ao esforço de adoção da biblioteca.
+
+### 3.7 Comparação com Hibernate/JPA
+
+Para fundamentar a construção de uma biblioteca híbrida própria em vez da adoção direta de uma ferramenta tradicional de mercado no cenário estudado, foi realizada uma comparação arquitetural com o Hibernate, uma das soluções ORM mais utilizadas no ecossistema Java, conforme sintetizado na Tabela 5:
+
+#### Tabela 5 — Comparação arquitetural entre o Hibernate/JPA e o SEOS
 
 | Requisito do projeto         | Hibernate / JPA                                                                         | SEOS híbrido JDBC                                                                  | Adequação ao cenário atual                                       |
 | ---------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Integração com conexões ERP  | Requer configurar e integrar o contexto de persistência ao ciclo da plataforma.         | Recebe diretamente a `Connection` já fornecida pela aplicação.                     | O SEOS preserva o modelo operacional existente.                  |
 | Previsibilidade das escritas | O resultado depende do estado da entidade, do contexto e das configurações de `flush`.  | Cada chamada representa um comando visível, sem sincronização implícita posterior. | O SEOS facilita a rastreabilidade nos projetos.                  |
-| SQL Oracle específico        | Pode ser usado por SQL nativo, paralelamente ao modelo de entidades.                    | É parte natural da API e permanece concentrado na camada de `Repository`.          | O SEOS evita manter duas formas de consulta para o mesmo módulo. |
-| CRUD de tabelas customizadas | Exige mapear entidades e configurar o ambiente JPA.                                     | Exige DTO anotado e _builders_ diretos.                                            | O SEOS atende com menor superfície de configuração.              |
+| SQL Oracle específico        | Pode ser usado por SQL nativo, paralelamente ao modelo de entidades.                    | É parte natural da API e permanece concentrado na camada de _Repository_.          | O SEOS evita manter duas formas de consulta para o mesmo módulo. |
+| CRUD (_Create, Read, Update, Delete_) de tabelas customizadas | Exige mapear entidades e configurar o ambiente JPA.                                     | Exige DTO anotado e _builders_ diretos.                                            | O SEOS atende com menor superfície de configuração.              |
 | Atualizações parciais        | Possui alternativas como entidade gerenciada, consultas específicas e `@DynamicUpdate`. | A estratégia _Anti-Null_ transforma o DTO parcial diretamente no `SET`.            | O SEOS expressa de forma simples o padrão recorrente do projeto. |
 | Controle transacional        | Integra-se a JTA, Spring e outros gerenciadores quando disponíveis.                     | Usa `commit`, `rollback` e conexão definidos pelo chamador.                        | O SEOS participa do limite transacional adotado pelo projeto.    |
 | Consultas e projeções        | Oferece JPQL, Criteria, SQL nativo e projeções.                                         | Oferece DTO, resultado único, escalar, mapa, dicionário e SQL explícito.           | A API atual cobre os formatos utilizados pelos DAOs.             |
@@ -367,17 +491,17 @@ Para fundamentar a construção de uma biblioteca híbrida própria em vez da ad
 
 **Fonte:** Elaborada pela autora (2026).
 
-### 3.5 Vantagens e desvantagens
+### 3.8 Vantagens e desvantagens
 
-A principal vantagem de adotar o SEOS é tornar as operações em banco de dados mais simples, auditáveis e seguras, sem interferir no controle interno de conexões JDBC nem na _performance_ da aplicação. Como seus métodos automatizam a parametrização das consultas e mapeiam os resultados via _reflection_, o risco de expor o sistema a ataques de _SQL Injection_ é reduzido. Com isso, a arquitetura do _framework_ apoia-se em quatro pilares: padronização, simplificação, proteção e reutilização.
+A principal vantagem de adotar o SEOS é tornar as operações em banco de dados mais simples, auditáveis e seguras, sem interferir no controle interno de conexões JDBC e com baixo impacto esperado sobre o desempenho da aplicação, uma vez que a biblioteca não adiciona camadas de _cache_, sessão ou sincronização implícita. Como seus métodos automatizam a parametrização das consultas e mapeiam os resultados via _reflection_, o risco de expor o sistema a ataques de _SQL Injection_ é reduzido. Com isso, a arquitetura da biblioteca apoia-se em quatro pilares: padronização, simplificação, proteção e reutilização.
 
 Em contrapartida, por ter uma proposta enxuta frente a um ORM completo como o Hibernate/JPA, o SEOS foca em operações diretas por tabela e não inclui recursos avançados de modelo de domínio, como o mapeamento automático de relacionamentos entre entidades (`@OneToMany`, `@ManyToOne`), o carregamento sob demanda (_lazy loading_) ou mecanismos próprios de _cache_. Assim, consultas que exigem múltiplos _joins_ ou regras de atualização fora do padrão _Anti-Null_ continuam requerendo a escrita manual do SQL pela equipe, embora ainda aproveitem a parametrização, o mapeamento de retorno e a auditoria do `SQLResult`.
 
-### 3.6 Plano de aplicação _DevSecOps_
+### 3.9 Plano de aplicação _DevSecOps_
 
-Embora tenha partido de problemas observados no ambiente corporativo estudado, o SEOS foi desenvolvido como um projeto autoral independente (`com.github.marygraywolf.seos`), hospedado em repositório próprio no GitHub e desvinculado de qualquer nomenclatura, regra de negócio ou código proprietário da empresa. Como a biblioteca atua na camada de persistência de aplicações Java/JDBC, sua estabilidade e sua segurança são requisitos diretos: uma falha ou vulnerabilidade no componente afetaria os sistemas que o importassem como dependência. Por essa razão, o ciclo de vida do SEOS foi estruturado sob a cultura _DevSecOps_, utilizando ferramentas gerenciadas no modelo _Software as a Service_ (SaaS), práticas de segurança por padrão (_security by design_) e execução sem custos com servidores dedicados. A Tabela 4 apresenta a matriz de decisão utilizada na escolha de cada tecnologia da esteira em comparação com outras opções de mercado:
+Embora tenha partido de problemas observados no ambiente corporativo estudado, o SEOS foi desenvolvido como um projeto autoral independente (`com.github.marygraywolf.seos`), hospedado em repositório próprio no GitHub e desvinculado de qualquer nomenclatura, regra de negócio ou código proprietário da empresa, a qual o adotou como piloto em um de seus projetos. Como a biblioteca atua na camada de persistência de aplicações Java/JDBC, sua estabilidade e sua segurança são requisitos diretos: uma falha ou vulnerabilidade no componente afetaria os sistemas que o importassem como dependência. Por essa razão, o ciclo de vida do SEOS foi estruturado sob a cultura _DevSecOps_, utilizando ferramentas gerenciadas no modelo _Software as a Service_ (SaaS), práticas de segurança por padrão (_security by design_) e execução sem custos com servidores dedicados. A Tabela 6 apresenta a matriz de decisão utilizada na escolha de cada tecnologia da esteira em comparação com outras opções de mercado:
 
-#### Tabela 4 — Matriz de decisão das ferramentas da esteira _DevSecOps_
+#### Tabela 6 — Matriz de decisão das ferramentas da esteira _DevSecOps_
 
 | Categoria | Ferramenta Adotada | Principais Concorrentes | Justificativa Técnica da Decisão |
 | :--- | :--- | :--- | :--- |
@@ -390,7 +514,7 @@ Embora tenha partido de problemas observados no ambiente corporativo estudado, o
 
 **Fonte:** Elaborada pela autora (2026).
 
-Com base nessas escolhas, a automação no GitHub Actions foi dividida em dois fluxos de trabalho (_workflows_) independentes: um dedicado à Integração, Qualidade e Segurança Contínua (`ci_integracao_e_qualidade.yml`) e outro exclusivo para a Entrega Contínua (`cd_entrega_continua.yml`). Como camada adicional de proteção contra ataques à cadeia de suprimentos (_Supply Chain_), todas as _actions_ externas utilizadas nas esteiras foram fixadas pelo _hash_ imutável do _commit_ via _Secure Hash Algorithm_ de 256 _bits_ (SHA-256) em vez de _tags_ mutáveis, prevenindo a execução de código adulterado em dependências de terceiros.
+Com base nessas escolhas, a automação no GitHub Actions foi dividida em dois fluxos de trabalho (_workflows_) independentes: um dedicado à Integração, Qualidade e Segurança Contínua (`ci_integracao_e_qualidade.yml`) e outro exclusivo para a Entrega Contínua (`cd_entrega_continua.yml`). Como camada adicional de proteção contra ataques à cadeia de suprimentos (_Supply Chain_), todas as _actions_ externas utilizadas nas esteiras foram fixadas pelo _hash_ completo e imutável do _commit_ (SHA, do inglês _Secure Hash Algorithm_, com 40 caracteres) em vez de _tags_ mutáveis, prevenindo a execução de código adulterado em dependências de terceiros.
 
 O fluxo de Integração Contínua (CI, do inglês _Continuous Integration_) é acionado a cada _push_ ou abertura de _Pull Request_ na _branch_ `main`, provisionando um ambiente Ubuntu com _Java Development Kit_ (JDK) 11 (Temurin) para compilação e execução do comando `mvn clean verify`. Nessa etapa, o comportamento do _microframework_ é validado pela bateria de testes unitários com JUnit 5 e Mockito, utilizando objetos simulados (_mocks_) para reproduzir conexões JDBC, `PreparedStatement`, `CallableStatement` e `ResultSet` em memória sem depender de uma instância de banco de dados durante a execução da esteira, enquanto o JaCoCo coleta os dados e gera o relatório de cobertura:
 
@@ -402,7 +526,9 @@ Concluída a fase de testes, a esteira envia os resultados e o relatório de cob
 
 ![Imagem da plataforma do SonarQube Cloud](/docs/image/imageSonarQube.png)
 
-Em seguida, aplica-se a Segurança Antecipada (_Shift-Left Security_) por meio do Semgrep, que realiza a varredura SAST no código Java do SEOS com base nas categorias do OWASP _Top_ 10. Para proteger o próprio ambiente de _build_, a instalação da ferramenta bloqueia a execução de pacotes binários desconhecidos, e o laudo final da análise é exportado no padrão _Static Analysis Results Interchange Format_ (SARIF) diretamente para a aba de segurança do repositório no GitHub:
+Na versão avaliada, a bateria de testes alcançou **90,3% de cobertura** medida pelo JaCoCo, e o projeto foi aprovado no _Quality Gate_ do SonarCloud (status _Passed_), conforme apresentado na imagem anterior.
+
+Em seguida, aplica-se a Segurança Antecipada (_Shift-Left Security_) por meio do Semgrep, que realiza a varredura SAST no código Java do SEOS com base nas categorias do OWASP _Top_ 10. Para proteger o próprio ambiente de _build_, a ferramenta é instalada em versão fixa e apenas a partir de pacotes pré-compilados (`--only-binary`), sem compilar código-fonte de terceiros durante a instalação, e o laudo final da análise é exportado no padrão _Static Analysis Results Interchange Format_ (SARIF) diretamente para a aba de segurança do repositório no GitHub:
 
 ![Análise SAST com Semgrep](/docs/image/imagePipelineSAST.png)
 
@@ -416,27 +542,29 @@ Já a disponibilização oficial da biblioteca ocorre na esteira de Entrega Cont
 
 ![Pacote publicado no GitHub Packages](/docs/image/imagePackageMaven.png)
 
-Por fim, a Tabela 5 apresenta o plano e cronograma estruturado para o desenvolvimento da biblioteca, a implantação de sua esteira _DevSecOps_ e a sua aplicação prática na refatoração do cenário estudado:
+A partir da avaliação de segurança da esteira frente ao OWASP _Top_ 10 (Apêndice A), as versões posteriores à `v1.1.0` receberam melhorias incrementais que reforçaram a integração entre os fluxos de CI e CD: o _job_ `verificar_ci`, que condiciona a publicação a uma execução aprovada do CI para o _commit_ da _tag_; a execução dos testes também durante o `mvn deploy`; o atestado de proveniência do `.jar` com a _action_ `actions/attest-build-provenance`; o monitoramento semanal de dependências Maven e de _actions_ pelo Dependabot; e a inclusão do conjunto de regras `p/owasp-top-ten` na análise SAST.
 
-#### Tabela 5 — Plano e cronograma de aplicação _DevSecOps_ e adoção do SEOS
+Por fim, a Tabela 7 apresenta o plano e cronograma estruturado para o desenvolvimento da biblioteca, a implantação de sua esteira _DevSecOps_ e a sua aplicação prática na refatoração do cenário estudado:
+
+#### Tabela 7 — Plano e cronograma de aplicação _DevSecOps_ e adoção do SEOS
 
 | Fase | Período | Etapa do Plano | Entregável e Objetivo Técnico |
 | :--- | :--- | :--- | :--- |
 | **Fase 1** | Mês 1 | Diagnóstico e Concepção do SEOS | Levantamento do cenário legado e implementação autoral do núcleo em Java puro/JDBC (`@TableDB`, `@ColumnDB`, `SQLBuilder`, `SQLResult`, `SQLCall` e `OrmLogger`). |
-| **Fase 2** | Mês 2 | Integração, Qualidade e SAST | Implementação do _workflow_ `ci_integracao_e_qualidade.yml` com testes unitários (JUnit 5, Mockito, JaCoCo), _Quality Gate_ no SonarCloud, análise SAST com Semgrep (SARIF) e fixação de _actions_ por _hash_ SHA-256. |
+| **Fase 2** | Mês 2 | Integração, Qualidade e SAST | Implementação do _workflow_ `ci_integracao_e_qualidade.yml` com testes unitários (JUnit 5, Mockito, JaCoCo), _Quality Gate_ no SonarCloud, análise SAST com Semgrep (SARIF) e fixação de _actions_ pelo _hash_ completo do _commit_. |
 | **Fase 3** | Mês 3 | _ChatOps_ e Entrega Contínua | Implementação do _workflow_ `cd_entrega_continua.yml`, alertas automatizados de falha no Microsoft Teams via _Webhook_ e publicação versionada (`v*.*.*`) no GitHub Packages. |
-| **Fase 4** | Mês 4 | Aplicação e Avaliação Comparativa | Refatoração de estudo de caso sobre os padrões vulneráveis mapeados no arquivo _Repository_ crítico (402 métodos e 21.381 linhas) para aferição das métricas de redução de código e segurança. |
+| **Fase 4** | Mês 4 | Aplicação e Avaliação Comparativa | Refatoração de uma amostra de 15 métodos do arquivo _Repository_ crítico (`ErpIntegracaoDAO`, com 402 métodos e 21.381 linhas) e comparação com 9 DAOs novos desenvolvidos com o SEOS, para aferição das métricas de redução de código e segurança. |
 | **Fase 5** | Mês 5 | Plano de Adoção Gradual | Recomendação de diretrizes para importação da biblioteca nos novos desenvolvimentos e substituição progressiva dos métodos legados vulneráveis. |
 
 **Fonte:** Elaborada pela autora (2026).
 
-### 3.7 Quadro de respostas — antes e depois
+### 3.10 Quadro de respostas — antes e depois
 
-Para medir na prática os resultados da adoção do SEOS frente ao cenário diagnosticado nas Seções 1.3 e 3.2, a avaliação comparativa foi dividida em duas frentes dentro do sistema de _e-commerce_ da empresa. A primeira analisou **9 classes DAO recém-desenvolvidas já com o SEOS** em novos módulos integrados à plataforma, comparando-as aos outros 69 arquivos de persistência em JDBC manual do mesmo repositório; a segunda realizou a refatoração de uma amostra de **15 métodos críticos da classe legada `ErpIntegracaoDAO`** (o arquivo-base de 21.381 linhas e 416 chamadas a `PreparedStatement` apresentado na Seção 1.3), permitindo comparar o comportamento antes e depois da biblioteca sobre o mesmo código.
+Para medir na prática os resultados da adoção do SEOS frente ao cenário diagnosticado nas Seções 1.4 e 3.2, a avaliação comparativa foi dividida em duas frentes dentro do sistema de _e-commerce_ da empresa. A primeira analisou **9 classes DAO recém-desenvolvidas já com o SEOS** em novos módulos integrados à plataforma e pertencentes a um projeto da empresa que aceitou adotar a biblioteca como piloto, comparando-as aos outros 69 arquivos de persistência em JDBC manual do mesmo repositório; a segunda realizou a refatoração de uma amostra de **15 métodos críticos da classe legada `ErpIntegracaoDAO`** (o arquivo-base de 21.381 linhas e 416 chamadas a `PreparedStatement` apresentado na Seção 1.4), permitindo comparar o comportamento antes e depois da biblioteca sobre o mesmo código.
 
-Na primeira frente, apresentada na Tabela 6, compara-se a adoção nativa do SEOS nos novos módulos do _e-commerce_ com o padrão histórico de escrita manual do repositório:
+Na primeira frente, apresentada na Tabela 8, compara-se a adoção nativa do SEOS nos novos módulos do _e-commerce_ com o padrão histórico de escrita manual do repositório:
 
-#### Tabela 6 — Comparação entre o padrão legado (JDBC manual) e os módulos desenvolvidos com o SEOS no _e-commerce_
+#### Tabela 8 — Comparação entre o padrão legado (JDBC manual) e os módulos desenvolvidos com o SEOS no _e-commerce_
 
 | Critério Avaliado | Padrão Legado (JDBC Manual) | Módulos com SEOS (9 DAOs) |
 | :--- | :--- | :--- |
@@ -451,9 +579,9 @@ Na primeira frente, apresentada na Tabela 6, compara-se a adoção nativa do SEO
 
 A redução de **48% na média de linhas por método** (de 52 para 27 linhas, já contando as regras de negócio) resulta da retirada do código repetitivo de infraestrutura. Enquanto um método de consulta simples no padrão legado do _e-commerce_, como a busca de usuário por documento na classe `ErpIntegracaoDAO`, ocupa **32 linhas** para preparar a instrução, preencher parâmetros, percorrer o resultado, extrair cinco colunas manualmente e capturar exceções de forma inadequada, operações equivalentes nas classes baseadas no SEOS (como `UsuarioAcessoDAO`) são escritas em uma a três linhas encadeadas com os construtores e executores da biblioteca.
 
-Na segunda frente de avaliação, foi selecionada uma amostra de **15 métodos do `ErpIntegracaoDAO`** (três operações de `UPDATE`, um `INSERT`, seis consultas escalares ou de contagem, duas consultas de lista, duas buscas de registro único e uma consulta em formato de dicionário) para medir o efeito direto da refatoração com o SEOS. Conforme mostra a Tabela 7, a substituição do JDBC manual na amostra reduziu em **36,1% o volume total de linhas de código**, além de eliminar as concatenações vulneráveis e o fechamento manual de recursos:
+Na segunda frente de avaliação, foi selecionada uma amostra de **15 métodos do `ErpIntegracaoDAO`** (três operações de `UPDATE`, um `INSERT`, seis consultas escalares ou de contagem, duas consultas de lista, duas buscas de registro único e uma consulta em formato de dicionário) para medir o efeito direto da refatoração com o SEOS. Conforme mostra a Tabela 9, a substituição do JDBC manual na amostra reduziu em **36,1% o volume total de linhas de código**, além de eliminar as concatenações vulneráveis e o fechamento manual de recursos:
 
-#### Tabela 7 — Comparativo antes e depois na refatoração da amostra de 15 métodos do `ErpIntegracaoDAO`
+#### Tabela 9 — Comparativo antes e depois na refatoração da amostra de 15 métodos do `ErpIntegracaoDAO`
 
 | Indicador (Soma dos 15 métodos analisados) | Antes do SEOS | Depois do SEOS | Variação Obtida |
 | :--- | :--- | :--- | :--- |
@@ -468,11 +596,11 @@ Na segunda frente de avaliação, foi selecionada uma amostra de **15 métodos d
 
 **Fonte:** Elaborada pela autora (2026).
 
-### 3.8 Resultados e Dados Consolidados do Projeto
+### 3.11 Resultados e Dados Consolidados do Projeto
 
-O cruzamento dos levantamentos feitos nos dois sistemas legados da empresa (**2.890 métodos de persistência** analisados na Seção 3.2) com as medições obtidas no sistema de _e-commerce_ (Seção 3.7) demonstra os resultados práticos do SEOS. Em relação à produtividade e à redução de _boilerplate_, o uso da biblioteca em 9 classes DAO novas, somando 82 pontos de montagem de instruções SQL e 62 execuções sobre conexões fornecidas pela própria aplicação, baixou a média de código de aproximadamente **52 para 27 linhas por método** ($-48\%$), mantendo o controle transacional sem a sobrecarga da escrita manual. Esse resultado se repete na refatoração da amostra de 15 métodos da classe `ErpIntegracaoDAO`, que teve queda de **36,1% no total de linhas** (de 363 para cerca de 232 linhas) e deixou de exigir chamadas manuais de preparação, leitura e fechamento de recursos.
+O cruzamento dos levantamentos feitos nos dois sistemas legados da empresa (**2.890 métodos de persistência** analisados na Seção 3.2) com as medições obtidas no sistema de _e-commerce_ (Seção 3.10) demonstra os resultados práticos do SEOS. Em relação à produtividade e à redução de _boilerplate_, o uso da biblioteca em 9 classes DAO novas, somando 82 pontos de montagem de instruções SQL e 62 execuções sobre conexões fornecidas pela própria aplicação, baixou a média de código de aproximadamente **52 para 27 linhas por método** ($-48\%$), mantendo o controle transacional sem a sobrecarga da escrita manual. Esse resultado se repete na refatoração da amostra de 15 métodos da classe `ErpIntegracaoDAO`, que teve queda de **36,1% no total de linhas** (de 363 para cerca de 232 linhas) e deixou de exigir chamadas manuais de preparação, leitura e fechamento de recursos.
 
-Quanto à segurança na camada de persistência, tanto nos novos módulos desenvolvidos com o SEOS quanto nos 15 métodos refatorados da amostra legada, a concatenação direta de variáveis na instrução SQL caiu a **zero ($-100\%$)**. Todos os filtros e valores persistidos passaram a ser enviados de forma parametrizada, com validação prévia da quantidade de parâmetros antes da execução e bloqueio de atualizações sem cláusula `WHERE`.
+Quanto à segurança na camada de persistência, tanto nos novos módulos desenvolvidos com o SEOS quanto nos 15 métodos refatorados da amostra legada, a concatenação direta de variáveis na instrução SQL caiu a **zero ($-100\%$)** nos módulos e métodos avaliados. Todos os filtros e valores persistidos passaram a ser enviados de forma parametrizada, com validação prévia da quantidade de parâmetros antes da execução e bloqueio de atualizações sem cláusula `WHERE`. No processo de desenvolvimento da própria biblioteca, a esteira _DevSecOps_ sustentou esses resultados com **90,3% de cobertura de testes**, aprovação no _Quality Gate_ do SonarCloud e nenhum achado na análise SAST do Semgrep (Apêndice A).
 
 No eixo de observabilidade e governança operacional, diante de um cenário em que **94,4%** dos métodos do sistema de _e-commerce_ (Tabela 2) e **59,4%** dos arquivos em JDBC manual não tinham registro de _log_, a adoção do SEOS levou a cobertura de auditoria e o tratamento estruturado de falhas a **100%** nos módulos avaliados, registrando de forma automática o tempo de execução, a contagem de parâmetros e a classe e método de origem de cada operação.
 
@@ -482,13 +610,23 @@ Além das métricas quantitativas, o uso do SEOS foi avaliado de forma qualitati
 
 [^1]: Depoimento escrito concedido à autora por pessoa desenvolvedora _back-end_ da empresa, em 2026.
 
+### 3.12 Delimitação e Limitações da Avaliação
+
+A avaliação foi conduzida em escopo piloto, o que define a abrangência dos resultados. As 9 classes DAO desenvolvidas com o SEOS integram um projeto da empresa que aceitou adotar a biblioteca como piloto, de modo que os dados provêm de uso em demanda real. Da mesma forma, a equipe de Arquitetura aceitou participar da refatoração de 15 métodos do `ErpIntegracaoDAO`, arquivo crítico do repositório (402 métodos e 21.381 linhas), o que permitiu comparar o comportamento antes e depois sobre o mesmo código.
+
+Em razão desse caráter piloto, os percentuais referem-se aos módulos e aos métodos avaliados e constituem evidência inicial, e não uma estimativa para o conjunto de 2.890 métodos levantados. A ampliação da adoção a outros projetos permitirá consolidar os indicadores em uma amostra maior.
+
+A segurança do SEOS foi verificada por análise estática (Semgrep, com regras do OWASP _Top_ 10), testes unitários e execução contínua na esteira _DevSecOps_, enquanto nos módulos do piloto a ausência de concatenação em instruções SQL foi verificada por levantamento do código. Como desdobramento, testes de intrusão em ambiente controlado poderão complementar essa validação.
+
+A avaliação qualitativa contou com o relato de uma pessoa desenvolvedora que aplicou a biblioteca em uma demanda real, e novos relatos poderão ser coletados à medida que o SEOS for adotado em outros projetos. Quanto ao desempenho, a biblioteca não adiciona camadas de _cache_, sessão ou sincronização implícita, executando cada comando diretamente sobre a conexão fornecida pela aplicação, o que sustenta o baixo impacto esperado. A medição em carga permanece prevista como etapa de validação futura.
+
 ## 4. Conclusão
 
 Este trabalho partiu de uma necessidade prática na manutenção de sistemas corporativos legados: lidar com uma camada de persistência extensa, repetitiva e exposta a falhas de segurança, mas que, pelas regras de integração com o ERP, exigia que o controle sobre conexões e transações continuasse nas mãos da aplicação. A evolução do **SEOS** (_Software Endurance Orchestration System_) junto à cultura _DevSecOps_ mostrou ser possível equilibrar essas duas exigências por meio de uma abordagem híbrida, que automatiza o trabalho mecânico do JDBC sem impor a complexidade e a sobrecarga de um ORM tradicional de mercado.
 
-Os resultados obtidos no estudo de caso confirmam, na prática, os objetivos de padronização, simplificação, proteção e reutilização definidos para o projeto. O uso da biblioteca reduziu quase pela metade a média de linhas por método nos novos módulos do _e-commerce_ ($-48\%$) e diminuiu em $36,1\%$ o volume de código na amostra legada refatorada, além de eliminar ($-100\%$) as concatenações diretas suscetíveis a _SQL Injection_ e levar a $100\%$ a cobertura de auditoria e rastreamento de falhas nas rotinas avaliadas. Esses números foram confirmados, no dia a dia de desenvolvimento, pelo relato de uma pessoa desenvolvedora da empresa que utilizou a biblioteca em uma demanda real, destacando a redução de código, a manutenção do controle sobre as instruções SQL e a segurança na montagem de filtros dinâmicos. Somado a esses ganhos na aplicação, o funcionamento da esteira automatizada de integração, análise de qualidade, verificação estática de segurança, alertas em tempo real e entrega contínua garantiu um processo confiável para evoluir e publicar novas versões da própria biblioteca.
+Em relação aos objetivos específicos, a automação da geração de instruções DML e DQL e do mapeamento objeto-relacional foi alcançada por meio das anotações `@TableDB` e `@ColumnDB` e das classes `SQLBuilder`, `SQLResult` e `SQLCall`, reduzindo a média de linhas por método nos novos módulos do _e-commerce_ ($-48\%$) e o volume de código na amostra legada refatorada ($-36,1\%$). A mitigação de _SQL Injection_ decorreu da parametrização obrigatória dos valores e do bloqueio de `UPDATE` sem cláusula `WHERE`, eliminando ($-100\%$) as concatenações diretas nas rotinas avaliadas. A auditoria e a observabilidade, incorporadas pelo `OrmLogger`, levaram a $100\%$ a cobertura de registro de tempo, origem e falhas nos módulos analisados. A esteira _DevSecOps_ foi estruturada com integração, qualidade, SAST, _ChatOps_ e entrega contínua, alcançando 90,3% de cobertura de testes, aprovação no _Quality Gate_ e nenhum achado do Semgrep. A comparação com o Hibernate/JPA mostrou que, diante da exigência de manter conexões e transações sob controle da aplicação, a abordagem híbrida do SEOS é mais aderente ao cenário estudado. Por fim, a avaliação frente ao OWASP _Top_ 10:2021 indicou duas categorias mitigadas (A03 e A09), cinco parcialmente mitigadas e três não aplicáveis a uma biblioteca de persistência (Apêndice B), resultados reforçados pelo relato de uma pessoa desenvolvedora que utilizou a biblioteca em uma demanda real.
 
-Por fim, mantendo a proposta enxuta do _microframework_, abrem-se caminhos claros para os próximos passos da ferramenta. Como trabalhos futuros, pretende-se expandir gradualmente seus recursos para suportar o reaproveitamento de mapeamentos por herança entre classes, permitir a gravação intencional de valores nulos em atualizações específicas, flexibilizar as inserções em lote para objetos com diferentes combinações de campos e oferecer suporte auxiliar à montagem de consultas com múltiplos relacionamentos, preservando a simplicidade e a previsibilidade que motivaram a sua criação. Na dimensão de segurança, a análise do Apêndice B também aponta melhorias no próprio código da biblioteca: a validação ou substituição da cláusula `WHERE` informada como texto livre por uma API de condições, que hoje permanece sob responsabilidade do desenvolvedor; o mascaramento opcional de colunas sensíveis antes que os parâmetros cheguem ao `OrmLogger`; a adoção de uma exceção própria da biblioteca em lugar de `RuntimeException` genéricas; e testes de segurança explícitos que comprovem que nenhum valor é concatenado ao SQL gerado.
+Por fim, mantendo a proposta enxuta do _microframework_, abrem-se caminhos claros para os próximos passos da ferramenta. Como trabalhos futuros, pretende-se expandir gradualmente seus recursos para suportar o reaproveitamento de mapeamentos por herança entre classes, permitir a gravação intencional de valores nulos em atualizações específicas, flexibilizar as inserções em lote para objetos com diferentes combinações de campos e oferecer suporte auxiliar à montagem de consultas com múltiplos relacionamentos, preservando a simplicidade e a previsibilidade que motivaram a sua criação. Também se pretende tratar a limitação identificada nas cláusulas de filtro: nos métodos `buildSelect`, `buildUpdate` e `where`, os valores são sempre enviados por `PreparedStatement`, mas a própria cláusula é recebida como texto, de modo que a proteção contra _SQL Injection_ depende de a aplicação utilizar marcadores `?` e não concatenar variáveis nessa cláusula, o que o SEOS atualmente não impede. Como mitigação, propõe-se validar a cláusula antes da execução, rejeitando literais e comentários SQL, ou oferecer um construtor de condições parametrizado, no qual a aplicação informa colunas e operadores e os valores ficam a cargo da biblioteca, complementado por uma regra de análise estática na esteira capaz de sinalizar concatenações em argumentos de cláusulas de filtro.
 
 ## 5. Referências
 
@@ -513,7 +651,7 @@ Este questionário foi respondido pela autora a partir das evidências disponív
 
 1. **Aplicabilidade:** o risco da categoria se aplica a uma biblioteca de persistência Java/JDBC?
 2. **Controle:** que controle existe no código ou na esteira e onde ele pode ser verificado?
-3. **Verificação:** como o controle foi confirmado e qual limitação permanece?
+3. **Verificação:** como o controle foi confirmado?
 
 Os cenários comparados correspondem a pontos do histórico do repositório: **ANTES** é o _commit_ `6982a7d` (núcleo da biblioteca e testes unitários, sem esteira _DevSecOps_) e **DEPOIS** é a _tag_ `v1.1.0` (com integração contínua, SAST, entrega contínua e alertas no Microsoft Teams). Após a análise deste questionário, a esteira recebeu melhorias que corrigem lacunas identificadas, e esse estado é tratado como **ESTEIRA EVOLUÍDA**, aplicado nas versões publicadas depois da `v1.1.0`: ambiente Python fixado e dependência do Semgrep corrigida no CI, regras `p/owasp-top-ten` no SAST, monitoramento de dependências pelo Dependabot, exigência de CI aprovado e execução dos testes na entrega contínua, e atestado de proveniência do `.jar`.
 
@@ -527,31 +665,31 @@ Os cenários comparados correspondem a pontos do histórico do repositório: **A
 
 - **Aplicabilidade:** parcial. A biblioteca não implementa criptografia, nem armazena ou transmite dados sensíveis; as credenciais e a conexão com o banco são fornecidas pela aplicação. O risco recai sobre o código da esteira e sobre o registro de parâmetros em _logs_.
 - **Controle:** o _logger_ padrão (`OrmConfig.DefaultConsoleLogger`) imprime apenas a origem, o código e a mensagem, sem os valores dos parâmetros. Na esteira, os _tokens_ (`SONAR_TOKEN`, `TEAMS_WEBHOOK`, `PACKAGES_TOKEN`) são lidos de `secrets` e o `settings-security.xml` usa variáveis de ambiente, sem credenciais no repositório.
-- **Verificação:** leitura do código e dos _workflows_. **Limitação:** um `OrmLogger` customizado recebe os parâmetros e pode registrá-los; não há ferramenta dedicada à detecção de segredos na esteira.
+- **Verificação:** leitura do código e dos _workflows_.
 
 #### A03:2021 — Injeção (_Injection_)
 
 - **Aplicabilidade:** sim. É o principal risco da camada de persistência e o motivador do trabalho (Tabelas 1 e 2).
-- **Controle:** todos os valores são enviados por `PreparedStatement` com `setObject` (`SQLResult.java:455-458`), o `SQLBuilder` gera apenas marcadores `?` e recusa `UPDATE` sem cláusula `WHERE` (`SQLBuilder.java:386`). Os nomes de tabela e coluna vêm das anotações `@TableDB` e `@ColumnDB`, e não de entrada do usuário.
-- **Verificação:** varredura com o Semgrep 1.90.0 (regras `p/owasp-top-ten` e `p/java`) sobre `src/main`, resultando em **0 achados nos dois cenários** (6 arquivos no ANTES e 7 no DEPOIS), executada pelo _workflow_ auxiliar `comparativo_owasp_semgrep.yml`. Na esteira evoluída, o CI passou a aplicar também o conjunto `p/owasp-top-ten` a cada _push_ e _Pull Request_. **Limitação:** a cláusula `WHERE` e o SQL manual informados pelo desenvolvedor continuam sob sua responsabilidade, e a ausência de achados indica que as regras não encontraram padrões vulneráveis, e não que nenhum uso inseguro seja possível.
+- **Controle:** todos os valores são enviados por `PreparedStatement` com `setObject` (`SQLResult.java:455-458`), o `SQLBuilder` gera marcadores `?` para todos os valores que monta e recusa `UPDATE` sem cláusula `WHERE` (`SQLBuilder.java:386`). Os nomes de tabela e coluna vêm das anotações `@TableDB` e `@ColumnDB`, e não de entrada do usuário. A cláusula `WHERE`, por sua vez, é fornecida pela aplicação como texto e incorporada à instrução sem alteração, de modo que sua segurança depende de a aplicação utilizar marcadores `?` em vez de concatenar variáveis (Seção 4).
+- **Verificação:** varredura com o Semgrep 1.90.0 (regras `p/owasp-top-ten` e `p/java`) sobre `src/main`, resultando em **0 achados nos dois cenários** (6 arquivos no ANTES e 7 no DEPOIS), executada pelo _workflow_ auxiliar `comparativo_owasp_semgrep.yml`. Na esteira evoluída, o CI passou a aplicar também o conjunto `p/owasp-top-ten` a cada _push_ e _Pull Request_.
 
 #### A04:2021 — Design Inseguro (_Insecure Design_)
 
 - **Aplicabilidade:** sim.
-- **Controle:** o projeto adota falha rápida (`IllegalArgumentException` e `IllegalStateException` para parâmetros inconsistentes, `UPDATE` sem `WHERE` e `INSERT` sem campos), mapeamento declarativo por anotações e controle transacional mantido com a aplicação. As decisões estão documentadas nas Seções 3.3 e 3.4.
-- **Verificação:** testes unitários (JUnit 5 e Mockito) e _Quality Gate_ do SonarCloud na esteira. **Limitação:** não houve modelagem formal de ameaças.
+- **Controle:** o projeto adota falha rápida (`IllegalArgumentException` e `IllegalStateException` para parâmetros inconsistentes, `UPDATE` sem `WHERE` e `INSERT` sem campos), mapeamento declarativo por anotações e controle transacional mantido com a aplicação. As decisões estão documentadas nas Seções 3.3 e 3.7.
+- **Verificação:** testes unitários (JUnit 5 e Mockito) e _Quality Gate_ do SonarCloud na esteira.
 
 #### A05:2021 — Configuração Incorreta de Segurança (_Security Misconfiguration_)
 
 - **Aplicabilidade:** parcial. A biblioteca não configura servidores; o risco está na configuração da esteira.
 - **Controle:** os _workflows_ declaram `permissions: contents: read` e elevam o escopo apenas nos _jobs_ que precisam (`security-events: write` no SAST e `packages: write` na publicação).
-- **Verificação:** leitura dos arquivos `ci_integracao_e_qualidade.yml` e `cd_entrega_continua.yml`. **Limitação:** regras de proteção de _branch_ e demais configurações do repositório não são verificáveis a partir do código.
+- **Verificação:** leitura dos arquivos `ci_integracao_e_qualidade.yml` e `cd_entrega_continua.yml`.
 
 #### A06:2021 — Componentes Vulneráveis e Desatualizados (_Vulnerable and Outdated Components_)
 
 - **Aplicabilidade:** sim.
 - **Controle:** o `pom.xml` não declara nenhuma dependência de _runtime_: Lombok tem escopo `provided` e JUnit e Mockito têm escopo `test`. O pacote publicado não carrega bibliotecas de terceiros para as aplicações consumidoras. Na esteira evoluída, o arquivo `.github/dependabot.yml` configura verificações semanais de atualização das dependências Maven e das _actions_ do GitHub Actions.
-- **Verificação:** leitura do `pom.xml` e do `dependabot.yml`. **Limitação:** nos cenários ANTES e DEPOIS **não havia ferramenta de análise de composição de _software_ (SCA)**, e as versões de desenvolvimento e teste não eram monitoradas. Na esteira evoluída, o Dependabot cobre essa lacuna parcialmente: ele propõe atualizações, mas não interrompe a esteira ao detectar uma dependência vulnerável.
+- **Verificação:** leitura do `pom.xml` e do `dependabot.yml`.
 
 #### A07:2021 — Falhas de Identificação e Autenticação (_Identification and Authentication Failures_)
 
@@ -563,13 +701,13 @@ Os cenários comparados correspondem a pontos do histórico do repositório: **A
 
 - **Aplicabilidade:** sim, pois o SEOS é distribuído como dependência para outros sistemas.
 - **Controle:** no DEPOIS, as _actions_ externas são fixadas por _hash_ de _commit_, a versão do Semgrep é fixada, a instalação usa `--only-binary`, e a publicação ocorre somente por _tag_ semântica (`v*.*.*`) via GitHub Packages, com histórico rastreável no repositório. No ANTES, o empacotamento dependia de execução local. Na esteira evoluída, o fluxo de entrega contínua passou a exigir, por meio do _job_ `verificar_ci`, uma execução aprovada do CI para o _commit_ da _tag_, executa os testes durante o `mvn deploy` (sem `-DskipTests`) e gera, ao final, um atestado de proveniência do `.jar` com a _action_ `actions/attest-build-provenance`, verificável com `gh attestation verify`.
-- **Verificação:** leitura dos _workflows_ e da _tag_ `v1.1.0`. **Limitações:** na `v1.1.0`, o fluxo de entrega contínua era acionado pela _tag_ sem depender da aprovação do CI, executava com `-DskipTests`, e o `.jar` não possuía assinatura ou atestado. Na esteira evoluída, essas três limitações foram tratadas, mas permanecem a ausência de uma lista de componentes (SBOM) e o fato de que apenas o Semgrep tem versão fixada: ao executar o fluxo comparativo, suas dependências transitivas não fixadas exigiram a escolha do Python 3.12 e do `setuptools<81` para a instalação funcionar.
+- **Verificação:** leitura dos _workflows_ e da _tag_ `v1.1.0`.
 
 #### A09:2021 — Falhas de Log e Monitoramento (_Security Logging and Monitoring Failures_)
 
 - **Aplicabilidade:** sim. Foi a lacuna mais grave encontrada nos sistemas legados: 34,9% e 94,4% dos métodos sem registro de _log_ (Tabelas 1 e 2).
-- **Controle:** os executores do `SQLResult` registram a duração e as falhas de cada operação por meio do método `auditarPerformance`, e o `OrmLogger` pode ser substituído pela aplicação via `OrmConfig.setLogger`, permitindo integrar o registro ao mecanismo de _logs_ da empresa. Nos módulos avaliados, a cobertura de auditoria foi de 100% (Seção 3.8). Na esteira, qualquer falha de _build_, teste, qualidade ou SAST dispara um alerta no Microsoft Teams com o _link_ para os _logs_ da execução.
-- **Verificação:** leitura do código, testes unitários e as Tabelas 6 e 7. **Limitação:** o _logger_ padrão escreve apenas no console, e a centralização e o monitoramento em tempo real dependem da aplicação consumidora.
+- **Controle:** os executores do `SQLResult` e do `SQLCall` registram o sucesso, a lentidão e as falhas de cada operação, inclusive em lote, por meio do método `auditarPerformance`. Como cada execução gera um evento, o volume de registros aumenta, cabendo à aplicação filtrá-los por nível em seu _logger_. O `OrmLogger` pode ser substituído pela aplicação via `OrmConfig.setLogger`, permitindo integrar o registro ao mecanismo de _logs_ da empresa. Nos módulos avaliados, a cobertura de auditoria foi de 100% (Seção 3.11). Na esteira, qualquer falha de _build_, teste, qualidade ou SAST dispara um alerta no Microsoft Teams com o _link_ para os _logs_ da execução.
+- **Verificação:** leitura do código, testes unitários e as Tabelas 8 e 9.
 
 #### A10:2021 — Falsificação de Requisição do Lado do Servidor (_Server-Side Request Forgery_)
 
@@ -579,23 +717,25 @@ Os cenários comparados correspondem a pontos do histórico do repositório: **A
 
 ### Apêndice B — Matriz comparativa de evidências (antes e depois da esteira _DevSecOps_)
 
-A Tabela B1 resume as respostas do Apêndice A. As colunas _ANTES_ e _DEPOIS_ correspondem ao _commit_ `6982a7d` e à _tag_ `v1.1.0` do repositório do SEOS, respectivamente, e a coluna _ESTEIRA EVOLUÍDA_ apresenta as melhorias aplicadas depois da análise do questionário. A coluna _Situação_ refere-se ao estado mais recente.
+A Tabela 10 resume as respostas do Apêndice A. As colunas _ANTES_ e _DEPOIS_ correspondem ao _commit_ `6982a7d` e à _tag_ `v1.1.0` do repositório do SEOS, respectivamente, e a coluna _ESTEIRA EVOLUÍDA_ apresenta as melhorias aplicadas depois da análise do questionário. A coluna _Situação_ refere-se ao estado mais recente.
 
-#### Tabela B1 — Matriz comparativa do SEOS frente ao OWASP Top 10:2021
+#### Tabela 10 — Matriz comparativa do SEOS frente ao OWASP _Top_ 10:2021
 
-| Categoria OWASP | Cenário ANTES (`6982a7d`) | Prática/Ferramenta DevSecOps adotada | Cenário DEPOIS (`v1.1.0`) | Esteira evoluída | Situação |
+| Categoria OWASP | Cenário ANTES (`6982a7d`) | Prática/Ferramenta _DevSecOps_ adotada | Cenário DEPOIS (`v1.1.0`) | Esteira evoluída | Situação |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **A01: Quebra de Controle de Acesso** | Não se aplica | — | Não se aplica | Não se aplica | Não aplicável |
 | **A02: Falhas Criptográficas** | _Logger_ padrão sem valores de parâmetros; sem esteira | `secrets` do GitHub e variáveis de ambiente no Maven | Segredos fora do código; sem detecção dedicada de segredos | Sem alteração | Parcial |
-| **A03: Injeção** | Valores parametrizados no código; sem varredura automática | Semgrep (`p/java`) a cada _push_ e _Pull Request_, com laudo SARIF | 0 achados, nos 7 arquivos varridos, e varredura repetida a cada alteração | CI com `p/java` e `p/owasp-top-ten` | Mitigado |
+| **A03: Injeção** | Valores parametrizados no código; sem varredura automática | Semgrep (`p/java`) a cada _push_ e _Pull Request_, com laudo SARIF | 0 achados nos 7 arquivos varridos (`p/owasp-top-ten` e `p/java` no fluxo comparativo) e varredura repetida a cada alteração | CI com `p/java` e `p/owasp-top-ten` | Mitigado nos valores\* |
 | **A04: Design Inseguro** | Falha rápida e validações no código | Testes unitários e _Quality Gate_ (SonarCloud) | Mesmos controles verificados automaticamente a cada integração | Testes também executados na entrega contínua | Parcial |
 | **A05: Configuração Incorreta** | Sem esteira para configurar | Permissões mínimas por _job_ no GitHub Actions | `contents: read` como padrão e escopos elevados apenas onde necessário | Sem alteração | Parcial |
 | **A06: Componentes Vulneráveis** | Sem dependências de _runtime_; sem monitoramento | Dependabot (Maven e _actions_) | Sem dependências de _runtime_; **sem SCA** | Verificação semanal de dependências pelo Dependabot | Parcial |
 | **A07: Falhas de Autenticação** | Não se aplica | — | Não se aplica | Não se aplica | Não aplicável |
-| **A08: Integridade de Dados e Software** | Empacotamento local, sem rastreabilidade | _Actions_ fixadas por _hash_, GitHub Packages por _tag_, atestado de proveniência | Publicação rastreável; CD sem dependência do CI e `.jar` não assinado | CD exige CI aprovado, executa testes e atesta o `.jar`; sem SBOM | Parcial |
+| **A08: Integridade de Dados e Software** | Empacotamento local, sem rastreabilidade | _Actions_ fixadas por _hash_, GitHub Packages por _tag_ | Publicação rastreável; CD sem dependência do CI e `.jar` não assinado | CD exige CI aprovado, executa testes e atesta o `.jar`; sem SBOM | Parcial |
 | **A09: Falhas de Log/Monitoramento** | Auditoria no código, sem alerta de falhas de _build_ | `OrmLogger` plugável e alertas via _Webhook_ no Microsoft Teams | Auditoria nas operações e alerta em tempo real das falhas da esteira | Alerta do Teams passa a cobrir também a verificação do CI na entrega | Mitigado |
 | **A10: SSRF** | Não se aplica | — | Não se aplica | Não se aplica | Não aplicável |
 
+**Nota:** \* No A03, a mitigação abrange os valores montados pelo SEOS, que são sempre parametrizados. A cláusula de filtro (`WHERE`) é recebida como texto da aplicação, e sua segurança depende do uso de marcadores `?` pela aplicação; essa limitação e as formas de mitigá-la são discutidas na Seção 4.
+
 **Fonte:** Elaborada pela autora (2026).
 
-Das dez categorias, três não se aplicam a uma biblioteca de persistência (A01, A07 e A10), duas são mitigadas diretamente (A03 e A09) e cinco são mitigadas parcialmente (A02, A04, A05, A06 e A08). A varredura do Semgrep não apresentou diferença entre os cenários ANTES e DEPOIS (0 achados em ambos), pois o código-fonte pouco mudou entre eles, e o ganho da esteira concentra-se na automação da verificação, na rastreabilidade da publicação e na resposta a falhas. As melhorias da esteira evoluída reduziram as lacunas identificadas em A06 (monitoramento de dependências) e A08 (dependência entre CI e CD, execução de testes na entrega e atestado de proveniência). Permanecem como trabalhos futuros a geração de uma lista de componentes (SBOM), a fixação completa das dependências do Semgrep, a detecção dedicada de segredos e a proteção da _branch_ principal.
+Das dez categorias, três não se aplicam a uma biblioteca de persistência (A01, A07 e A10), duas são mitigadas diretamente (A03, quanto aos valores, e A09) e cinco são mitigadas parcialmente (A02, A04, A05, A06 e A08). A varredura do Semgrep não apresentou diferença entre os cenários ANTES e DEPOIS (0 achados em ambos), pois o código-fonte pouco mudou entre eles, e o ganho da esteira concentra-se na automação da verificação, na rastreabilidade da publicação e na resposta a falhas. As melhorias da esteira evoluída reduziram as lacunas identificadas em A06 (monitoramento de dependências) e A08 (dependência entre CI e CD, execução de testes na entrega e atestado de proveniência).

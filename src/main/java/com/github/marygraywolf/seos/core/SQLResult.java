@@ -201,8 +201,9 @@ public class SQLResult {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             setParameters(ps, this.params);
             try (ResultSet rs = ps.executeQuery()) {
+                List<T> resultado = mapearResultSet(rs, classeDTO);
                 auditarPerformance(tempoInicio, null);
-                return mapearResultSet(rs, classeDTO);
+                return resultado;
             }
         } catch (Exception e) {
             auditarPerformance(tempoInicio, e);
@@ -347,8 +348,10 @@ public class SQLResult {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Object valorBanco = rs.getObject(1);
-                    if (valorBanco == null)
+                    if (valorBanco == null) {
+                        auditarPerformance(tempoInicio, null);
                         return null;
+                    }
 
                     Object valorConvertido = converterParaTipoCorreto(valorBanco, tipoEsperado);
                     auditarPerformance(tempoInicio, null);
@@ -705,6 +708,9 @@ public class SQLResult {
 		 *                   lote
 		 */
         public int[] executeBatch(Connection conn) throws Exception {
+            long tempoInicio = System.currentTimeMillis();
+            int totalParams = batchParams.stream().mapToInt(List::size).sum();
+
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 for (List<Object> paramsDaLinha : batchParams) {
                     for (int i = 0; i < paramsDaLinha.size(); i++) {
@@ -712,18 +718,23 @@ public class SQLResult {
                     }
                     ps.addBatch();
                 }
-                return ps.executeBatch();
+                int[] resultado = ps.executeBatch();
+                auditar(tempoInicio, null, totalParams);
+                return resultado;
+            } catch (Exception e) {
+                auditar(tempoInicio, e, totalParams);
+                throw e;
             }
         }
     }
 
-    private String obterOrigemDaChamada() {
+    private static String obterOrigemDaChamada() {
         StackTraceElement[] stack = Thread.currentThread().getStackTrace();
 
         for (StackTraceElement element : stack) {
             String className = element.getClassName();
-            if (!className.equals(Thread.class.getName()) && !className.equals(SQLResult.class.getName())
-                    && !className.equals("br.com.tbm.framework.core.SQLBuilder") && !className.startsWith("java.")) {
+            if (!className.equals(Thread.class.getName()) && !className.startsWith(SQLResult.class.getName())
+                    && !className.startsWith(SQLBuilder.class.getName()) && !className.startsWith("java.")) {
 
                 return className.substring(className.lastIndexOf('.') + 1) + "." + element.getMethodName();
             }
@@ -738,9 +749,20 @@ public class SQLResult {
      * @param excecao     excecao capturada, ou {@code null} em caso de sucesso
      */
     private void auditarPerformance(long tempoInicio, Exception excecao) {
+        auditar(tempoInicio, excecao, this.params == null ? 0 : this.params.size());
+    }
+
+    /**
+     * Registra a execucao (sucesso, lentidao ou falha) no logger configurado.
+     * Compartilhado entre {@link SQLResult} e {@link Batch}.
+     *
+     * @param tempoInicio instante em milissegundos capturado antes da execucao
+     * @param excecao     excecao capturada, ou {@code null} em caso de sucesso
+     * @param paramCount  quantidade de parametros enviados ao banco
+     */
+    private static void auditar(long tempoInicio, Exception excecao, int paramCount) {
         long tempoExecucaoMs = System.currentTimeMillis() - tempoInicio;
         String origem = obterOrigemDaChamada();
-        int paramCount = this.params == null ? 0 : this.params.size();
 
         if (excecao != null) {
             String msg = String.format("[SEOS ERRO] Falha ao executar SQL. Origem: [%s] | Tempo: %d ms | Params: %d", origem, tempoExecucaoMs, paramCount);
@@ -751,6 +773,9 @@ public class SQLResult {
         if (tempoExecucaoMs > 10000) {
             String msg = String.format("[SEOS LENTIDAO] Slow Query detectada! Origem: [%s] | Tempo: %d ms | Params: %d", origem, tempoExecucaoMs, paramCount);
             OrmConfig.getLogger().warn(SQLResult.class.getSimpleName(), "SQL-WARN-001", msg);
+        } else {
+            String msg = String.format("[SEOS INFO] Query executada! Origem: [%s] | Tempo: %d ms | Params: %d", origem, tempoExecucaoMs, paramCount);
+            OrmConfig.getLogger().info(SQLResult.class.getSimpleName(), "SQL-INFO-001", msg);
         }
     }
 }

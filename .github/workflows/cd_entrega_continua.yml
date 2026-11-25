@@ -68,61 +68,59 @@ jobs:
     if: failure()
 
     steps:
-      - name: Set error message variables
-        id: error_info
-        run: |
-          echo "job_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
-
+      # Os dados do contexto do GitHub entram apenas por variáveis de ambiente
+      # e o JSON é montado pelo jq, evitando injeção de comandos no shell
+      # (regra Semgrep run-shell-injection).
       - name: Enviar alerta para o Microsoft Teams
         env:
           WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK }}
+          REPOSITORIO: ${{ github.repository }}
+          VERSAO_TAG: ${{ github.ref_name }}
+          URL_EXECUCAO: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          curl -H "Content-Type: application/json" \
-          -d '{
-            "type": "message",
-            "attachments": [
-              {
-                "contentType": "application/vnd.microsoft.card.adaptive",
-                "content": {
-                  "$schema": "https://adaptivecards.io/schemas/adaptive-card.json",
-                  "type": "AdaptiveCard",
-                  "version": "1.4",
-                  "body": [
-                    {
-                      "type": "TextBlock",
-                      "text": "📦 Falha na Publicação do Pacote (CD)!",
-                      "weight": "Bolder",
-                      "size": "Large",
-                      "color": "Attention"
-                    },
-                    {
-                      "type": "TextBlock",
-                      "text": "Ocorreu um erro ao tentar publicar a nova versão do SEOS no GitHub Packages.",
-                      "wrap": true
-                    },
-                    {
-                      "type": "FactSet",
-                      "facts": [
-                        {
-                          "title": "Repositório:",
-                          "value": "${{ github.repository }}"
-                        },
-                        {
-                          "title": "Versão (Tag):",
-                          "value": "${{ github.ref_name }}"
-                        }
-                      ]
-                    }
-                  ],
-                  "actions": [
-                    {
-                      "type": "Action.OpenUrl",
-                      "title": "Acessar Logs do Deploy",
-                      "url": "${{ steps.error_info.outputs.job_url }}"
-                    }
-                  ]
+          payload=$(jq -n \
+            --arg repositorio "$REPOSITORIO" \
+            --arg versao "$VERSAO_TAG" \
+            --arg url "$URL_EXECUCAO" \
+            '{
+              type: "message",
+              attachments: [
+                {
+                  contentType: "application/vnd.microsoft.card.adaptive",
+                  content: {
+                    "$schema": "https://adaptivecards.io/schemas/adaptive-card.json",
+                    type: "AdaptiveCard",
+                    version: "1.4",
+                    body: [
+                      {
+                        type: "TextBlock",
+                        text: "📦 Falha na Publicação do Pacote (CD)!",
+                        weight: "Bolder",
+                        size: "Large",
+                        color: "Attention"
+                      },
+                      {
+                        type: "TextBlock",
+                        text: "Ocorreu um erro ao tentar publicar a nova versão do SEOS no GitHub Packages.",
+                        wrap: true
+                      },
+                      {
+                        type: "FactSet",
+                        facts: [
+                          { title: "Repositório:", value: $repositorio },
+                          { title: "Versão (Tag):", value: $versao }
+                        ]
+                      }
+                    ],
+                    actions: [
+                      {
+                        type: "Action.OpenUrl",
+                        title: "Acessar Logs do Deploy",
+                        url: $url
+                      }
+                    ]
+                  }
                 }
-              }
-            ]
-          }' \
-          "$WEBHOOK_URL"
+              ]
+            }')
+          curl -H "Content-Type: application/json" --data "$payload" "$WEBHOOK_URL"

@@ -499,7 +499,7 @@ Quadro 9 - Exemplo de execução fluente de \textit{procedure} PL/SQL com o \tex
 \end{minipage}
 \vspace{0.3cm}
 
-Por fim, para resolver a falta de rastreabilidade apontada na Seção~\ref{sec:situacao-atual}, na qual \textbf{34,9\%} dos métodos do sistema de automações e \textbf{94,4\%} dos métodos do \textit{e-commerce} não possuíam nenhum registro de \textit{log}, o SEOS incorporou uma camada transversal de auditoria baseada na interface \textit{Service Provider Interface} (SPI) \texttt{OrmLogger}, gerenciada pela classe \texttt{OrmConfig}. Com essa estrutura, todas as operações executadas pela biblioteca têm seu tempo de resposta medido e identificam automaticamente a classe e o método da aplicação que originaram a chamada ao banco. Sempre que ocorre uma falha SQL ou quando uma operação ultrapassa o limite de tempo configurado (\textbf{10 segundos} para consultas e \textbf{3 segundos} para chamadas PL/SQL), um alerta padronizado é emitido com a origem, a duração e a contagem de parâmetros, permitindo que a aplicação conecte seu próprio sistema de \textit{logs} na inicialização, conforme exemplificado no Quadro~10:
+Por fim, para resolver a falta de rastreabilidade apontada na Seção~\ref{sec:situacao-atual}, na qual \textbf{34,9\%} dos métodos do sistema de automações e \textbf{94,4\%} dos métodos do \textit{e-commerce} não possuíam nenhum registro de \textit{log}, o SEOS incorporou uma camada transversal de auditoria baseada na interface \textit{Service Provider Interface} (SPI) \texttt{OrmLogger}, gerenciada pela classe \texttt{OrmConfig}. Com essa estrutura, todas as operações executadas pela biblioteca têm seu tempo de resposta medido e identificam automaticamente a classe e o método da aplicação que originaram a chamada ao banco. Cada execução gera um registro padronizado com a origem, a duração e a contagem de parâmetros: informativo em caso de sucesso, de alerta quando a operação ultrapassa o limite de tempo configurado (\textbf{10 segundos} para consultas e \textbf{5 segundos} para chamadas PL/SQL) e de erro em caso de falha SQL, permitindo que a aplicação conecte seu próprio sistema de \textit{logs} na inicialização, conforme exemplificado no Quadro~10:
 
 \vspace{0.3cm}
 \noindent
@@ -601,7 +601,7 @@ Os requisitos funcionais (RF) e não funcionais (RNF) do SEOS são apresentados 
     RF07 & Retornar o número de linhas afetadas e o ID gerado pela \textit{sequence}. & \texttt{executeUpdate} e \texttt{executeAndReturnId} (Quadro~6). \\ \hline
     RF08 & Chamar procedimentos PL/SQL com parâmetros de entrada, saída e entrada/saída. & \texttt{SQLCall.in}, \texttt{out}, \texttt{inOut} e \texttt{execute}; \texttt{SQLCallTest}. \\ \hline
     RF09 & Utilizar a conexão e o controle transacional da aplicação, sem abri-la nem encerrá-la. & Métodos \texttt{execute*(Connection)}; Quadro~6. \\ \hline
-    RF10 & Auditar cada execução (origem, duração, falhas) e permitir substituir o \textit{logger}. & \texttt{auditarPerformance}, \texttt{OrmLogger} e \texttt{OrmConfig.setLogger} (Quadro~10). \\ \hline
+    RF10 & Registrar cada execução, inclusive em lote, com origem, duração e quantidade de parâmetros, classificando-a como sucesso, lentidão ou falha, e permitir substituir o \textit{logger}. & \texttt{auditarPerformance}, \texttt{OrmLogger} e \texttt{OrmConfig.setLogger} (Quadro~10). \\ \hline
     \end{tabular}
     \endgroup
     \vspace{0.15cm}
@@ -621,9 +621,9 @@ Os requisitos funcionais (RF) e não funcionais (RNF) do SEOS são apresentados 
     \hline
     \textbf{ID} & \textbf{Requisito} & \textbf{Meta} & \textbf{Evidência} \\ \hline
     RNF01 & Segurança: valores nunca concatenados à instrução SQL. & Nenhum achado de \textit{SQL Injection} no código do SEOS. A cláusula \texttt{WHERE}, recebida como texto, é segura apenas quando a aplicação utiliza marcadores \texttt{?}. & Uso exclusivo de \textit{placeholders}; varredura do Semgrep sem achados e matriz OWASP A03 (Tabela~\ref{tab:matriz-owasp}). \\ \hline
-    RNF02 & Rastreabilidade: auditoria de todas as operações. & Registro em 100\% das operações. & Cobertura de auditoria dos módulos avaliados (Seção~\ref{sec:resultados}). \\ \hline
-    RNF03 & Desempenho: alerta de lentidão. & Aviso acima de 10 s (consultas) e 3 s (PL/SQL). & \texttt{auditarPerformance}; desempenho sob carga não avaliado. \\ \hline
-    RNF04 & Confidencialidade dos \textit{logs}. & Valores dos parâmetros ausentes do \textit{log} padrão. & \texttt{OrmConfig.DefaultConsoleLogger} (A09 da Tabela~\ref{tab:matriz-owasp}). \\ \hline
+    RNF02 & Rastreabilidade: auditoria de todas as operações. & Registro em 100\% das operações (sucesso, lentidão e falha). & \texttt{auditarPerformance}, eventos \texttt{info}, \texttt{warn} e \texttt{error}, e cobertura de auditoria dos módulos avaliados (Seção~\ref{sec:resultados}). \\ \hline
+    RNF03 & Desempenho: alerta de lentidão. & Aviso acima de 10 s (consultas) e 5 s (PL/SQL). & \texttt{auditarPerformance}; desempenho sob carga não avaliado. \\ \hline
+    RNF04 & Confidencialidade dos \textit{logs}. & Valores dos parâmetros ausentes dos eventos emitidos, inclusive os de sucesso. & \texttt{OrmConfig.DefaultConsoleLogger} (A09 da Tabela~\ref{tab:matriz-owasp}). \\ \hline
     RNF05 & Compatibilidade: ausência de contêiner ou \textit{runtime} adicional. & Dependência apenas do JDBC; distribuição em \texttt{.jar}. & Tabela~\ref{tab:comparacao-hibernate-seos}. \\ \hline
     RNF06 & Manutenibilidade: qualidade verificada na esteira. & Aprovação em \textit{build}, testes, SonarQube e SAST a cada \textit{commit}. & Tabela~\ref{tab:matriz-devsecops}; Seção~\ref{sec:resultados}. \\ \hline
     \end{tabular}
@@ -634,6 +634,20 @@ Os requisitos funcionais (RF) e não funcionais (RNF) do SEOS são apresentados 
 \end{table}
 
 \vspace{0.3cm}
+\subsection{Registro de Eventos e LGPD}
+\label{sec:lgpd-logs}
+
+O SEOS não armazena registros em seu código-fonte: os eventos são emitidos por meio da interface \texttt{OrmLogger} e repassados à aplicação que importa a biblioteca, a qual os grava no servidor conforme a configuração adotada. Na ausência de um \textit{logger} configurado, o SEOS utiliza um mecanismo de contingência que escreve no console, cujo destino também depende do servidor.
+
+Os eventos emitidos (sucesso, lentidão e falha) contêm apenas a origem da chamada, o tempo de execução e a quantidade de parâmetros (e o nome da \textit{procedure}, nas chamadas PL/SQL), sem os valores dos parâmetros. Esse conteúdo está alinhado ao princípio da necessidade da Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018, art. 6º, III), por restringir o registro ao mínimo necessário para auditoria e diagnóstico, de modo que os dados pessoais não são registrados pela biblioteca.
+
+Permanece, contudo, a possibilidade de que a mensagem da exceção repassada ao \textit{logger} contenha trechos da instrução ou de dados, a depender do \textit{driver} do banco. Recomenda-se que a aplicação filtre ou mascare essa mensagem, restrinja o acesso aos arquivos de \textit{log} e defina o prazo de retenção segundo a política de segurança da empresa.
+
+\subsection{Impacto de um Incidente de \textit{SQL Injection}}
+\label{sec:impacto-incidente}
+
+O impacto de um incidente de \textit{SQL Injection} pode ser descrito por suas categorias de custo. O custo direto decorre da paralisação do faturamento e das vendas durante a contenção do incidente, a auditoria dos registros afetados e a restauração do ambiente, etapas que, conforme o diagnóstico apresentado na Seção~\ref{sec:problema}, exigiriam várias horas de trabalho. O custo indireto compreende a perda de clientes, o desgaste reputacional e o impacto no atendimento. Havendo exposição de dados pessoais, soma-se ainda o risco de sanções administrativas previstas na LGPD (Lei nº 13.709/2018, art. 52). Em contrapartida, a redução da exposição a esse tipo de ataque, pelo uso de parâmetros nas instruções, tem custo de implantação restrito ao esforço de adoção da biblioteca.
+
 \subsection{Comparação com Hibernate/JPA}
 \label{sec:comparacao-hibernate}
 
@@ -1038,7 +1052,7 @@ Os cenários comparados correspondem a pontos do histórico do repositório: \te
 
 \begin{itemize}
     \item \textbf{Aplicabilidade:} sim. Foi a lacuna mais grave encontrada nos sistemas legados: 34,9\% e 94,4\% dos métodos sem registro de \textit{log} (Tabelas~\ref{tab:resultados_automacoes} e~\ref{tab:resultados_ecommerce}).
-    \item \textbf{Controle:} os executores do \texttt{SQLResult} registram a duração e as falhas de cada operação por meio do método \texttt{auditarPerformance}, e o \texttt{OrmLogger} pode ser substituído pela aplicação via \texttt{OrmConfig.setLogger}, permitindo integrar o registro ao mecanismo de \textit{logs} da empresa. Nos módulos avaliados, a cobertura de auditoria foi de 100\% (Seção~\ref{sec:resultados}). Na esteira, qualquer falha de \textit{build}, teste, qualidade ou SAST dispara um alerta no Microsoft Teams com o \textit{link} para os \textit{logs} da execução.
+    \item \textbf{Controle:} os executores do \texttt{SQLResult} e do \texttt{SQLCall} registram o sucesso, a lentidão e as falhas de cada operação, inclusive em lote, por meio do método \texttt{auditarPerformance}. Como cada execução gera um evento, o volume de registros aumenta, cabendo à aplicação filtrá-los por nível em seu \textit{logger}. O \texttt{OrmLogger} pode ser substituído pela aplicação via \texttt{OrmConfig.setLogger}, permitindo integrar o registro ao mecanismo de \textit{logs} da empresa. Nos módulos avaliados, a cobertura de auditoria foi de 100\% (Seção~\ref{sec:resultados}). Na esteira, qualquer falha de \textit{build}, teste, qualidade ou SAST dispara um alerta no Microsoft Teams com o \textit{link} para os \textit{logs} da execução.
     \item \textbf{Verificação:} leitura do código, testes unitários e as Tabelas~\ref{tab:comparacao-modulos-ecommerce} e~\ref{tab:comparativo-amostra-refatorada}.
 \end{itemize}
 

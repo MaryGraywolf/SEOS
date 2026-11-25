@@ -60,62 +60,59 @@ jobs:
     runs-on: ubuntu-latest
     if: failure()
     steps:
-      - name: Set error message variables
-        id: error_info
-        run: |
-          echo "error_message=A pipeline de CI falhou no branch ${{ github.ref_name }}." >> $GITHUB_OUTPUT
-          echo "job_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
-
+      # Os dados do contexto do GitHub entram apenas por variáveis de ambiente
+      # e o JSON é montado pelo jq, evitando injeção de comandos no shell
+      # (regra Semgrep run-shell-injection).
       - name: Enviar alerta para o Microsoft Teams
         env:
           WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK }}
+          REPOSITORIO: ${{ github.repository }}
+          REFERENCIA: ${{ github.ref_name }}
+          URL_EXECUCAO: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          curl -H "Content-Type: application/json" \
-          -d '{
-            "type": "message",
-            "attachments": [
-              {
-                "contentType": "application/vnd.microsoft.card.adaptive",
-                "content": {
-                  "$schema": "https://adaptivecards.io/schemas/adaptive-card.json",
-                  "type": "AdaptiveCard",
-                  "version": "1.4",
-                  "body": [
-                    {
-                      "type": "TextBlock",
-                      "text": "🚨 Falha na Integração Contínua (CI)!",
-                      "weight": "Bolder",
-                      "size": "Large",
-                      "color": "Attention"
-                    },
-                    {
-                      "type": "TextBlock",
-                      "text": "Ocorreu um erro durante a validação do código na esteira principal (Build, Testes, SonarCloud ou Semgrep). O merge deve ser bloqueado.",
-                      "wrap": true
-                    },
-                    {
-                      "type": "FactSet",
-                      "facts": [
-                        {
-                          "title": "Repositório:",
-                          "value": "${{ github.repository }}"
-                        },
-                        {
-                          "title": "Branch / Ref:",
-                          "value": "${{ github.ref_name }}"
-                        }
-                      ]
-                    }
-                  ],
-                  "actions": [
-                    {
-                      "type": "Action.OpenUrl",
-                      "title": "Acessar Logs da Pipeline",
-                      "url": "${{ steps.error_info.outputs.job_url }}"
-                    }
-                  ]
+          payload=$(jq -n \
+            --arg repositorio "$REPOSITORIO" \
+            --arg referencia "$REFERENCIA" \
+            --arg url "$URL_EXECUCAO" \
+            '{
+              type: "message",
+              attachments: [
+                {
+                  contentType: "application/vnd.microsoft.card.adaptive",
+                  content: {
+                    "$schema": "https://adaptivecards.io/schemas/adaptive-card.json",
+                    type: "AdaptiveCard",
+                    version: "1.4",
+                    body: [
+                      {
+                        type: "TextBlock",
+                        text: "🚨 Falha na Integração Contínua (CI)!",
+                        weight: "Bolder",
+                        size: "Large",
+                        color: "Attention"
+                      },
+                      {
+                        type: "TextBlock",
+                        text: "Ocorreu um erro durante a validação do código na esteira principal (Build, Testes, SonarCloud ou Semgrep). O merge deve ser bloqueado.",
+                        wrap: true
+                      },
+                      {
+                        type: "FactSet",
+                        facts: [
+                          { title: "Repositório:", value: $repositorio },
+                          { title: "Branch / Ref:", value: $referencia }
+                        ]
+                      }
+                    ],
+                    actions: [
+                      {
+                        type: "Action.OpenUrl",
+                        title: "Acessar Logs da Pipeline",
+                        url: $url
+                      }
+                    ]
+                  }
                 }
-              }
-            ]
-          }' \
-          "$WEBHOOK_URL"
+              ]
+            }')
+          curl -H "Content-Type: application/json" --data "$payload" "$WEBHOOK_URL"
