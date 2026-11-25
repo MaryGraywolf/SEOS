@@ -339,17 +339,22 @@ public class SQLCall {
 
         if (excecao != null) {
             String msg = String.format(
-                    "[Mini-ORM PL/SQL ERRO] Falha ao executar Procedure. Origem: [%s] | Tempo: %d ms | Procedure: %s | Params: %d",
+                    "[SEOS PL/SQL ERRO] Falha ao executar Procedure. Origem: [%s] | Tempo: %d ms | Procedure: %s | Params: %d",
                     origem, tempoExecucaoMs, procedureName, paramCount);
             OrmConfig.getLogger().error(SQLCall.class.getSimpleName(), "PLSQL-ERR-001", msg, excecao);
             return;
         }
 
-        if (tempoExecucaoMs > 3000) {
+        if (tempoExecucaoMs > 5000) {
             String msg = String.format(
-                    "[Mini-ORM LENTIDAO] Procedure Lenta! Origem: [%s] | Tempo: %d ms | Procedure: %s | Params: %d",
+                    "[SEOS LENTIDAO] Procedure Lenta! Origem: [%s] | Tempo: %d ms | Procedure: %s | Params: %d",
                     origem, tempoExecucaoMs, procedureName, paramCount);
             OrmConfig.getLogger().warn(SQLCall.class.getSimpleName(), "PLSQL-WARN-001", msg);
+        } else {
+            String msg = String.format(
+                    "[SEOS INFO] Procedure executada! Origem: [%s] | Tempo: %d ms | Procedure: %s | Params: %d",
+                    origem, tempoExecucaoMs, procedureName, paramCount);
+            OrmConfig.getLogger().info(SQLResult.class.getSimpleName(), "PLSQL-INFO-001", msg);
         }
     }
 }
