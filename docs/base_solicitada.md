@@ -55,3 +55,8 @@ Colocar datas em cada fase do cronograma e dizer se a Fase 5 foi executada	2	at�
 Recalcular a Tabela 6 com a média real dos 69 arquivos, explicar como os 15 métodos foram escolhidos e trocar "≈232" pelo número exato	5	até +0,20
 Discutir a LGPD nos logs (o que pode ser registrado e por quanto tempo) e estimar o custo de um incidente de SQL Injection	8	até +0,20
 Deixar o texto em voz impessoal, incluir um resumo, trocar os artigos da Alura por fontes primárias e usar o OWASP Top 10:2025 até +0,15
+
+Divergências a corrigir após a inclusão das limitações da avaliação:
+1. Confirmar e documentar a participação da equipe de Arquitetura na refatoração dos 15 métodos (linhas 42, 843 e 856); se não houve, retirar a frase da seção de limitações.
+2. Ajustar "o SQLBuilder gera apenas marcadores ?" (controle do A03) para valores; a cláusula WHERE é fornecida pela aplicação.
+3. Qualificar a matriz do A03 ("Mitigado") com nota sobre a cláusula de filtro e trocar "parametrização obrigatória das consultas" por "dos valores" no objetivo específico.

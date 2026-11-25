@@ -538,6 +538,102 @@ Quadro 10 - Integração do \textit{logger} da aplicação com a auditoria do SE
 \end{minipage}
 
 \vspace{0.3cm}
+\subsection{Arquitetura e Requisitos}
+\label{sec:arquitetura-requisitos}
+
+A Figura~\ref{fig:componentes-seos} apresenta os componentes do SEOS e as dependências entre eles. A aplicação cliente fornece o DTO anotado e a \texttt{Connection} JDBC. O \texttt{SQLBuilder} interpreta as \textit{annotations} por meio de \textit{reflection} e produz um \texttt{SQLResult}, que executa o comando, mapeia o retorno e aciona a auditoria. O \texttt{SQLCall} desempenha função análoga para procedimentos PL/SQL. Ambos registram eventos pela interface \texttt{OrmLogger}, configurada na classe \texttt{OrmConfig}.
+
+% Requer \usepackage{tikz} e \usetikzlibrary{positioning,arrows.meta} no preâmbulo.
+\begin{figure}[H]
+    \centering
+    \caption{Diagrama de componentes do SEOS}
+    \label{fig:componentes-seos}
+    \vspace{0.15cm}
+    \begin{tikzpicture}[
+        font=\footnotesize,
+        comp/.style={draw, rectangle, rounded corners=2pt, minimum width=3.0cm, minimum height=0.9cm, align=center},
+        ext/.style={comp, dashed},
+        dep/.style={-{Stealth[length=2mm]}, dashed},
+        node distance=1.1cm and 1.0cm]
+        \node[ext] (app) {Aplicação cliente\\(DAO / \textit{Repository})};
+        \node[comp, below left=of app] (dto) {DTO anotado\\\texttt{@TableDB}, \texttt{@ColumnDB}};
+        \node[comp, below=of app] (builder) {\texttt{SQLBuilder}};
+        \node[comp, below right=of app] (call) {\texttt{SQLCall}\\(PL/SQL)};
+        \node[comp, below=of builder] (result) {\texttt{SQLResult}\\(\texttt{Batch})};
+        \node[comp, below=of call] (config) {\texttt{OrmConfig}};
+        \node[comp, below=of config] (logger) {\texttt{OrmLogger} (SPI)};
+        \node[ext, below=of result] (jdbc) {JDBC / Oracle};
+        \draw[->] (app) -- (builder);
+        \draw[->] (app) -- (call);
+        \draw[->] (app) -- (dto);
+        \draw[dep] (builder) -- node[right]{lê \textit{annotations}} (dto);
+        \draw[->] (builder) -- (result);
+        \draw[->] (result) -- (jdbc);
+        \draw[->] (call) -| ([xshift=0.9cm]jdbc.north east);
+        \draw[dep] (result.east) -- node[above]{audita} (config.west);
+        \draw[dep] (call) -- (config);
+        \draw[->] (config) -- (logger);
+    \end{tikzpicture}
+    \vspace{0.15cm}
+
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{figure}
+
+Os requisitos funcionais (RF) e não funcionais (RNF) do SEOS são apresentados nas Tabelas~\ref{tab:requisitos-funcionais} e~\ref{tab:requisitos-nao-funcionais}, cada um associado à evidência que o sustenta e, no caso dos não funcionais, a uma meta. O desempenho sob carga não foi medido neste trabalho; as metas correspondentes referem-se aos limites configurados na biblioteca, e sua validação empírica permanece como proposta de trabalho futuro.
+
+\begin{table}[H]
+    \centering
+    \caption{Requisitos funcionais do SEOS}
+    \label{tab:requisitos-funcionais}
+    \vspace{0.15cm}
+    \begingroup
+    \renewcommand{\arraystretch}{1.2}
+    \footnotesize
+    \begin{tabular}{|p{1.1cm}|p{6.2cm}|p{6.2cm}|}
+    \hline
+    \textbf{ID} & \textbf{Requisito} & \textbf{Evidência} \\ \hline
+    RF01 & Mapear tabelas, colunas, \textit{primary key} e \textit{sequences} por \textit{annotations} no DTO. & \texttt{@TableDB} e \texttt{@ColumnDB} (Quadro~2). \\ \hline
+    RF02 & Gerar \texttt{SELECT} com todos os campos ou campos específicos, com filtro parametrizado. & \texttt{buildSelect} e \texttt{select().campos().where()} (Quadro~3); \texttt{SQLBuilderTest}. \\ \hline
+    RF03 & Gerar \texttt{INSERT} e \texttt{UPDATE} apenas com os atributos preenchidos (\textit{Anti-Null}), usando a \textit{sequence} quando a \textit{primary key} é omitida. & \texttt{buildInsert} e \texttt{buildUpdate} (Quadros~4 e~5); \texttt{SQLBuilderTest}. \\ \hline
+    RF04 & Permitir a inserção em lote. & \texttt{buildInsertBatch} e \texttt{Batch.executeBatch} (Quadro~6). \\ \hline
+    RF05 & Preencher o \texttt{PreparedStatement} e validar que a quantidade de parâmetros corresponde à de \textit{placeholders}. & \texttt{SQLResult.validarParametros} e \texttt{setParameters}; \texttt{SQLResultTest}. \\ \hline
+    RF06 & Devolver o resultado como lista de DTOs, objeto único, escalar, mapa ou dicionário. & \texttt{executeQuery}, \texttt{executeQuerySingle}, \texttt{executeScalar}, \texttt{executeQueryAsMap}, \texttt{executeAsDictionary} (Quadro~7). \\ \hline
+    RF07 & Retornar o número de linhas afetadas e o ID gerado pela \textit{sequence}. & \texttt{executeUpdate} e \texttt{executeAndReturnId} (Quadro~6). \\ \hline
+    RF08 & Chamar procedimentos PL/SQL com parâmetros de entrada, saída e entrada/saída. & \texttt{SQLCall.in}, \texttt{out}, \texttt{inOut} e \texttt{execute}; \texttt{SQLCallTest}. \\ \hline
+    RF09 & Utilizar a conexão e o controle transacional da aplicação, sem abri-la nem encerrá-la. & Métodos \texttt{execute*(Connection)}; Quadro~6. \\ \hline
+    RF10 & Auditar cada execução (origem, duração, falhas) e permitir substituir o \textit{logger}. & \texttt{auditarPerformance}, \texttt{OrmLogger} e \texttt{OrmConfig.setLogger} (Quadro~10). \\ \hline
+    \end{tabular}
+    \endgroup
+    \vspace{0.15cm}
+
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{Requisitos não funcionais do SEOS}
+    \label{tab:requisitos-nao-funcionais}
+    \vspace{0.15cm}
+    \begingroup
+    \renewcommand{\arraystretch}{1.2}
+    \footnotesize
+    \begin{tabular}{|p{1.3cm}|p{3.4cm}|p{4.0cm}|p{4.8cm}|}
+    \hline
+    \textbf{ID} & \textbf{Requisito} & \textbf{Meta} & \textbf{Evidência} \\ \hline
+    RNF01 & Segurança: valores nunca concatenados à instrução SQL. & Nenhum achado de \textit{SQL Injection} no código do SEOS. A cláusula \texttt{WHERE}, recebida como texto, é segura apenas quando a aplicação utiliza marcadores \texttt{?}. & Uso exclusivo de \textit{placeholders}; varredura do Semgrep sem achados e matriz OWASP A03 (Tabela~\ref{tab:matriz-owasp}). \\ \hline
+    RNF02 & Rastreabilidade: auditoria de todas as operações. & Registro em 100\% das operações. & Cobertura de auditoria dos módulos avaliados (Seção~\ref{sec:resultados}). \\ \hline
+    RNF03 & Desempenho: alerta de lentidão. & Aviso acima de 10 s (consultas) e 3 s (PL/SQL). & \texttt{auditarPerformance}; desempenho sob carga não avaliado. \\ \hline
+    RNF04 & Confidencialidade dos \textit{logs}. & Valores dos parâmetros ausentes do \textit{log} padrão. & \texttt{OrmConfig.DefaultConsoleLogger} (A09 da Tabela~\ref{tab:matriz-owasp}). \\ \hline
+    RNF05 & Compatibilidade: ausência de contêiner ou \textit{runtime} adicional. & Dependência apenas do JDBC; distribuição em \texttt{.jar}. & Tabela~\ref{tab:comparacao-hibernate-seos}. \\ \hline
+    RNF06 & Manutenibilidade: qualidade verificada na esteira. & Aprovação em \textit{build}, testes, SonarQube e SAST a cada \textit{commit}. & Tabela~\ref{tab:matriz-devsecops}; Seção~\ref{sec:resultados}. \\ \hline
+    \end{tabular}
+    \endgroup
+    \vspace{0.15cm}
+
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{table}
+
+\vspace{0.3cm}
 \subsection{Comparação com Hibernate/JPA}
 \label{sec:comparacao-hibernate}
 
@@ -583,7 +679,7 @@ Em contrapartida, por ter uma proposta enxuta frente a um ORM completo como o Hi
 \vspace{0.3cm}
 \subsection{Plano de Aplicação \textit{DevSecOps}}
 
-Embora tenha partido de problemas observados no ambiente corporativo estudado, o SEOS foi desenvolvido como um projeto autoral independente (\texttt{com.github.marygraywolf.seos}), hospedado em repositório próprio no GitHub e desvinculado de qualquer nomenclatura, regra de negócio ou código proprietário da empresa. Como a biblioteca atua na camada de persistência de aplicações Java/JDBC, sua estabilidade e sua segurança são requisitos diretos: uma falha ou vulnerabilidade no componente afetaria os sistemas que o importassem como dependência. Por essa razão, o ciclo de vida do SEOS foi estruturado sob a cultura \textit{DevSecOps}, utilizando ferramentas gerenciadas no modelo \textit{Software as a Service} (SaaS), práticas de segurança por padrão (\textit{security by design}) e execução sem custos com servidores dedicados. A Tabela~\ref{tab:matriz-devsecops} apresenta a matriz de decisão utilizada na escolha de cada tecnologia da esteira em comparação com outras opções de mercado:
+Embora tenha partido de problemas observados no ambiente corporativo estudado, o SEOS foi desenvolvido como um projeto autoral independente (\texttt{com.github.marygraywolf.seos}), hospedado em repositório próprio no GitHub e desvinculado de qualquer nomenclatura, regra de negócio ou código proprietário da empresa, a qual o adotou como piloto em um de seus projetos. Como a biblioteca atua na camada de persistência de aplicações Java/JDBC, sua estabilidade e sua segurança são requisitos diretos: uma falha ou vulnerabilidade no componente afetaria os sistemas que o importassem como dependência. Por essa razão, o ciclo de vida do SEOS foi estruturado sob a cultura \textit{DevSecOps}, utilizando ferramentas gerenciadas no modelo \textit{Software as a Service} (SaaS), práticas de segurança por padrão (\textit{security by design}) e execução sem custos com servidores dedicados. A Tabela~\ref{tab:matriz-devsecops} apresenta a matriz de decisão utilizada na escolha de cada tecnologia da esteira em comparação com outras opções de mercado:
 
 \clearpage
 \begin{table}[H]
@@ -757,7 +853,7 @@ Por fim, a Tabela~\ref{tab:cronograma-devsecops} apresenta o plano e cronograma 
 \subsection{Quadro de Respostas --- Antes e Depois}
 \label{sec:antes-depois}
 
-Para medir na prática os resultados da adoção do SEOS frente ao cenário diagnosticado nas Seções~\ref{sec:problema} e~\ref{sec:situacao-atual}, a avaliação comparativa foi dividida em duas frentes dentro do sistema de \textit{e-commerce} da empresa. A primeira analisou \textbf{9 classes DAO recém-desenvolvidas já com o SEOS} em novos módulos integrados à plataforma, comparando-as aos outros 69 arquivos de persistência em JDBC manual do mesmo repositório; a segunda realizou a refatoração de uma amostra de \textbf{15 métodos críticos da classe legada \texttt{ErpIntegracaoDAO}} (o arquivo-base de 21.381 linhas e 416 chamadas a \texttt{PreparedStatement} apresentado na Seção~\ref{sec:problema}), permitindo comparar o comportamento antes e depois da biblioteca sobre o mesmo código.
+Para medir na prática os resultados da adoção do SEOS frente ao cenário diagnosticado nas Seções~\ref{sec:problema} e~\ref{sec:situacao-atual}, a avaliação comparativa foi dividida em duas frentes dentro do sistema de \textit{e-commerce} da empresa. A primeira analisou \textbf{9 classes DAO recém-desenvolvidas já com o SEOS} em novos módulos integrados à plataforma e pertencentes a um projeto da empresa que aceitou adotar a biblioteca como piloto, comparando-as aos outros 69 arquivos de persistência em JDBC manual do mesmo repositório; a segunda realizou a refatoração de uma amostra de \textbf{15 métodos críticos da classe legada \texttt{ErpIntegracaoDAO}} (o arquivo-base de 21.381 linhas e 416 chamadas a \texttt{PreparedStatement} apresentado na Seção~\ref{sec:problema}), permitindo comparar o comportamento antes e depois da biblioteca sobre o mesmo código.
 
 Na primeira frente, apresentada na Tabela~\ref{tab:comparacao-modulos-ecommerce}, compara-se a adoção nativa do SEOS nos novos módulos do \textit{e-commerce} com o padrão histórico de escrita manual do repositório:
 
@@ -823,7 +919,7 @@ Na segunda frente de avaliação, foi selecionada uma amostra de \textbf{15 mét
 
 O cruzamento dos levantamentos feitos nos dois sistemas legados da empresa (\textbf{2.890 métodos de persistência} analisados na Seção~\ref{sec:situacao-atual}) com as medições obtidas no sistema de \textit{e-commerce} (Seção~\ref{sec:antes-depois}) demonstra os resultados práticos do SEOS. Em relação à produtividade e à redução de \textit{boilerplate}, o uso da biblioteca em 9 classes DAO novas, somando 82 pontos de montagem de instruções SQL e 62 execuções sobre conexões fornecidas pela própria aplicação, baixou a média de código de aproximadamente \textbf{52 para 27 linhas por método} ($-48\%$), mantendo o controle transacional sem a sobrecarga da escrita manual. Esse resultado se repete na refatoração da amostra de 15 métodos da classe \texttt{ErpIntegracaoDAO}, que teve queda de \textbf{36,1\% no total de linhas} (de 363 para cerca de 232 linhas) e deixou de exigir chamadas manuais de preparação, leitura e fechamento de recursos.
 
-Quanto à segurança na camada de persistência, tanto nos novos módulos desenvolvidos com o SEOS quanto nos 15 métodos refatorados da amostra legada, a concatenação direta de variáveis na instrução SQL caiu a \textbf{zero ($-100\%$)}. Todos os filtros e valores persistidos passaram a ser enviados de forma parametrizada, com validação prévia da quantidade de parâmetros antes da execução e bloqueio de atualizações sem cláusula \texttt{WHERE}. No processo de desenvolvimento da própria biblioteca, a esteira \textit{DevSecOps} sustentou esses resultados com \textbf{90,3\% de cobertura de testes}, aprovação no \textit{Quality Gate} do SonarCloud e nenhum achado na análise SAST do Semgrep (Apêndice~A).
+Quanto à segurança na camada de persistência, tanto nos novos módulos desenvolvidos com o SEOS quanto nos 15 métodos refatorados da amostra legada, a concatenação direta de variáveis na instrução SQL caiu a \textbf{zero ($-100\%$)} nos módulos e métodos avaliados. Todos os filtros e valores persistidos passaram a ser enviados de forma parametrizada, com validação prévia da quantidade de parâmetros antes da execução e bloqueio de atualizações sem cláusula \texttt{WHERE}. No processo de desenvolvimento da própria biblioteca, a esteira \textit{DevSecOps} sustentou esses resultados com \textbf{90,3\% de cobertura de testes}, aprovação no \textit{Quality Gate} do SonarCloud e nenhum achado na análise SAST do Semgrep (Apêndice~A).
 
 No eixo de observabilidade e governança operacional, diante de um cenário em que \textbf{94,4\%} dos métodos do sistema de \textit{e-commerce} (Tabela~\ref{tab:resultados_ecommerce}) e \textbf{59,4\%} dos arquivos em JDBC manual não tinham registro de \textit{log}, a adoção do SEOS levou a cobertura de auditoria e o tratamento estruturado de falhas a \textbf{100\%} nos módulos avaliados, registrando de forma automática o tempo de execução, a contagem de parâmetros e a classe e método de origem de cada operação.
 
@@ -835,6 +931,17 @@ Utilizei o SEOS no desenvolvimento do \textit{back-end} de uma atividade que faz
 \par}
 \end{list}
 
+\subsection{Delimitação e Limitações da Avaliação}
+\label{sec:limitacoes}
+
+A avaliação foi conduzida em escopo piloto, o que define a abrangência dos resultados. As 9 classes DAO desenvolvidas com o SEOS integram um projeto da empresa que aceitou adotar a biblioteca como piloto, de modo que os dados provêm de uso em demanda real. Da mesma forma, a equipe de Arquitetura aceitou participar da refatoração de 15 métodos do \texttt{ErpIntegracaoDAO}, arquivo crítico do repositório (402 métodos e 21.381 linhas), o que permitiu comparar o comportamento antes e depois sobre o mesmo código.
+
+Em razão desse caráter piloto, os percentuais referem-se aos módulos e aos métodos avaliados e constituem evidência inicial, e não uma estimativa para o conjunto de 2.890 métodos levantados. A ampliação da adoção a outros projetos permitirá consolidar os indicadores em uma amostra maior.
+
+A segurança do SEOS foi verificada por análise estática (Semgrep, com regras do OWASP \textit{Top} 10), testes unitários e execução contínua na esteira \textit{DevSecOps}, enquanto nos módulos do piloto a ausência de concatenação em instruções SQL foi verificada por levantamento do código. Como desdobramento, testes de intrusão em ambiente controlado poderão complementar essa validação.
+
+A avaliação qualitativa contou com o relato de uma pessoa desenvolvedora que aplicou a biblioteca em uma demanda real, e novos relatos poderão ser coletados à medida que o SEOS for adotado em outros projetos. Quanto ao desempenho, a biblioteca não adiciona camadas de \textit{cache}, sessão ou sincronização implícita, executando cada comando diretamente sobre a conexão fornecida pela aplicação, o que sustenta o baixo impacto esperado. A medição em carga permanece prevista como etapa de validação futura.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 4. CONCLUSÃO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -844,7 +951,7 @@ Este trabalho partiu de uma necessidade prática na manutenção de sistemas cor
 
 Em relação aos objetivos específicos, a automação da geração de instruções DML e DQL e do mapeamento objeto-relacional foi alcançada por meio das anotações \texttt{@TableDB} e \texttt{@ColumnDB} e das classes \texttt{SQLBuilder}, \texttt{SQLResult} e \texttt{SQLCall}, reduzindo a média de linhas por método nos novos módulos do \textit{e-commerce} ($-48\%$) e o volume de código na amostra legada refatorada ($-36{,}1\%$). A mitigação de \textit{SQL Injection} decorreu da parametrização obrigatória e do bloqueio de \texttt{UPDATE} sem cláusula \texttt{WHERE}, eliminando ($-100\%$) as concatenações diretas nas rotinas avaliadas. A auditoria e a observabilidade, incorporadas pelo \texttt{OrmLogger}, levaram a $100\%$ a cobertura de registro de tempo, origem e falhas nos módulos analisados. A esteira \textit{DevSecOps} foi estruturada com integração, qualidade, SAST, \textit{ChatOps} e entrega contínua, alcançando 90,3\% de cobertura de testes, aprovação no \textit{Quality Gate} e nenhum achado do Semgrep. A comparação com o Hibernate/JPA mostrou que, diante da exigência de manter conexões e transações sob controle da aplicação, a abordagem híbrida do SEOS é mais aderente ao cenário estudado. Por fim, a avaliação frente ao OWASP \textit{Top} 10:2021 indicou duas categorias mitigadas (A03 e A09), cinco parcialmente mitigadas e três não aplicáveis a uma biblioteca de persistência (Apêndice~B), resultados reforçados pelo relato de uma pessoa desenvolvedora que utilizou a biblioteca em uma demanda real.
 
-Por fim, mantendo a proposta enxuta do \textit{microframework}, abrem-se caminhos claros para os próximos passos da ferramenta. Como trabalhos futuros, pretende-se expandir gradualmente seus recursos para suportar o reaproveitamento de mapeamentos por herança entre classes, permitir a gravação intencional de valores nulos em atualizações específicas, flexibilizar as inserções em lote para objetos com diferentes combinações de campos e oferecer suporte auxiliar à montagem de consultas com múltiplos relacionamentos, preservando a simplicidade e a previsibilidade que motivaram a sua criação.
+Por fim, mantendo a proposta enxuta do \textit{microframework}, abrem-se caminhos claros para os próximos passos da ferramenta. Como trabalhos futuros, pretende-se expandir gradualmente seus recursos para suportar o reaproveitamento de mapeamentos por herança entre classes, permitir a gravação intencional de valores nulos em atualizações específicas, flexibilizar as inserções em lote para objetos com diferentes combinações de campos e oferecer suporte auxiliar à montagem de consultas com múltiplos relacionamentos, preservando a simplicidade e a previsibilidade que motivaram a sua criação. Também se pretende tratar a limitação identificada nas cláusulas de filtro: nos métodos \texttt{buildSelect}, \texttt{buildUpdate} e \texttt{where}, os valores são sempre enviados por \texttt{PreparedStatement}, mas a própria cláusula é recebida como texto, de modo que a proteção contra \textit{SQL Injection} depende de a aplicação utilizar marcadores \texttt{?} e não concatenar variáveis nessa cláusula, o que o SEOS atualmente não impede. Como mitigação, propõe-se validar a cláusula antes da execução, rejeitando literais e comentários SQL, ou oferecer um construtor de condições parametrizado, no qual a aplicação informa colunas e operadores e os valores ficam a cargo da biblioteca, complementado por uma regra de análise estática na esteira capaz de sinalizar concatenações em argumentos de cláusulas de filtro.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% APÊNDICE (após as Referências)
