@@ -5,13 +5,13 @@
 
 Na empresa estudada, os métodos de consulta usados nos projetos são longos e verbosos. Para realizar uma consulta, é necessário escrevê-la manualmente, armazená-la em uma variável, mapear os parâmetros do \texttt{PreparedStatement} e, logo em seguida, mapear o \texttt{ResultSet}, campo a campo.
 
-Em alguns casos, as consultas não possuem parâmetros. Em outros, os valores são concatenados diretamente na instrução \textit{Structured Query Language} (SQL), o que cria uma brecha significativa para \textit{SQL Injection}. Além disso, existem diversas versões de operações como \texttt{INSERT}, \texttt{UPDATE} e consultas para uma mesma tabela. Isso ocorre porque determinadas implementações precisam de estruturas específicas que não podem ser modificadas, resultando na duplicação de operações semelhantes.
+Em alguns casos, as consultas não possuem parâmetros. Em outros, os valores são concatenados diretamente na instrução \textit{Structured Query Language} (SQL), o que torna a aplicação vulnerável a \textit{SQL Injection}. Além disso, existem diversas versões de operações como \texttt{INSERT}, \texttt{UPDATE} e consultas para uma mesma tabela. Isso ocorre porque determinadas implementações precisam de estruturas específicas que não podem ser modificadas, resultando na duplicação de operações semelhantes.
 
 Nesse contexto, foi desenvolvido o \textbf{SEOS} (\textit{Software Endurance Orchestration System}), um \textit{microframework} de Mapeamento Objeto-Relacional (ORM, do inglês \textit{Object-Relational Mapping}) criado para atender às necessidades específicas da empresa. O SEOS mapeia tabelas, campos e \textit{sequences} por meio de \textit{annotations} e constrói estruturas \textit{Data Manipulation Language} (DML) e \textit{Data Query Language} (DQL) com base nesses mapeamentos. Dessa forma, busca tornar o acesso ao banco de dados mais padronizado e seguro, além de retornar as classes com os valores já mapeados e prontos para serem utilizados pelas implementações. Neste trabalho, o SEOS é caracterizado como um \textit{microframework} quanto à sua proposta e referido como biblioteca quanto à sua forma de distribuição, um pacote \texttt{.jar} importado como dependência pelas aplicações.
 
 \subsection{Resumo}
 
-Os sistemas legados da empresa estudada, uma indústria do setor têxtil, acessam o banco de dados com consultas escritas à mão via JDBC. Com o passar dos anos, isso gerou muito código repetido, poucos registros de \textit{log} e consultas expostas a \textit{SQL Injection}: dos 2.890 métodos de persistência analisados nos dois sistemas principais, 582 foram classificados como vulneráveis. Para enfrentar esse problema, foi evoluído o SEOS, um \textit{microframework} em Java que monta as consultas de forma parametrizada a partir de \textit{annotations}, converte os resultados em objetos automaticamente e registra cada execução, sem tirar da aplicação o controle sobre conexões e transações. O desenvolvimento da biblioteca seguiu a cultura \textit{DevSecOps}, com testes automatizados, análise de qualidade e de segurança a cada alteração, alertas no Microsoft Teams e publicação versionada. Nos testes feitos no sistema de \textit{e-commerce}, os métodos escritos com o SEOS ficaram, em média, 48\% menores, e a refatoração de 15 métodos legados reduziu o código em 36,1\%. Nas rotinas avaliadas, nenhuma consulta voltou a concatenar valores e todas passaram a gerar registro de auditoria. A esteira chegou a 90,3\% de cobertura de testes, sem nenhuma vulnerabilidade apontada pela análise estática. Os resultados mostram que é possível deixar a camada de persistência mais segura e enxuta sem adotar um ORM completo, o que se encaixa bem em cenários nos quais a aplicação precisa manter o controle das transações.
+Os sistemas legados da empresa estudada, uma indústria do setor têxtil, acessam o banco de dados com consultas escritas à mão via JDBC. Ao longo dos anos, essa prática resultou em elevada duplicação de código, escassez de registros de \textit{log} e consultas expostas a \textit{SQL Injection}: dos 2.890 métodos de persistência analisados nos dois sistemas principais, 582 foram classificados como vulneráveis. Para enfrentar esse problema, foi evoluído o SEOS, um \textit{microframework} em Java que monta as consultas de forma parametrizada a partir de \textit{annotations}, converte os resultados em objetos automaticamente e registra cada execução, sem tirar da aplicação o controle sobre conexões e transações. O desenvolvimento da biblioteca seguiu a cultura \textit{DevSecOps}, com testes automatizados, análise de qualidade e de segurança a cada alteração, alertas no Microsoft Teams e publicação versionada. Na avaliação conduzida no sistema de \textit{e-commerce}, os métodos escritos com o SEOS apresentaram redução média de 48\% no número de linhas, e a refatoração de 15 métodos legados reduziu o volume de código em 36,1\%. Nas rotinas avaliadas, as concatenações de valores nas instruções SQL foram eliminadas e todas as execuções passaram a contar com auditoria. A esteira alcançou 90,3\% de cobertura de testes, sem vulnerabilidades apontadas pela análise estática. Os resultados indicam que é possível tornar a camada de persistência mais segura e enxuta sem a adoção de um ORM completo, abordagem que se mostra adequada a cenários nos quais a aplicação precisa manter o controle das transações.
 
 \subsection{Objetivo}
 
@@ -23,8 +23,8 @@ Evoluir o \textit{microframework} SEOS com base em práticas consolidadas de mer
 
 \begin{itemize}
     \item Automatizar a geração de instruções DML e DQL e o mapeamento objeto-relacional de consultas por meio de \textit{annotations} e \textit{reflection};
-    \item Mitigar os riscos de \textit{SQL Injection} na camada de persistência mediante a parametrização obrigatória das consultas e a validação estrutural das operações;
-    \item Incorporar mecanismos de auditoria e observabilidade para o rastreamento de erros, parâmetros e tempo de execução das operações no banco de dados;
+    \item Mitigar os riscos de \textit{SQL Injection} na camada de persistência mediante a parametrização obrigatória dos valores e a validação estrutural das operações;
+    \item Incorporar mecanismos de auditoria e observabilidade para o rastreamento de erros, origem, quantidade de parâmetros e tempo de execução das operações no banco de dados;
     \item Estruturar uma esteira \textit{DevSecOps} de Integração e Entrega Contínua (CI/CD, do inglês \textit{Continuous Integration/Continuous Delivery}), contemplando testes automatizados, inspeção de qualidade e cobertura, análise estática de segurança (SAST, do inglês \textit{Static Application Security Testing}), alertas via \textit{ChatOps} e publicação com versionamento semântico;
     \item Avaliar a aderência arquitetural do SEOS frente às restrições do cenário corporativo estudado em comparação com soluções tradicionais de mercado, como o Hibernate/\textit{Java Persistence API} (JPA);
     \item Mensurar os ganhos quantitativos e qualitativos da adoção da biblioteca em relação à escrita manual via \textit{Java Database Connectivity} (JDBC), considerando a redução de código, a eliminação de duplicações e a mitigação de vulnerabilidades baseadas no \textit{Open Worldwide Application Security Project} (OWASP) \textit{Top} 10.
@@ -32,14 +32,14 @@ Evoluir o \textit{microframework} SEOS com base em práticas consolidadas de mer
 
 \subsection{Justificativa}
 
-Durante o desenvolvimento de uma demanda, o método de persistência que já existia não pôde ser reaproveitado, e a única saída seria criar mais uma versão de um \texttt{UPDATE} com as mesmas condições. Daí surgiu a pergunta: \textit{``por que duplicar algo que já existe?''}. Essa situação deixou claro que a \textbf{falta de padronização}, a \textbf{baixa qualidade do código} e os \textbf{problemas de segurança nas consultas} precisavam ser resolvidos.
+Durante o desenvolvimento de uma demanda, o método de persistência existente não pôde ser reaproveitado, e seria necessário criar mais uma versão de um \texttt{UPDATE} com as mesmas condições. Essa situação suscitou o questionamento sobre a necessidade de duplicar uma operação já implementada e evidenciou que a \textbf{falta de padronização}, a \textbf{baixa qualidade do código} e os \textbf{problemas de segurança nas consultas} precisavam ser tratados.
 
-O \textbf{SEOS} nasceu dessa necessidade, como uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de \textit{SQL Injection}, \textbf{sem retirar da equipe o controle} sobre as consultas, conexões e transações de persistência.
+O \textbf{SEOS} foi concebido a partir dessa necessidade, como uma solução capaz de reduzir o trabalho manual e a duplicação de métodos, facilitar a manutenção dos projetos empresariais e diminuir os riscos de \textit{SQL Injection}, \textbf{sem retirar da equipe o controle} sobre as consultas, conexões e transações de persistência.
 
 \subsection{Problema}
 \label{sec:problema}
 
-Em um diagnóstico inicial realizado junto à equipe de Arquitetura sobre uma única classe de acesso a dados (DAO, do inglês \textit{Data Access Object}, também chamada de \textit{Repository}) de um dos projetos legados da empresa, identificou-se um volume alto de retrabalho e vulnerabilidades. Ao todo, o arquivo concentrava \textbf{21.381 linhas de código} distribuídas em \textbf{409 métodos} (dos quais \textbf{402} acessam diretamente o banco de dados), com uma taxa de \textbf{19,6\% de linhas idênticas} e \textbf{54,4\% de linhas repetidas}. Além da duplicação, constatou-se que, entre \textbf{416 chamadas} a \texttt{PreparedStatement}, apenas \textbf{156} parametrizavam os valores adequadamente. Considerando os \textbf{402 métodos} que acessam o banco de dados, aproximadamente \textbf{43\%} deles mostraram-se potencialmente vulneráveis a \textit{SQL Injection}. Os alertas sobre essas falhas na camada de persistência já eram conhecidos internamente, mas a falta de uma abstração padronizada, a pressão por entregas rápidas e o tamanho dos sistemas legados inviabilizaram a correção manual desse código, cenário no qual o SEOS se insere.
+Em um diagnóstico inicial realizado junto à equipe de Arquitetura sobre uma única classe de acesso a dados (DAO, do inglês \textit{Data Access Object}, também chamada de \textit{Repository}) de um dos projetos legados da empresa, identificou-se um volume elevado de retrabalho e de vulnerabilidades. Ao todo, o arquivo concentrava \textbf{21.381 linhas de código} distribuídas em \textbf{409 métodos} (dos quais \textbf{402} acessam diretamente o banco de dados), com uma taxa de \textbf{19,6\% de linhas idênticas} e \textbf{54,4\% de linhas repetidas}. Além da duplicação, constatou-se que, entre \textbf{416 chamadas} a \texttt{PreparedStatement}, apenas \textbf{156} parametrizavam os valores adequadamente. Considerando os \textbf{402 métodos} que acessam o banco de dados, aproximadamente \textbf{43\%} deles mostraram-se potencialmente vulneráveis a \textit{SQL Injection}. Os alertas sobre essas falhas na camada de persistência já eram conhecidos internamente, mas a falta de uma abstração padronizada, a pressão por entregas rápidas e o tamanho dos sistemas legados inviabilizaram a correção manual desse código, cenário no qual o SEOS se insere.
 
 Embora seja distribuído como uma biblioteca Java sob versionamento semântico, e não como uma aplicação final isolada, o SEOS opera no núcleo da camada de persistência dos módulos que sustentam a operação da empresa. No exemplo citado, ter cerca de \textbf{43\% dos métodos suscetíveis a \textit{SQL Injection}} representa um risco operacional direto ao banco de dados. Caso uma vulnerabilidade dessa natureza fosse explorada ou tabelas essenciais fossem corrompidas, a contenção do incidente, a auditoria dos registros afetados e a restauração do ambiente exigiriam várias horas de trabalho. Nesse período, a paralisação do faturamento e das vendas traria prejuízos financeiros diretos à organização, além de perdas indiretas, como desgaste reputacional e impacto no atendimento aos clientes. Assim, o uso do SEOS em conjunto com a esteira \textit{DevSecOps} e o controle estrito de versões atua na prevenção desses incidentes operacionais e financeiros.
 
@@ -55,19 +55,19 @@ A vida útil de um sistema corporativo depende da clareza e da facilidade de man
 Ferramentas tradicionais de ORM buscam abstrair esse trabalho manual, mas sua adoção nem sempre é viável em sistemas legados acoplados a regras de negócio no banco de dados. Nos Capítulos 30 e 32 de \textit{Arquitetura Limpa}, \citeonline{martin2019} defende que tanto o banco de dados quanto os \textit{frameworks} de mercado devem ser tratados como detalhes de infraestrutura, evitando que ferramentas opinativas assumam o controle sobre a arquitetura ou imponham acoplamento ao modelo da aplicação. De forma complementar, \citeonline{richards2020} definem como primeira lei da arquitetura de \textit{software} que toda decisão arquitetural envolve compensações (\textit{trade-offs}). Conforme analisado por \citeonline{ford2022}, quando não há soluções universais prontas e diversos módulos compartilham contratos estritos sobre uma mesma base de dados, a engenharia de \textit{software} precisa equilibrar o nível de abstração desejado e o controle transacional exigido pela operação.
 
 \subsection{Segurança na Camada de Persistência e \textit{SQL Injection}}
-A falta de padronização no acesso a dados dificulta a manutenção do código e expõe a organização a riscos de segurança cibernética. De acordo com a \citeonline{owasp2021}, no relatório \textit{OWASP Top 10}, as falhas de injeção (\textit{A03:2021 --- Injection}) estão entre as vulnerabilidades mais críticas em aplicações corporativas e \textit{web}, ocorrendo quando dados não confiáveis são enviados a um interpretador como parte de um comando ou consulta.
+A falta de padronização no acesso a dados dificulta a manutenção do código e expõe a organização a riscos de segurança cibernética. De acordo com a \citeonline{owasp2025}, na edição 2025 do relatório \textit{OWASP Top 10}, as falhas de injeção (\textit{A05:2025 --- Injection}) permanecem entre os riscos mais críticos em aplicações corporativas e \textit{web}, ocorrendo quando dados não confiáveis são enviados a um interpretador como parte de um comando ou consulta.
 
-Em bancos de dados relacionais, como explicam \citeonline{leite2023} e \citeonline{alura2024}, os ataques de \textit{SQL Injection} exploram a montagem dinâmica de instruções pela concatenação direta de variáveis no texto da consulta, o que permite a um invasor alterar a lógica do comando SQL para ler dados sigilosos, modificar registros ou interromper o serviço. Para evitar essa brecha na camada de aplicação, \citeonline{leite2023} recomenda o uso de consultas parametrizadas (\textit{Prepared Statements}), nas quais o banco de dados compila previamente a estrutura da instrução SQL e trata os parâmetros recebidos apenas como valores literais, sem executá-los como comando. Quando essa parametrização é centralizada na própria abstração de persistência, a equipe deixa de depender apenas de revisões manuais a cada novo método criado.
+Em bancos de dados relacionais, conforme a definição da fraqueza CWE-89 mantida pela \citeonline{mitre-cwe89}, o \textit{SQL Injection} ocorre quando a instrução SQL é construída com dados de origem externa sem a neutralização adequada de elementos especiais, como na concatenação direta de variáveis no texto da consulta, o que permite a um invasor alterar a lógica do comando para ler dados sigilosos, modificar registros ou contornar mecanismos de proteção. Como principal defesa na camada de aplicação, a \citeonline{owasp-sqli-cheatsheet} recomenda o uso de consultas parametrizadas (\textit{Prepared Statements}), nas quais a estrutura da instrução SQL é definida previamente e os parâmetros recebidos são tratados apenas como dados, sem serem interpretados como comando. Quando essa parametrização é centralizada na própria abstração de persistência, a equipe deixa de depender apenas de revisões manuais a cada novo método criado.
 
 \subsection{Cultura \textit{DevSecOps}, Análise Estática (SAST) e Segurança da Cadeia de Suprimentos}
-Para que práticas de codificação segura sejam verificadas de forma contínua, a engenharia de \textit{software} evoluiu do modelo DevOps tradicional para a cultura \textit{DevSecOps}. Segundo \citeonline{santos2024}, o \textit{DevSecOps} integra a segurança a todas as fases do desenvolvimento por meio da Segurança Antecipada (\textit{Shift-Left Security}), trazendo a detecção de vulnerabilidades para o início da esteira de CI/CD.
+Para que práticas de codificação segura sejam verificadas de forma contínua, a engenharia de \textit{software} evoluiu do modelo DevOps tradicional para a cultura \textit{DevSecOps}. Segundo \citeonline{souppaya2022}, no \textit{Secure Software Development Framework} (SSDF) do \textit{National Institute of Standards and Technology} (NIST), as práticas de desenvolvimento seguro devem ser integradas a todas as fases do ciclo de vida do \textit{software}, de modo que as vulnerabilidades sejam identificadas e corrigidas o mais cedo possível. A cultura \textit{DevSecOps} operacionaliza essa recomendação por meio da Segurança Antecipada (\textit{Shift-Left Security}), que traz a detecção de vulnerabilidades para o início da esteira de CI/CD.
 
 Essa automação baseia-se em ferramentas de SAST e em portões de qualidade (\textit{Quality Gates}). No Capítulo 6 de sua obra, \citeonline{richards2020} classificam essas verificações automatizadas em \textit{pipelines} como funções de avaliação (\textit{fitness functions}), que aferem se características arquiteturais como segurança, cobertura de testes e controle de duplicação estão sendo mantidas. No Brasil, pesquisas publicadas nos anais da Sociedade Brasileira de Computação (SBC) demonstram resultados práticos do uso dessas ferramentas: \citeonline{milanez2025} aplicaram a detecção automatizada de falhas de código com base nas diretrizes da OWASP utilizando o \textit{SonarQube}, enquanto \citeonline{pimentel2025}, ao compararem ferramentas SAST tradicionais como \textit{Semgrep} e \textit{SonarQube}, registraram 100\% de precisão na identificação de vulnerabilidades estruturais clássicas, incluindo \textit{SQL Injection}. Já \citeonline{machado2026} destacam a necessidade de calibrar os portões de segurança nas esteiras \textit{DevSecOps} para barrar \textit{builds} vulneráveis sem causar fadiga de alertas (\textit{alert fatigue}) na equipe.
 
-Além da análise do código próprio, a segurança da esteira envolve a integridade da cadeia de suprimentos de \textit{software} (\textit{Software Supply Chain Security}), abordada na categoria \textit{A08:2021 --- Software and Data Integrity Failures} da \citeonline{owasp2021}, que alerta sobre o uso de componentes e \textit{pipelines} de CI/CD sem verificação de integridade. Seguindo essa orientação, o guia de segurança do \citeonline{github2024} recomenda fixar todas as \textit{actions} de terceiros pelo \textit{hash} completo e imutável do \textit{commit} (SHA) em vez de utilizar \textit{tags} mutáveis, o que evita a execução de código alterado em dependências externas durante o \textit{build} e a publicação de pacotes.
+Além da análise do código próprio, a segurança da esteira envolve a cadeia de suprimentos de \textit{software} (\textit{Software Supply Chain Security}), tema que recebeu categoria própria na edição 2025 do OWASP \textit{Top} 10 (\textit{A03:2025 --- Software Supply Chain Failures}), abrangendo dependências, ferramentas de \textit{build} e \textit{pipelines} de CI/CD, e que se complementa pela categoria \textit{A08:2025 --- Software or Data Integrity Failures}, voltada à verificação da integridade de artefatos e atualizações \cite{owasp2025}. Seguindo essa orientação, o guia de segurança do \citeonline{github2024} recomenda fixar todas as \textit{actions} de terceiros pelo \textit{hash} completo e imutável do \textit{commit} (SHA) em vez de utilizar \textit{tags} mutáveis, o que evita a execução de código alterado em dependências externas durante o \textit{build} e a publicação de pacotes.
 
 \subsection{Observabilidade, Auditoria e Resposta a Incidentes}
-A operação segura de sistemas críticos também exige visibilidade sobre o que ocorre em tempo de execução. No Capítulo 7 de \textit{Código Limpo}, \citeonline{martin2009} afirma que o tratamento de erros deve informar contexto suficiente para identificar a origem e a localização de uma falha, evitando blocos de captura que escondam exceções ou atrasem o diagnóstico. Na área de segurança, a categoria \textit{A09:2021 --- Security Logging and Monitoring Failures} da \citeonline{owasp2021} mostra que a falta de registros de auditoria e de alertas ativos dificulta a identificação de falhas e amplia o impacto de incidentes em produção.
+A operação segura de sistemas críticos também exige visibilidade sobre o que ocorre em tempo de execução. No Capítulo 7 de \textit{Código Limpo}, \citeonline{martin2009} afirma que o tratamento de erros deve informar contexto suficiente para identificar a origem e a localização de uma falha, evitando blocos de captura que escondam exceções ou atrasem o diagnóstico. Na área de segurança, a categoria \textit{A09:2025 --- Security Logging and Alerting Failures} \cite{owasp2025} mostra que a falta de registros de auditoria e de alertas ativos dificulta a identificação de falhas e amplia o impacto de incidentes em produção. Em complemento, a categoria \textit{A10:2025 --- Mishandling of Exceptional Conditions}, introduzida nessa edição, trata das falhas no tratamento de erros e de condições anormais, como exceções suprimidas ou que deixam o sistema em estado inconsistente, em consonância com a recomendação de \citeonline{martin2009}.
 
 Por isso, combinar o registro padronizado de erros e de tempo de execução na camada de persistência com o envio de alertas direcionados na esteira de integração contínua, evitando a fadiga de alertas apontada por \citeonline{machado2026}, oferece à equipe técnica os dados necessários para corrigir falhas rapidamente e acompanhar o ciclo de vida do \textit{software}.
 
@@ -144,7 +144,7 @@ Dos \textbf{573 métodos sem \textit{logs}}, \textbf{254} possuem \texttt{try/ca
     {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
 \end{table}
 
-No Quadro~1, apresenta-se um exemplo claro do padrão de código que alimentou os dados desses levantamentos:
+No Quadro~1, apresenta-se um exemplo representativo do padrão de código que alimentou os dados desses levantamentos:
 
 \vspace{0.3cm}
 \noindent
@@ -281,7 +281,7 @@ Quadro 3 - Exemplos de construção de consultas \texttt{SELECT} com o \texttt{S
 
 Para as operações DML (\texttt{INSERT} e \texttt{UPDATE}), o \texttt{SQLBuilder} aplica o conceito de \textit{Anti-Null}: apenas os atributos que estiverem preenchidos serão persistidos no banco. Dessa forma, não é mais preciso desenvolver métodos diferentes para a mesma tabela, sendo necessário apenas informar a classe com as informações preenchidas.
 
-Quando é utilizado o \textit{builder} de \texttt{INSERT} (\texttt{buildInsert}) sem preencher os dados da \textit{primary key}, automaticamente é utilizada a \textit{sequence} configurada anteriormente no \texttt{@ColumnDB}. Também é possível realizar inserções em lote por meio do método \texttt{buildInsertBatch()}. No Quadro~4, apresenta-se o exemplo de uso do \texttt{buildInsert} e a respectiva instrução SQL gerada:
+Quando é utilizado o \textit{builder} de \texttt{INSERT} (\texttt{buildInsert}) sem preencher os dados da \textit{primary key}, automaticamente é utilizada a \textit{sequence} configurada anteriormente no \texttt{@ColumnDB}, sendo também possível realizar inserções em lote por meio do método \texttt{buildInsertBatch()}, conforme apresentado no Quadro~4:
 
 \vspace{0.3cm}
 \noindent
@@ -368,7 +368,7 @@ Quadro 6 - Exemplos de execução de operações de escrita com o \texttt{SQLRes
 08      .buildInsert(newUser)
 09      .executeAndReturnId(conn, newUser);
 10
-11  // 3. Inserção em lote com controle transacional explícito:
+11  // 3. Inserção em lote com controle transacional explícito pelo chamador:
 12  boolean autoCommitOriginal = conn.getAutoCommit();
 13  try {
 14      conn.setAutoCommit(false);
@@ -439,7 +439,7 @@ Quadro 8 - Exemplos de leitura dinâmica em mapas, dicionários e valores escala
 \vspace{0.1cm}
 {\small\linespread{1.0}\selectfont
 \begin{verbatim}
-01  // 1. Consulta agregada retornando lista de mapas (sem DTO):
+01  // 1. Consulta agregada retornando lista de mapas (sem necessidade de DTO):
 02  List<Map<String, Object>> totaisPorStatus = new SQLResult(
 03      "SELECT STATUS, COUNT(1) TOTAL FROM TB_USER GROUP BY STATUS",
 04      Collections.emptyList()
@@ -499,7 +499,7 @@ Quadro 9 - Exemplo de execução fluente de \textit{procedure} PL/SQL com o \tex
 \end{minipage}
 \vspace{0.3cm}
 
-Por fim, para resolver a falta de rastreabilidade apontada na Seção~\ref{sec:situacao-atual}, na qual \textbf{34,9\%} dos métodos do sistema de automações e \textbf{94,4\%} dos métodos do \textit{e-commerce} não possuíam nenhum registro de \textit{log}, o SEOS incorporou uma camada transversal de auditoria baseada na interface \textit{Service Provider Interface} (SPI) \texttt{OrmLogger}, gerenciada pela classe \texttt{OrmConfig}. Com essa estrutura, todas as operações executadas pela biblioteca têm seu tempo de resposta medido e identificam automaticamente a classe e o método da aplicação que originaram a chamada ao banco. Cada execução gera um registro padronizado com a origem, a duração e a contagem de parâmetros: informativo em caso de sucesso, de alerta quando a operação ultrapassa o limite de tempo configurado (\textbf{10 segundos} para consultas e \textbf{5 segundos} para chamadas PL/SQL) e de erro em caso de falha SQL, permitindo que a aplicação conecte seu próprio sistema de \textit{logs} na inicialização, conforme exemplificado no Quadro~10:
+Por fim, para resolver a falta de rastreabilidade apontada na Seção~\ref{sec:situacao-atual}, na qual \textbf{34,9\%} dos métodos do sistema de automações e \textbf{94,4\%} dos métodos do \textit{e-commerce} não possuíam nenhum registro de \textit{log}, o SEOS incorporou uma camada transversal de auditoria baseada na interface \textit{Service Provider Interface} (SPI) \texttt{OrmLogger}, gerenciada pela classe \texttt{OrmConfig}. Com essa estrutura, todas as operações executadas pela biblioteca têm seu tempo de resposta medido e identificam automaticamente a classe e o método da aplicação que originaram a chamada ao banco. Cada execução gera um registro padronizado com a origem, a duração e a contagem de parâmetros: informativo em caso de sucesso, de alerta quando a operação ultrapassa o limite de tempo configurado (\textbf{10 segundos} para consultas e \textbf{5 segundos} para chamadas PL/SQL) e de erro em caso de falha SQL, permitindo que a aplicação conecte seu próprio sistema de \textit{logs} na inicialização. Esse comportamento corresponde à versão \texttt{v1.2.0}; na versão \texttt{v1.1.0}, utilizada no piloto descrito na Seção~\ref{sec:antes-depois}, eram registradas apenas as falhas e as execuções lentas, com limite de 3 segundos para chamadas PL/SQL. O Quadro~10 ilustra a integração do \textit{logger} da aplicação:
 
 \vspace{0.3cm}
 \noindent
@@ -511,25 +511,26 @@ Quadro 10 - Integração do \textit{logger} da aplicação com a auditoria do SE
 \vspace{0.1cm}
 {\small\linespread{1.0}\selectfont
 \begin{verbatim}
-01  OrmConfig.setLogger(new OrmLogger() {
-02      @Override
-03      public void info(String origin, String code, String msg,
-04                       Object... params) {
-05          appLogger.info("{} [{}] {}", origin, code, msg);
-06      }
-07
-08      @Override
-09      public void warn(String origin, String code, String msg,
-10                       Object... params) {
-11          appLogger.warn("{} [{}] {}", origin, code, msg);
-12      }
-13
-14      @Override
-15      public void error(String origin, String code, String msg,
-16                        Exception e, Object... params) {
-17          appLogger.error("{} [{}] {}", origin, code, msg, e);
-18      }
-19  });
+01  // Integração opcional do logger da aplicação com a auditoria do SEOS:
+02  OrmConfig.setLogger(new OrmLogger() {
+03      @Override
+04      public void info(String origin, String code, String msg,
+05                       Object... params) {
+06          appLogger.info("{} [{}] {}", origin, code, msg);
+07      }
+08
+09      @Override
+10      public void warn(String origin, String code, String msg,
+11                       Object... params) {
+12          appLogger.warn("{} [{}] {}", origin, code, msg);
+13      }
+14
+15      @Override
+16      public void error(String origin, String code, String msg,
+17                        Exception e, Object... params) {
+18          appLogger.error("{} [{}] {}", origin, code, msg, e);
+19      }
+20  });
 \end{verbatim}
 }
 \hrule
@@ -571,8 +572,112 @@ A Figura~\ref{fig:componentes-seos} apresenta os componentes do SEOS e as depend
         \draw[->] (result) -- (jdbc);
         \draw[->] (call) -| ([xshift=0.9cm]jdbc.north east);
         \draw[dep] (result.east) -- node[above]{audita} (config.west);
-        \draw[dep] (call) -- (config);
+        \draw[dep] (call) -- node[right]{audita} (config);
         \draw[->] (config) -- (logger);
+    \end{tikzpicture}
+    \vspace{0.15cm}
+
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{figure}
+
+A Figura~\ref{fig:sequencia-update} detalha, em ordem cronológica, uma execução completa de \texttt{UPDATE}, do DTO preenchido pela aplicação até o banco de dados e o registro do evento de auditoria. O fluxo mostra em que momento cada validação acontece: a ausência de campos preenchidos ou de cláusula \texttt{WHERE} interrompe a montagem ainda no \texttt{SQLBuilder}, e a divergência entre marcadores \texttt{?} e parâmetros é barrada na criação do \texttt{SQLResult}, antes de qualquer acesso ao banco. Como essas validações ocorrem antes do envio ao banco, as exceções correspondentes são lançadas diretamente à aplicação, sem registro de auditoria pelo SEOS. Depois da execução, o evento é classificado como sucesso, lentidão ou falha, e o controle da transação volta à aplicação.
+
+% Requer \usepackage{tikz} e \usetikzlibrary{arrows.meta} no preâmbulo.
+% Posições horizontais das linhas de vida: App = 0; SQLBuilder = 3,2; UserDTO = 5,9;
+% SQLResult = 8,3; JDBC/Oracle = 11,2; OrmLogger = 13,6 (em cm).
+\begin{figure}[H]
+    \centering
+    \caption{Diagrama de sequência de uma operação \texttt{UPDATE} com o SEOS}
+    \label{fig:sequencia-update}
+    \vspace{0.15cm}
+    \begin{tikzpicture}[
+        font=\scriptsize,
+        part/.style={draw, rectangle, rounded corners=2pt, fill=white, minimum width=2.0cm, minimum height=0.8cm, text width=1.9cm, align=center, inner sep=2pt},
+        vida/.style={densely dashed, gray},
+        msg/.style={-{Stealth[length=1.8mm]}},
+        ret/.style={dashed, -{Stealth[length=1.8mm]}},
+        rot/.style={fill=white, inner sep=1pt, align=center, anchor=south, yshift=1pt},
+        moldura/.style={draw, thin},
+        tag/.style={draw, fill=white, anchor=north west, inner sep=2pt, font=\scriptsize\bfseries},
+        guarda/.style={anchor=north west, inner sep=2pt, font=\scriptsize\itshape}]
+
+        % Linhas de vida
+        \foreach \x in {0, 3.2, 5.9, 8.3, 11.2, 13.6}
+            \draw[vida] (\x,-0.4) -- (\x,-17.8);
+
+        % Participantes
+        \node[part] at (0,0)    {DAO da aplicação};
+        \node[part] at (3.2,0)  {\texttt{SQLBuilder}};
+        \node[part] at (5.9,0)  {\texttt{UserDTO}};
+        \node[part] at (8.3,0)  {\texttt{SQLResult}};
+        \node[part] at (11.2,0) {JDBC / Oracle};
+        \node[part] at (13.6,0) {\texttt{OrmLogger}};
+
+        % Montagem da instrução
+        \draw[msg] (0,-1.4) -- (3.2,-1.4);
+        \node[rot] at (1.6,-1.4) {\textbf{1.} \texttt{buildUpdate(updateUser,}\\\texttt{\detokenize{"USER_ID = ?"}, idUser)}};
+        \draw[msg] (3.2,-2.4) -- (5.9,-2.4);
+        \node[rot] at (4.55,-2.4) {\textbf{2.} \textit{reflection}: lê \texttt{@TableDB},\\\texttt{@ColumnDB} e valores};
+        \draw[ret] (5.9,-3.4) -- (3.2,-3.4);
+        \node[rot] at (4.55,-3.4) {\textbf{3.} \texttt{TB\_USER} e campos\\não nulos (\texttt{name}, \texttt{age})};
+
+        % alt: validação no SQLBuilder
+        \draw[moldura] (-1.0,-3.75) rectangle (4.9,-5.1);
+        \node[tag] at (-1.0,-3.75) {alt};
+        \node[guarda] at (-0.45,-3.75) {[nenhum campo preenchido ou \texttt{WHERE} ausente]};
+        \draw[ret] (3.2,-4.8) -- (0,-4.8);
+        \node[rot] at (1.6,-4.8) {\textbf{4.} \texttt{IllegalStateException} /\\\texttt{IllegalArgumentException}};
+
+        % Criação e validação do SQLResult
+        \draw[msg] (3.2,-5.8) -- (8.3,-5.8);
+        \node[rot] at (5.75,-5.8) {\textbf{5.} \texttt{new SQLResult(sql, [name, age, idUser])}};
+        \draw[msg] (8.3,-6.25) -- ++(0.5,0) -- ++(0,-0.4) -- ++(-0.5,0);
+        \node[fill=white, inner sep=1pt, anchor=west, align=left] at (8.9,-6.45) {\textbf{6.} \texttt{validarParametros}:\\3 marcadores = 3 parâmetros};
+        \draw[ret] (8.3,-7.4) -- (0,-7.4);
+        \node[rot] at (4.15,-7.4) {\textbf{7.} \texttt{SQLResult} pronto para execução};
+
+        % Execução
+        \draw[msg] (0,-8.0) -- (8.3,-8.0);
+        \node[rot] at (4.15,-8.0) {\textbf{8.} \texttt{executeUpdate(conn)}};
+        \draw[msg] (8.3,-8.6) -- (11.2,-8.6);
+        \node[rot] at (9.75,-8.6) {\textbf{9.} \texttt{prepareStatement(sql)}};
+        \draw[msg] (8.3,-9.2) -- (11.2,-9.2);
+        \node[rot] at (9.75,-9.2) {\textbf{10.} \texttt{setObject(1..3, valores)}};
+        \draw[msg] (8.3,-9.8) -- (11.2,-9.8);
+        \node[rot] at (9.75,-9.8) {\textbf{11.} \texttt{executeUpdate()}};
+
+        % alt: classificação do evento de auditoria
+        \draw[moldura] (-1.0,-10.15) rectangle (14.6,-16.85);
+        \node[tag] at (-1.0,-10.15) {alt};
+        \node[guarda] at (-0.45,-10.15) {[sucesso em até 10 s]};
+        \draw[ret] (11.2,-10.9) -- (8.3,-10.9);
+        \node[rot] at (9.75,-10.9) {\textbf{12.} linhas afetadas};
+        \draw[msg] (8.3,-11.75) -- (13.6,-11.75);
+        \node[rot] at (10.95,-11.75) {\textbf{13.} \texttt{info SQL-INFO-001}\\(origem, tempo, qtd. de parâmetros)};
+        \draw[ret] (8.3,-12.3) -- (0,-12.3);
+        \node[rot] at (4.15,-12.3) {\textbf{14.} linhas afetadas};
+
+        \draw[moldura, dashed] (-1.0,-12.6) -- (14.6,-12.6);
+        \node[guarda] at (-0.95,-12.6) {[sucesso acima de 10 s]};
+        \draw[ret] (11.2,-13.35) -- (8.3,-13.35);
+        \node[rot] at (9.75,-13.35) {\textbf{15.} linhas afetadas};
+        \draw[msg] (8.3,-13.9) -- (13.6,-13.9);
+        \node[rot] at (10.95,-13.9) {\textbf{16.} \texttt{warn SQL-WARN-001} (consulta lenta)};
+        \draw[ret] (8.3,-14.45) -- (0,-14.45);
+        \node[rot] at (4.15,-14.45) {\textbf{17.} linhas afetadas};
+
+        \draw[moldura, dashed] (-1.0,-14.75) -- (14.6,-14.75);
+        \node[guarda] at (-0.95,-14.75) {[falha SQL]};
+        \draw[ret] (11.2,-15.5) -- (8.3,-15.5);
+        \node[rot] at (9.75,-15.5) {\textbf{18.} \texttt{SQLException}};
+        \draw[msg] (8.3,-16.05) -- (13.6,-16.05);
+        \node[rot] at (10.95,-16.05) {\textbf{19.} \texttt{error SQL-ERR-001} (com a exceção)};
+        \draw[ret] (8.3,-16.6) -- (0,-16.6);
+        \node[rot] at (4.15,-16.6) {\textbf{20.} relança a exceção};
+
+        % Controle transacional da aplicação
+        \draw[msg] (0,-17.4) -- (11.2,-17.4);
+        \node[rot] at (5.6,-17.4) {\textbf{21.} \texttt{commit()} ou \texttt{rollback()}};
     \end{tikzpicture}
     \vspace{0.15cm}
 
@@ -601,7 +706,7 @@ Os requisitos funcionais (RF) e não funcionais (RNF) do SEOS são apresentados 
     RF07 & Retornar o número de linhas afetadas e o ID gerado pela \textit{sequence}. & \texttt{executeUpdate} e \texttt{executeAndReturnId} (Quadro~6). \\ \hline
     RF08 & Chamar procedimentos PL/SQL com parâmetros de entrada, saída e entrada/saída. & \texttt{SQLCall.in}, \texttt{out}, \texttt{inOut} e \texttt{execute}; \texttt{SQLCallTest}. \\ \hline
     RF09 & Utilizar a conexão e o controle transacional da aplicação, sem abri-la nem encerrá-la. & Métodos \texttt{execute*(Connection)}; Quadro~6. \\ \hline
-    RF10 & Registrar cada execução, inclusive em lote, com origem, duração e quantidade de parâmetros, classificando-a como sucesso, lentidão ou falha, e permitir substituir o \textit{logger}. & \texttt{auditarPerformance}, \texttt{OrmLogger} e \texttt{OrmConfig.setLogger} (Quadro~10). \\ \hline
+    RF10 & Registrar cada execução, inclusive em lote, com origem, duração e quantidade de parâmetros, classificando-a como sucesso, lentidão ou falha, e permitir substituir o \textit{logger}. & \texttt{auditarPerformance}, \texttt{OrmLogger} e \texttt{OrmConfig.setLogger} (Quadro~10); registro de sucesso e de lotes a partir da \texttt{v1.2.0}. \\ \hline
     \end{tabular}
     \endgroup
     \vspace{0.15cm}
@@ -620,9 +725,9 @@ Os requisitos funcionais (RF) e não funcionais (RNF) do SEOS são apresentados 
     \begin{tabular}{|p{1.3cm}|p{3.4cm}|p{4.0cm}|p{4.8cm}|}
     \hline
     \textbf{ID} & \textbf{Requisito} & \textbf{Meta} & \textbf{Evidência} \\ \hline
-    RNF01 & Segurança: valores nunca concatenados à instrução SQL. & Nenhum achado de \textit{SQL Injection} no código do SEOS. A cláusula \texttt{WHERE}, recebida como texto, é segura apenas quando a aplicação utiliza marcadores \texttt{?}. & Uso exclusivo de \textit{placeholders}; varredura do Semgrep sem achados e matriz OWASP A03 (Tabela~\ref{tab:matriz-owasp}). \\ \hline
-    RNF02 & Rastreabilidade: auditoria de todas as operações. & Registro em 100\% das operações (sucesso, lentidão e falha). & \texttt{auditarPerformance}, eventos \texttt{info}, \texttt{warn} e \texttt{error}, e cobertura de auditoria dos módulos avaliados (Seção~\ref{sec:resultados}). \\ \hline
-    RNF03 & Desempenho: alerta de lentidão. & Aviso acima de 10 s (consultas) e 5 s (PL/SQL). & \texttt{auditarPerformance}; desempenho sob carga não avaliado. \\ \hline
+    RNF01 & Segurança: valores nunca concatenados à instrução SQL. & Nenhum achado de \textit{SQL Injection} no código do SEOS. A cláusula \texttt{WHERE}, recebida como texto, é segura apenas quando a aplicação utiliza marcadores \texttt{?}. & Uso exclusivo de \textit{placeholders}; varredura do Semgrep sem achados e matriz OWASP A05 (Tabela~\ref{tab:matriz-owasp}). \\ \hline
+    RNF02 & Rastreabilidade: auditoria de todas as execuções no banco. & Registro em 100\% das execuções enviadas ao banco (sucesso, lentidão e falha), a partir da \texttt{v1.2.0}; exceções de validação anteriores à execução são lançadas à aplicação sem registro. & \texttt{auditarPerformance}, eventos \texttt{info}, \texttt{warn} e \texttt{error}; na \texttt{v1.1.0}, avaliada no piloto, cobertura de 100\% para falhas e lentidão (Seção~\ref{sec:resultados}). \\ \hline
+    RNF03 & Desempenho: alerta de lentidão. & Aviso acima de 10 s (consultas) e 5 s (PL/SQL), a partir da \texttt{v1.2.0} (3 s para PL/SQL na \texttt{v1.1.0}). & \texttt{auditarPerformance}; desempenho sob carga não avaliado. \\ \hline
     RNF04 & Confidencialidade dos \textit{logs}. & Valores dos parâmetros ausentes dos eventos emitidos, inclusive os de sucesso. & \texttt{OrmConfig.DefaultConsoleLogger} (A09 da Tabela~\ref{tab:matriz-owasp}). \\ \hline
     RNF05 & Compatibilidade: ausência de contêiner ou \textit{runtime} adicional. & Dependência apenas do JDBC; distribuição em \texttt{.jar}. & Tabela~\ref{tab:comparacao-hibernate-seos}. \\ \hline
     RNF06 & Manutenibilidade: qualidade verificada na esteira. & Aprovação em \textit{build}, testes, SonarQube e SAST a cada \textit{commit}. & Tabela~\ref{tab:matriz-devsecops}; Seção~\ref{sec:resultados}. \\ \hline
@@ -639,14 +744,14 @@ Os requisitos funcionais (RF) e não funcionais (RNF) do SEOS são apresentados 
 
 O SEOS não armazena registros em seu código-fonte: os eventos são emitidos por meio da interface \texttt{OrmLogger} e repassados à aplicação que importa a biblioteca, a qual os grava no servidor conforme a configuração adotada. Na ausência de um \textit{logger} configurado, o SEOS utiliza um mecanismo de contingência que escreve no console, cujo destino também depende do servidor.
 
-Os eventos emitidos (sucesso, lentidão e falha) contêm apenas a origem da chamada, o tempo de execução e a quantidade de parâmetros (e o nome da \textit{procedure}, nas chamadas PL/SQL), sem os valores dos parâmetros. Esse conteúdo está alinhado ao princípio da necessidade da Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018, art. 6º, III), por restringir o registro ao mínimo necessário para auditoria e diagnóstico, de modo que os dados pessoais não são registrados pela biblioteca.
+Os eventos emitidos (sucesso, lentidão e falha) contêm apenas a origem da chamada, o tempo de execução e a quantidade de parâmetros (e o nome da \textit{procedure}, nas chamadas PL/SQL), sem os valores dos parâmetros. Esse conteúdo está alinhado ao princípio da necessidade da Lei Geral de Proteção de Dados Pessoais (LGPD) \cite[art.~6º, III]{brasil2018}, por restringir o registro ao mínimo necessário para auditoria e diagnóstico, de modo que os dados pessoais não são registrados pela biblioteca.
 
 Permanece, contudo, a possibilidade de que a mensagem da exceção repassada ao \textit{logger} contenha trechos da instrução ou de dados, a depender do \textit{driver} do banco. Recomenda-se que a aplicação filtre ou mascare essa mensagem, restrinja o acesso aos arquivos de \textit{log} e defina o prazo de retenção segundo a política de segurança da empresa.
 
 \subsection{Impacto de um Incidente de \textit{SQL Injection}}
 \label{sec:impacto-incidente}
 
-O impacto de um incidente de \textit{SQL Injection} pode ser descrito por suas categorias de custo. O custo direto decorre da paralisação do faturamento e das vendas durante a contenção do incidente, a auditoria dos registros afetados e a restauração do ambiente, etapas que, conforme o diagnóstico apresentado na Seção~\ref{sec:problema}, exigiriam várias horas de trabalho. O custo indireto compreende a perda de clientes, o desgaste reputacional e o impacto no atendimento. Havendo exposição de dados pessoais, soma-se ainda o risco de sanções administrativas previstas na LGPD (Lei nº 13.709/2018, art. 52). Em contrapartida, a redução da exposição a esse tipo de ataque, pelo uso de parâmetros nas instruções, tem custo de implantação restrito ao esforço de adoção da biblioteca.
+O impacto de um incidente de \textit{SQL Injection} pode ser descrito por suas categorias de custo. O custo direto decorre da paralisação do faturamento e das vendas durante a contenção do incidente, a auditoria dos registros afetados e a restauração do ambiente, etapas que, conforme o diagnóstico apresentado na Seção~\ref{sec:problema}, exigiriam várias horas de trabalho. O custo indireto compreende a perda de clientes, o desgaste reputacional e o impacto no atendimento. Havendo exposição de dados pessoais, soma-se ainda o risco de sanções administrativas previstas na LGPD \cite[art.~52]{brasil2018}. Em contrapartida, a redução da exposição a esse tipo de ataque, pelo uso de parâmetros nas instruções, tem custo de implantação restrito ao esforço de adoção da biblioteca.
 
 \subsection{Comparação com Hibernate/JPA}
 \label{sec:comparacao-hibernate}
@@ -675,7 +780,7 @@ Para fundamentar a construção de uma biblioteca híbrida própria em vez da ad
     Consultas e projeções & Oferece JPQL, Criteria, SQL nativo e projeções. & Oferece DTO, resultado único, escalar, mapa, dicionário e SQL explícito. & A API atual cobre os formatos utilizados pelos DAOs. \\ \hline
     Relacionamentos de domínio & Automatiza associações, cascatas e estratégias de carregamento. & Mantém \textit{joins} e composição de resultados explícitos. & O escopo atual privilegia operações objetivas. \\ \hline
     Dependências e inicialização & Requer o \textit{runtime} e a configuração do provedor ORM. & Utiliza JDBC e poucas classes utilitárias já incorporadas ao projeto. & O SEOS acrescenta baixo \textit{overhead} à implantação. \\ \hline
-    Diagnóstico & Possui ecossistema de \textit{logs} e métricas, sujeito à configuração adotada. & Concentra SQL e parâmetros e audita erros, origem e consultas lentas. & A observabilidade atende ao diagnóstico necessário. \\ \hline
+    Diagnóstico & Possui ecossistema de \textit{logs} e métricas, sujeito à configuração adotada. & Concentra SQL e parâmetros e audita sucesso, lentidão, falhas e origem de cada execução. & A observabilidade atende ao diagnóstico necessário. \\ \hline
     \end{tabular}
     \endgroup
     \vspace{0.15cm}
@@ -684,14 +789,14 @@ Para fundamentar a construção de uma biblioteca híbrida própria em vez da ad
 \end{table}
 
 \vspace{0.3cm}
-\subsection{Vantagens e Desvantagens}
+\subsection{Vantagens e desvantagens}
 
 A principal vantagem de adotar o SEOS é tornar as operações em banco de dados mais simples, auditáveis e seguras, sem interferir no controle interno de conexões JDBC e com baixo impacto esperado sobre o desempenho da aplicação, uma vez que a biblioteca não adiciona camadas de \textit{cache}, sessão ou sincronização implícita. Como seus métodos automatizam a parametrização das consultas e mapeiam os resultados via \textit{reflection}, o risco de expor o sistema a ataques de \textit{SQL Injection} é reduzido. Com isso, a arquitetura da biblioteca apoia-se em quatro pilares: padronização, simplificação, proteção e reutilização.
 
 Em contrapartida, por ter uma proposta enxuta frente a um ORM completo como o Hibernate/JPA, o SEOS foca em operações diretas por tabela e não inclui recursos avançados de modelo de domínio, como o mapeamento automático de relacionamentos entre entidades (\texttt{@OneToMany}, \texttt{@ManyToOne}), o carregamento sob demanda (\textit{lazy loading}) ou mecanismos próprios de \textit{cache}. Assim, consultas que exigem múltiplos \textit{joins} ou regras de atualização fora do padrão \textit{Anti-Null} continuam requerendo a escrita manual do SQL pela equipe, embora ainda aproveitem a parametrização, o mapeamento de retorno e a auditoria do \texttt{SQLResult}.
 
 \vspace{0.3cm}
-\subsection{Plano de Aplicação \textit{DevSecOps}}
+\subsection{Plano de aplicação \textit{DevSecOps}}
 
 Embora tenha partido de problemas observados no ambiente corporativo estudado, o SEOS foi desenvolvido como um projeto autoral independente (\texttt{com.github.marygraywolf.seos}), hospedado em repositório próprio no GitHub e desvinculado de qualquer nomenclatura, regra de negócio ou código proprietário da empresa, a qual o adotou como piloto em um de seus projetos. Como a biblioteca atua na camada de persistência de aplicações Java/JDBC, sua estabilidade e sua segurança são requisitos diretos: uma falha ou vulnerabilidade no componente afetaria os sistemas que o importassem como dependência. Por essa razão, o ciclo de vida do SEOS foi estruturado sob a cultura \textit{DevSecOps}, utilizando ferramentas gerenciadas no modelo \textit{Software as a Service} (SaaS), práticas de segurança por padrão (\textit{security by design}) e execução sem custos com servidores dedicados. A Tabela~\ref{tab:matriz-devsecops} apresenta a matriz de decisão utilizada na escolha de cada tecnologia da esteira em comparação com outras opções de mercado:
 
@@ -709,11 +814,11 @@ Embora tenha partido de problemas observados no ambiente corporativo estudado, o
     \hline
     \textbf{Categoria} & \textbf{Ferramenta Adotada} & \textbf{Principais Concorrentes} & \textbf{Justificativa Técnica da Decisão} \\ \hline
    \textbf{Orquestração (CI/CD)} & GitHub Actions & Jenkins, GitLab CI & O Jenkins exige provisionamento, hospedagem e manutenção contínua de servidores e \textit{plugins}. O GitLab CI exigiria manter a biblioteca fora do ecossistema onde o repositório já está hospedado. O GitHub Actions oferece execução nativa e efêmera diretamente no repositório do projeto, sem custo de infraestrutura. \\ \hline
-    \textbf{\textit{Build} e Empacotamento} & Apache Maven & Gradle & Embora o Gradle utilize \textit{scripts} dinâmicos (Groovy/Kotlin), essa flexibilidade permite lógica imperativa no arquivo de \textit{build}, dificultando a auditoria. O Maven possui ciclo de vida estrito e declarativo em XML, facilitando a injeção padronizada de \textit{plugins} de segurança e o controle determinístico de versões. \\ \hline
+    \textbf{\textit{Build} e Empacotamento} & Apache Maven & Gradle & Embora o Gradle utilize \textit{scripts} dinâmicos (Groovy/Kotlin), essa flexibilidade permite lógica imperativa no arquivo de \textit{build}, dificultando a auditoria. O Maven possui ciclo de vida estrito e declarativo em \textit{Extensible Markup Language} (XML), facilitando a injeção padronizada de \textit{plugins} de segurança e o controle determinístico de versões. \\ \hline
     \textbf{Inspeção de Qualidade} & SonarCloud & Codacy, Code Climate & Possui regras maduras para o ecossistema Java/JDBC e aplica a metodologia \textit{Clean as You Code} com \textit{Quality Gate} nativo, capaz de bloquear \textit{Pull Requests} automaticamente caso novas métricas de cobertura, duplicação ou \textit{code smells} sejam violadas. \\ \hline
-    \textbf{Segurança (SAST)} & Semgrep & Checkmarx, Fortify, Snyk & Soluções comerciais demandam alto custo de licenciamento e elevam o tempo de \textit{build}, prejudicando o \textit{feedback} rápido da esteira. O Semgrep executa localmente no agente de integração (\textit{runner}) em poucos segundos e exporta nativamente o laudo em formato SARIF para a aba Security do próprio GitHub. \\ \hline
+    \textbf{Segurança (SAST)} & Semgrep & Checkmarx, Fortify, Snyk & Soluções comerciais demandam alto custo de licenciamento e elevam o tempo de \textit{build}, prejudicando o \textit{feedback} rápido da esteira. O Semgrep executa localmente no agente de integração (\textit{runner}), sem dependência de serviço externo, e exporta nativamente o laudo em formato SARIF para a aba \textit{Security} do próprio GitHub. \\ \hline
     \textbf{Repositório de Pacotes (CD)} & GitHub Packages & Sonatype Nexus, JFrog Artifactory & Nexus e Artifactory demandam máquinas virtuais próprias, gestão de armazenamento e controle separado de credenciais. O GitHub Packages elimina a complexidade de IAM ao publicar o pacote diretamente no repositório do projeto via \texttt{GITHUB\_TOKEN}. \\ \hline
-    \textbf{Observabilidade (\textit{ChatOps})} & Microsoft Teams & Slack, E-mail & Notificações por e-mail não atendem à resposta em tempo real e geram fadiga de alertas, enquanto o Slack exigiria licenciamento adicional. O Microsoft Teams, integrado via \textit{Workflows} e \textit{Adaptive Cards}, reflete fielmente o padrão de comunicação empresarial. \\ \hline
+    \textbf{Observabilidade (\textit{ChatOps})} & Microsoft Teams & Slack, E-mail & Notificações por e-mail não atendem à resposta em tempo real e geram fadiga de alertas, enquanto o Slack exigiria licenciamento adicional. O Microsoft Teams, integrado via \textit{Workflows} e \textit{Adaptive Cards}, corresponde ao padrão de comunicação adotado pela empresa. \\ \hline
     \end{tabular}
     \endgroup
     \vspace{0.15cm}
@@ -724,119 +829,112 @@ Embora tenha partido de problemas observados no ambiente corporativo estudado, o
 
 Com base nessas escolhas, a automação no GitHub Actions foi dividida em dois fluxos de trabalho (\textit{workflows}) independentes: um dedicado à Integração, Qualidade e Segurança Contínua (\texttt{ci\_integracao\_\allowbreak e\_qualidade.yml}) e outro exclusivo para a Entrega Contínua (\texttt{cd\_entrega\_\allowbreak continua.yml}). Como camada adicional de proteção contra ataques à cadeia de suprimentos (\textit{Supply Chain}), todas as \textit{actions} externas utilizadas nas esteiras foram fixadas pelo \textit{hash} completo e imutável do \textit{commit} (SHA, do inglês \textit{Secure Hash Algorithm}, com 40 caracteres) em vez de \textit{tags} mutáveis, prevenindo a execução de código adulterado em dependências de terceiros.
 
-O fluxo de Integração Contínua (CI, do inglês \textit{Continuous Integration}) é acionado a cada \textit{push} ou abertura de \textit{Pull Request} na \textit{branch} \texttt{main}, provisionando um ambiente Ubuntu com \textit{Java Development Kit} (JDK)~11 (Temurin) para compilação e execução do comando \texttt{mvn clean verify}. Nessa etapa, o comportamento do \textit{microframework} é validado pela bateria de testes unitários com JUnit~5 e Mockito, utilizando objetos simulados (\textit{mocks}) para reproduzir conexões JDBC, \texttt{PreparedStatement}, \texttt{CallableStatement} e \texttt{ResultSet} em memória sem depender de uma instância de banco de dados durante a execução da esteira, enquanto o JaCoCo coleta os dados e gera o relatório de cobertura (Figuras~1 e~2):
+O fluxo de Integração Contínua (CI, do inglês \textit{Continuous Integration}) é acionado a cada \textit{push} ou abertura de \textit{Pull Request} na \textit{branch} \texttt{main}, provisionando um ambiente Ubuntu com \textit{Java Development Kit} (JDK)~11 (Temurin) para compilação e execução do comando \texttt{mvn clean verify}. Nessa etapa, o comportamento do \textit{microframework} é validado pela bateria de testes unitários com JUnit~5 e Mockito, utilizando objetos simulados (\textit{mocks}) para reproduzir conexões JDBC, \texttt{PreparedStatement}, \texttt{CallableStatement} e \texttt{ResultSet} em memória sem depender de uma instância de banco de dados durante a execução da esteira, enquanto o JaCoCo coleta os dados e gera o relatório de cobertura (Figuras~\ref{fig:pipeline-ci} e~\ref{fig:pipeline-testes}):
 
-\vspace{0.3cm}
-\noindent
-\begin{minipage}{\linewidth}
-\centering
-Figura 1 - Execução da esteira de Integração Contínua no GitHub Actions
-\vspace{0.15cm}
+\begin{figure}[H]
+    \centering
+    \caption{Execução da esteira de Integração Contínua no GitHub Actions}
+    \label{fig:pipeline-ci}
+    \vspace{0.15cm}
 
-\includegraphics[width=0.9\linewidth]{imagens/imagePipelineCI.png}
+    \includegraphics[width=0.9\linewidth]{imagens/imagePipelineCI.png}
 
-\vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
-\end{minipage}
-\vspace{0.3cm}
+    \vspace{0.15cm}
 
-\vspace{0.3cm}
-\noindent
-\begin{minipage}{\linewidth}
-\centering
-Figura 2 - Execução da bateria de testes automatizados e geração de cobertura
-\vspace{0.15cm}
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{figure}
 
-\includegraphics[width=0.9\linewidth]{imagens/imagePipelineTestes.png}
+\begin{figure}[H]
+    \centering
+    \caption{Execução da bateria de testes automatizados e geração de cobertura}
+    \label{fig:pipeline-testes}
+    \vspace{0.15cm}
 
-\vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
-\end{minipage}
-\vspace{0.3cm}
+    \includegraphics[width=0.9\linewidth]{imagens/imagePipelineTestes.png}
 
-Concluída a fase de testes, a esteira envia os resultados e o relatório de cobertura para o SonarCloud, iniciando a etapa de Qualidade Contínua (\textit{Continuous Quality}). A plataforma analisa a cobertura de testes, o percentual de duplicação, \textit{bugs}, vulnerabilidades e \textit{code smells}, cabendo ao \textit{Quality Gate} verificar os critérios estabelecidos e reprovar automaticamente a integração da \textit{Pull Request} caso qualquer indicador fique abaixo do padrão exigido (Figura~3):
+    \vspace{0.15cm}
 
-\vspace{0.3cm}
-\noindent
-\begin{minipage}{\linewidth}
-\centering
-Figura 3 - Painel de análise de qualidade e cobertura no SonarCloud
-\vspace{0.15cm}
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{figure}
 
-\includegraphics[width=0.9\linewidth]{imagens/imageSonarQube.png}
+Concluída a fase de testes, a esteira envia os resultados e o relatório de cobertura para o SonarCloud, iniciando a etapa de Qualidade Contínua (\textit{Continuous Quality}). A plataforma analisa a cobertura de testes, o percentual de duplicação, \textit{bugs}, vulnerabilidades e \textit{code smells}, cabendo ao \textit{Quality Gate} verificar os critérios estabelecidos e reprovar automaticamente a integração da \textit{Pull Request} caso qualquer indicador fique abaixo do padrão exigido (Figura~\ref{fig:sonarcloud}):
 
-\vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
-\end{minipage}
-\vspace{0.3cm}
+\begin{figure}[H]
+    \centering
+    \caption{Painel de análise de qualidade e cobertura no SonarCloud}
+    \label{fig:sonarcloud}
+    \vspace{0.15cm}
 
-Na versão avaliada, a bateria de testes alcançou \textbf{90,3\% de cobertura} medida pelo JaCoCo, e o projeto foi aprovado no \textit{Quality Gate} do SonarCloud (status \textit{Passed}), conforme apresentado na Figura~3.
+    \includegraphics[width=0.9\linewidth]{imagens/imageSonarQube.png}
 
-Em seguida, aplica-se a Segurança Antecipada (\textit{Shift-Left Security}) por meio do Semgrep, que realiza a varredura SAST no código Java do SEOS com base nas categorias do OWASP \textit{Top} 10. Para proteger o próprio ambiente de \textit{build}, a ferramenta é instalada em versão fixa e apenas a partir de pacotes pré-compilados (\texttt{--only-binary}), sem compilar código-fonte de terceiros durante a instalação, e o laudo final da análise é exportado no padrão \textit{Static Analysis Results Interchange Format} (SARIF) diretamente para a aba de segurança do repositório no GitHub (Figura~4):
+    \vspace{0.15cm}
 
-\vspace{0.3cm}
-\noindent
-\begin{minipage}{\linewidth}
-\centering
-Figura 4 - Execução da análise estática de segurança (SAST) com Semgrep
-\vspace{0.15cm}
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{figure}
 
-\includegraphics[width=0.9\linewidth]{imagens/imagePipelineSAST.png}
+Na versão avaliada, a bateria de testes alcançou \textbf{90,3\% de cobertura} medida pelo JaCoCo, e o projeto foi aprovado no \textit{Quality Gate} do SonarCloud (status \textit{Passed}), conforme apresentado na Figura~\ref{fig:sonarcloud}.
 
-\vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
-\end{minipage}
-\vspace{0.3cm}
+Em seguida, aplica-se a Segurança Antecipada (\textit{Shift-Left Security}) por meio do Semgrep, que realiza a varredura SAST no código Java do SEOS com base nas categorias do OWASP \textit{Top} 10. Para proteger o próprio ambiente de \textit{build}, a ferramenta é executada a partir da imagem oficial do Semgrep em versão fixa (1.90.0), referenciada pelo \textit{digest} SHA-256 do contêiner, sem instalação de pacotes durante a execução; na \texttt{v1.1.0}, a instalação era feita em versão fixa e apenas a partir de pacotes pré-compilados (\texttt{-{}-only-binary}). O laudo final da análise é exportado no padrão \textit{Static Analysis Results Interchange Format} (SARIF) diretamente para a aba de segurança do repositório no GitHub (Figura~\ref{fig:pipeline-sast}):
 
-Para agilizar a resposta caso qualquer validação anterior apresente erro, os dois fluxos contam com um mecanismo automatizado de observabilidade e \textit{ChatOps} que dispara um alerta via \textit{Webhook} para o Microsoft Teams sempre que uma etapa falha. A notificação é exibida em formato \textit{Adaptive Card} e informa em tempo real a esteira afetada, o repositório, a \textit{branch} ou versão, o motivo da falha e o atalho direto para os \textit{logs} da execução, reduzindo o Tempo Médio de Recuperação (MTTR, do inglês \textit{Mean Time to Recovery}) durante o desenvolvimento (Figura~5):
+\begin{figure}[H]
+    \centering
+    \caption{Execução da análise estática de segurança (SAST) com Semgrep}
+    \label{fig:pipeline-sast}
+    \vspace{0.15cm}
 
-\vspace{0.3cm}
-\noindent
-\begin{minipage}{\linewidth}
-\centering
-Figura 5 - Notificação automatizada de falha via \textit{ChatOps} no Microsoft Teams
-\vspace{0.15cm}
+    \includegraphics[width=0.9\linewidth]{imagens/imagePipelineSAST.png}
 
-\includegraphics[width=0.9\linewidth]{imagens/imageMensagemTeams.png}
+    \vspace{0.15cm}
 
-\vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
-\end{minipage}
-\vspace{0.3cm}
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{figure}
 
-Já a disponibilização oficial da biblioteca ocorre na esteira de Entrega Contínua (CD, do inglês \textit{Continuous Delivery}), acionada apenas quando uma nova \textit{tag} de versionamento semântico é publicada no repositório. Nessa etapa, a \textit{pipeline} extrai automaticamente o identificador da versão, atualiza o descritor do projeto Maven e realiza a publicação autenticada no GitHub Packages, disponibilizando o pacote \texttt{.jar} pronto para ser importado como dependência por projetos externos (Figuras~6 e~7):
+Para agilizar a resposta caso qualquer validação anterior apresente erro, os dois fluxos contam com um mecanismo automatizado de observabilidade e \textit{ChatOps} que dispara um alerta via \textit{Webhook} para o Microsoft Teams sempre que uma etapa falha. A notificação é exibida em formato \textit{Adaptive Card} e informa em tempo real a esteira afetada, o repositório, a \textit{branch} ou versão, o motivo da falha e o atalho direto para os \textit{logs} da execução, reduzindo o Tempo Médio de Recuperação (MTTR, do inglês \textit{Mean Time to Recovery}) durante o desenvolvimento (Figura~\ref{fig:teams}):
 
-\vspace{0.3cm}
-\noindent
-\begin{minipage}{\linewidth}
-\centering
-Figura 6 - Execução da esteira de Entrega Contínua (CD) por \textit{tag} semântica
-\vspace{0.15cm}
+\begin{figure}[H]
+    \centering
+    \caption{Notificação automatizada de falha via \textit{ChatOps} no Microsoft Teams}
+    \label{fig:teams}
+    \vspace{0.15cm}
 
-\includegraphics[width=0.9\linewidth]{imagens/imagePipelineCD.png}
+    \includegraphics[width=0.9\linewidth]{imagens/imageMensagemTeams.png}
 
-\vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
-\end{minipage}
-\vspace{0.3cm}
+    \vspace{0.15cm}
 
-\vspace{0.3cm}
-\noindent
-\begin{minipage}{\linewidth}
-\centering
-Figura 7 - Artefato da biblioteca SEOS publicado e versionado no GitHub Packages
-\vspace{0.15cm}
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{figure}
 
-\includegraphics[width=0.9\linewidth]{imagens/imagePackageMaven.png}
+Já a disponibilização oficial da biblioteca ocorre na esteira de Entrega Contínua (CD, do inglês \textit{Continuous Delivery}), acionada apenas quando uma nova \textit{tag} de versionamento semântico é publicada no repositório. Nessa etapa, a \textit{pipeline} extrai automaticamente o identificador da versão, atualiza o descritor do projeto Maven e realiza a publicação autenticada no \textit{GitHub Packages}, disponibilizando o pacote \texttt{.jar} pronto para ser importado como dependência por projetos externos (Figuras~\ref{fig:pipeline-cd} e~\ref{fig:github-packages}):
 
-\vspace{0.15cm}
-{\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
-\end{minipage}
-\vspace{0.3cm}
+\begin{figure}[H]
+    \centering
+    \caption{Execução da esteira de Entrega Contínua (CD) por \textit{tag} semântica}
+    \label{fig:pipeline-cd}
+    \vspace{0.15cm}
 
-A partir da avaliação de segurança da esteira frente ao OWASP \textit{Top} 10 (Apêndice~A), as versões posteriores à \texttt{v1.1.0} receberam melhorias incrementais que reforçaram a integração entre os fluxos de CI e CD: o \textit{job} \texttt{verificar\_ci}, que condiciona a publicação a uma execução aprovada do CI para o \textit{commit} da \textit{tag}; a execução dos testes também durante o \texttt{mvn deploy}; o atestado de proveniência do \texttt{.jar} com a \textit{action} \texttt{actions/attest-build-provenance}; o monitoramento semanal de dependências Maven e de \textit{actions} pelo Dependabot; e a inclusão do conjunto de regras \texttt{p/owasp-top-ten} na análise SAST.
+    \includegraphics[width=0.9\linewidth]{imagens/imagePipelineCD.png}
 
-Por fim, a Tabela~\ref{tab:cronograma-devsecops} apresenta o plano e cronograma estruturado para o desenvolvimento da biblioteca, a implantação de sua esteira \textit{DevSecOps} e a sua aplicação prática na refatoração do cenário estudado:
+    \vspace{0.15cm}
+
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Artefato da biblioteca SEOS publicado e versionado no GitHub Packages}
+    \label{fig:github-packages}
+    \vspace{0.15cm}
+
+    \includegraphics[width=0.9\linewidth]{imagens/imagePackageMaven.png}
+
+    \vspace{0.15cm}
+
+    {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+\end{figure}
+
+A partir da avaliação de segurança da esteira frente ao OWASP \textit{Top} 10 (Apêndice~A), a versão \texttt{v1.2.0}, publicada em 25/11/2026, incorporou melhorias que reforçaram a integração entre os fluxos de CI e CD: o \textit{job} \texttt{verificar\_ci}, que condiciona a publicação a uma execução aprovada do CI para o \textit{commit} da \textit{tag}; a execução dos testes também durante o \texttt{mvn deploy}; o atestado de proveniência do \texttt{.jar} com a \textit{action} \texttt{actions/attest-build-provenance}; o monitoramento semanal de dependências Maven e de \textit{actions} pelo Dependabot; a inclusão do conjunto de regras \texttt{p/owasp-top-ten} na análise SAST; e a correção, apontada pelo próprio Semgrep, da interpolação de dados do contexto do GitHub nos comandos de alerta ao Microsoft Teams, que passaram a receber esses dados por variáveis de ambiente.
+
+Por fim, a Tabela~\ref{tab:cronograma-devsecops} apresenta o plano e cronograma do desenvolvimento da biblioteca, da implantação de sua esteira \textit{DevSecOps} e de sua aplicação prática no cenário estudado, com o período e a situação de cada fase:
 
 \clearpage
 \begin{table}[H]
@@ -848,14 +946,14 @@ Por fim, a Tabela~\ref{tab:cronograma-devsecops} apresenta o plano e cronograma 
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
     \footnotesize
-    \begin{tabular}{|>{\raggedright\arraybackslash}p{1.3cm}|>{\raggedright\arraybackslash}p{1.4cm}|>{\raggedright\arraybackslash}p{3.4cm}|>{\raggedright\arraybackslash}p{8.0cm}|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{1.2cm}|>{\raggedright\arraybackslash}p{2.0cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{6.4cm}|>{\raggedright\arraybackslash}p{2.0cm}|}
     \hline
-    \textbf{Fase} & \textbf{Período} & \textbf{Etapa do Plano} & \textbf{Entregável e Objetivo Técnico} \\ \hline
-    \textbf{Fase 1} & Mês 1 & Diagnóstico e Concepção do SEOS & Levantamento do cenário legado e implementação autoral do núcleo em Java puro/JDBC (\texttt{@TableDB}, \texttt{@ColumnDB}, \texttt{SQLBuilder}, \texttt{SQLResult}, \texttt{SQLCall} e \texttt{OrmLogger}). \\ \hline
-    \textbf{Fase 2} & Mês 2 & Integração, Qualidade e SAST & Implementação do \textit{workflow} \texttt{ci\_integracao\_e\_qualidade.yml} com testes unitários (JUnit~5, Mockito, JaCoCo), \textit{Quality Gate} no SonarCloud, análise SAST com Semgrep (SARIF) e fixação de \textit{actions} pelo \textit{hash} completo do \textit{commit}. \\ \hline
-    \textbf{Fase 3} & Mês 3 & \textit{ChatOps} e Entrega Contínua & Implementação do \textit{workflow} \texttt{cd\_entrega\_continua.yml}, alertas automatizados de falha no Microsoft Teams via \textit{Webhook} e publicação versionada (\texttt{v*.*.*}) no GitHub Packages. \\ \hline
-    \textbf{Fase 4} & Mês 4 & Aplicação e Avaliação Comparativa & Refatoração de uma amostra de 15 métodos do arquivo \textit{Repository} crítico (\texttt{ErpIntegracaoDAO}, com 402 métodos e 21.381 linhas) e comparação com 9 DAOs novos desenvolvidos com o SEOS, para aferição das métricas de redução de código e segurança. \\ \hline
-    \textbf{Fase 5} & Mês 5 & Plano de Adoção Gradual & Recomendação de diretrizes para importação da biblioteca nos novos desenvolvimentos e substituição progressiva dos métodos legados vulneráveis. \\ \hline
+    \textbf{Fase} & \textbf{Período} & \textbf{Etapa do Plano} & \textbf{Entregável e Objetivo Técnico} & \textbf{Situação} \\ \hline
+    \textbf{Fase 1} & 23/07 a 18/08/2026 & Diagnóstico e Concepção do SEOS & Levantamento do cenário legado (2.890 métodos) e implementação autoral do núcleo em Java puro/JDBC (\texttt{@TableDB}, \texttt{@ColumnDB}, \texttt{SQLBuilder}, \texttt{SQLResult} e \texttt{OrmLogger}). O \texttt{SQLCall} foi incorporado em 24/10/2026, como refinamento do núcleo. & Concluída \\ \hline
+    \textbf{Fase 2} & set./2026 (a partir de 24/09) & Integração, Qualidade e SAST & Implementação do \textit{workflow} \texttt{ci\_integracao\_\allowbreak e\_qualidade.yml} com testes unitários (JUnit~5, Mockito, JaCoCo), \textit{Quality Gate} no SonarCloud, análise SAST com Semgrep (SARIF) e fixação de \textit{actions} pelo \textit{hash} completo do \textit{commit}. & Concluída \\ \hline
+    \textbf{Fase 3} & 21/10 a 25/11/2026 & \textit{ChatOps} e Entrega Contínua & Implementação do \textit{workflow} \texttt{cd\_entrega\_\allowbreak continua.yml}, alertas automatizados de falha no Microsoft Teams via \textit{Webhook} e publicação versionada no GitHub Packages das versões \texttt{v1.1.0} (24/10/2026) e \texttt{v1.2.0} (25/11/2026). & Concluída \\ \hline
+    \textbf{Fase 4} & nov./2026 & Aplicação e Avaliação Comparativa & Refatoração de uma amostra de 15 métodos do arquivo \textit{Repository} crítico (\texttt{ErpIntegracaoDAO}, com 402 métodos e 21.381 linhas) e comparação com 9 DAOs novos desenvolvidos com o SEOS, utilizando a versão \texttt{v1.1.0} publicada, para aferição das métricas de redução de código e segurança. & Concluída \\ \hline
+    \textbf{Fase 5} & dez./2026 a mar./2027 & Plano de Adoção Gradual & Recomendação de diretrizes para importação da biblioteca nos novos desenvolvimentos e substituição progressiva dos métodos legados vulneráveis. & Planejada (não executada no escopo deste trabalho) \\ \hline
     \end{tabular}
     \endgroup
     \vspace{0.15cm}
@@ -864,7 +962,7 @@ Por fim, a Tabela~\ref{tab:cronograma-devsecops} apresenta o plano e cronograma 
 \end{table}
 
 \vspace{0.3cm}
-\subsection{Quadro de Respostas --- Antes e Depois}
+\subsection{Quadro de respostas --- antes e depois}
 \label{sec:antes-depois}
 
 Para medir na prática os resultados da adoção do SEOS frente ao cenário diagnosticado nas Seções~\ref{sec:problema} e~\ref{sec:situacao-atual}, a avaliação comparativa foi dividida em duas frentes dentro do sistema de \textit{e-commerce} da empresa. A primeira analisou \textbf{9 classes DAO recém-desenvolvidas já com o SEOS} em novos módulos integrados à plataforma e pertencentes a um projeto da empresa que aceitou adotar a biblioteca como piloto, comparando-as aos outros 69 arquivos de persistência em JDBC manual do mesmo repositório; a segunda realizou a refatoração de uma amostra de \textbf{15 métodos críticos da classe legada \texttt{ErpIntegracaoDAO}} (o arquivo-base de 21.381 linhas e 416 chamadas a \texttt{PreparedStatement} apresentado na Seção~\ref{sec:problema}), permitindo comparar o comportamento antes e depois da biblioteca sobre o mesmo código.
@@ -888,7 +986,7 @@ Na primeira frente, apresentada na Tabela~\ref{tab:comparacao-modulos-ecommerce}
     \textbf{Mapeamento manual (\texttt{rs.getXxx()})} & Manual, campo a campo & \textbf{0} (automatizado pelo \texttt{SQLResult}) \\ \hline
     \textbf{Pontos de montagem e execução via SEOS} & --- & 82 montagens (\texttt{SQLBuilder}) e 62 execuções \\ \hline
     \textbf{Média de linhas por método} & $\approx 52$ linhas (21.381 linhas / 409 métodos) & \textbf{$\approx 27$ linhas} (1.652 linhas / 62 métodos) \\ \hline
-    \textbf{Arquivos sem registro de \textit{log}} & 41 de 69 arquivos (\textbf{59,4\%}) & \textbf{0 de 9 arquivos} (100\% auditados) \\ \hline
+    \textbf{Arquivos sem registro de \textit{log}} & 41 de 69 arquivos (\textbf{59,4\%}) & \textbf{0 de 9 arquivos} (100\% com auditoria de falhas e lentidão) \\ \hline
     \end{tabular}
     \endgroup
     \vspace{0.15cm}
@@ -918,7 +1016,7 @@ Na segunda frente de avaliação, foi selecionada uma amostra de \textbf{15 mét
     \textbf{Extração manual de colunas (\texttt{rs.getXxx})} & 18 & 0 & \textbf{$-100\%$} \\ \hline
     \textbf{Concatenações diretas de variáveis na SQL} & 8 (em 7 métodos) & 0 (100\% parametrizado) & \textbf{$-100\%$} \\ \hline
     \textbf{Tratamento inadequado com \texttt{printStackTrace}} & 10 & 0 & \textbf{$-100\%$} \\ \hline
-    \textbf{Fechamentos manuais de recursos (\texttt{.close()})} & 15 & 0 (\texttt{try-with-\allowbreak resources}) & \textbf{$-100\%$} \\ \hline
+    \textbf{Fechamentos manuais de recursos (\texttt{.close()})} & 15 & 0 (\texttt{try-with-\allowbreak resources} interno) & \textbf{$-100\%$} \\ \hline
     \textbf{Métodos com auditoria de tempo, origem e erro} & 0 de 15 (0\%) & 15 de 15 (100\%) & \textbf{$+100$ p.p.} \\ \hline
     \end{tabular}
     \endgroup
@@ -931,11 +1029,11 @@ Na segunda frente de avaliação, foi selecionada uma amostra de \textbf{15 mét
 \subsection{Resultados e Dados Consolidados do Projeto}
 \label{sec:resultados}
 
-O cruzamento dos levantamentos feitos nos dois sistemas legados da empresa (\textbf{2.890 métodos de persistência} analisados na Seção~\ref{sec:situacao-atual}) com as medições obtidas no sistema de \textit{e-commerce} (Seção~\ref{sec:antes-depois}) demonstra os resultados práticos do SEOS. Em relação à produtividade e à redução de \textit{boilerplate}, o uso da biblioteca em 9 classes DAO novas, somando 82 pontos de montagem de instruções SQL e 62 execuções sobre conexões fornecidas pela própria aplicação, baixou a média de código de aproximadamente \textbf{52 para 27 linhas por método} ($-48\%$), mantendo o controle transacional sem a sobrecarga da escrita manual. Esse resultado se repete na refatoração da amostra de 15 métodos da classe \texttt{ErpIntegracaoDAO}, que teve queda de \textbf{36,1\% no total de linhas} (de 363 para cerca de 232 linhas) e deixou de exigir chamadas manuais de preparação, leitura e fechamento de recursos.
+O cruzamento dos levantamentos feitos nos dois sistemas legados da empresa (\textbf{2.890 métodos de persistência} analisados na Seção~\ref{sec:situacao-atual}) com as medições obtidas no sistema de \textit{e-commerce} (Seção~\ref{sec:antes-depois}) demonstra os resultados práticos do SEOS. Em relação à produtividade e à redução de \textit{boilerplate}, o uso da biblioteca em 9 classes DAO novas, somando 82 pontos de montagem de instruções SQL e 62 execuções sobre conexões fornecidas pela própria aplicação, reduziu a média de código de aproximadamente \textbf{52 para 27 linhas por método} ($-48\%$), mantendo o controle transacional sem a sobrecarga da escrita manual. Esse resultado se repete na refatoração da amostra de 15 métodos da classe \texttt{ErpIntegracaoDAO}, que teve queda de \textbf{36,1\% no total de linhas} (de 363 para cerca de 232 linhas) e deixou de exigir chamadas manuais de preparação, leitura e fechamento de recursos.
 
-Quanto à segurança na camada de persistência, tanto nos novos módulos desenvolvidos com o SEOS quanto nos 15 métodos refatorados da amostra legada, a concatenação direta de variáveis na instrução SQL caiu a \textbf{zero ($-100\%$)} nos módulos e métodos avaliados. Todos os filtros e valores persistidos passaram a ser enviados de forma parametrizada, com validação prévia da quantidade de parâmetros antes da execução e bloqueio de atualizações sem cláusula \texttt{WHERE}. No processo de desenvolvimento da própria biblioteca, a esteira \textit{DevSecOps} sustentou esses resultados com \textbf{90,3\% de cobertura de testes}, aprovação no \textit{Quality Gate} do SonarCloud e nenhum achado na análise SAST do Semgrep (Apêndice~A).
+Quanto à segurança na camada de persistência, tanto nos novos módulos desenvolvidos com o SEOS quanto nos 15 métodos refatorados da amostra legada, a concatenação direta de variáveis na instrução SQL foi reduzida a \textbf{zero ($-100\%$)} nos módulos e métodos avaliados. Todos os filtros e valores persistidos passaram a ser enviados de forma parametrizada, com validação prévia da quantidade de parâmetros antes da execução e bloqueio de atualizações sem cláusula \texttt{WHERE}. No processo de desenvolvimento da própria biblioteca, a esteira \textit{DevSecOps} sustentou esses resultados com \textbf{90,3\% de cobertura de testes}, aprovação no \textit{Quality Gate} do SonarCloud e nenhum achado na análise SAST do Semgrep (Apêndice~A).
 
-No eixo de observabilidade e governança operacional, diante de um cenário em que \textbf{94,4\%} dos métodos do sistema de \textit{e-commerce} (Tabela~\ref{tab:resultados_ecommerce}) e \textbf{59,4\%} dos arquivos em JDBC manual não tinham registro de \textit{log}, a adoção do SEOS levou a cobertura de auditoria e o tratamento estruturado de falhas a \textbf{100\%} nos módulos avaliados, registrando de forma automática o tempo de execução, a contagem de parâmetros e a classe e método de origem de cada operação.
+No eixo de observabilidade e governança operacional, diante de um cenário em que \textbf{94,4\%} dos métodos do sistema de \textit{e-commerce} (Tabela~\ref{tab:resultados_ecommerce}) e \textbf{59,4\%} dos arquivos em JDBC manual não tinham registro de \textit{log}, a adoção do SEOS, na versão \texttt{v1.1.0} utilizada no piloto, levou a cobertura de auditoria de falhas e execuções lentas e o tratamento estruturado de exceções a \textbf{100\%} nos módulos avaliados, com registro automático do tempo de execução, da contagem de parâmetros e da classe e método de origem. A partir da \texttt{v1.2.0}, as execuções bem-sucedidas também passaram a ser registradas.
 
 Além das métricas quantitativas, o uso do SEOS foi avaliado de forma qualitativa por meio do relato de uma pessoa desenvolvedora da empresa que aplicou a biblioteca em uma demanda real. O depoimento aponta, na rotina de trabalho, os mesmos pontos observados nos indicadores (redução de código, manutenção do controle sobre as instruções SQL e segurança na parametrização de filtros dinâmicos), conforme transcrito a seguir:
 
@@ -960,12 +1058,13 @@ A avaliação qualitativa contou com o relato de uma pessoa desenvolvedora que a
 %% 4. CONCLUSÃO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusão}
+\label{sec:conclusao}
 
 Este trabalho partiu de uma necessidade prática na manutenção de sistemas corporativos legados: lidar com uma camada de persistência extensa, repetitiva e exposta a falhas de segurança, mas que, pelas regras de integração com o ERP, exigia que o controle sobre conexões e transações continuasse nas mãos da aplicação. A evolução do \textbf{SEOS} (\textit{Software Endurance Orchestration System}) junto à cultura \textit{DevSecOps} mostrou ser possível equilibrar essas duas exigências por meio de uma abordagem híbrida, que automatiza o trabalho mecânico do JDBC sem impor a complexidade e a sobrecarga de um ORM tradicional de mercado.
 
-Em relação aos objetivos específicos, a automação da geração de instruções DML e DQL e do mapeamento objeto-relacional foi alcançada por meio das anotações \texttt{@TableDB} e \texttt{@ColumnDB} e das classes \texttt{SQLBuilder}, \texttt{SQLResult} e \texttt{SQLCall}, reduzindo a média de linhas por método nos novos módulos do \textit{e-commerce} ($-48\%$) e o volume de código na amostra legada refatorada ($-36{,}1\%$). A mitigação de \textit{SQL Injection} decorreu da parametrização obrigatória e do bloqueio de \texttt{UPDATE} sem cláusula \texttt{WHERE}, eliminando ($-100\%$) as concatenações diretas nas rotinas avaliadas. A auditoria e a observabilidade, incorporadas pelo \texttt{OrmLogger}, levaram a $100\%$ a cobertura de registro de tempo, origem e falhas nos módulos analisados. A esteira \textit{DevSecOps} foi estruturada com integração, qualidade, SAST, \textit{ChatOps} e entrega contínua, alcançando 90,3\% de cobertura de testes, aprovação no \textit{Quality Gate} e nenhum achado do Semgrep. A comparação com o Hibernate/JPA mostrou que, diante da exigência de manter conexões e transações sob controle da aplicação, a abordagem híbrida do SEOS é mais aderente ao cenário estudado. Por fim, a avaliação frente ao OWASP \textit{Top} 10:2021 indicou duas categorias mitigadas (A03 e A09), cinco parcialmente mitigadas e três não aplicáveis a uma biblioteca de persistência (Apêndice~B), resultados reforçados pelo relato de uma pessoa desenvolvedora que utilizou a biblioteca em uma demanda real.
+Em relação aos objetivos específicos, a automação da geração de instruções DML e DQL e do mapeamento objeto-relacional foi alcançada por meio das anotações \texttt{@TableDB} e \texttt{@ColumnDB} e das classes \texttt{SQLBuilder}, \texttt{SQLResult} e \texttt{SQLCall}, reduzindo a média de linhas por método nos novos módulos do \textit{e-commerce} ($-48\%$) e o volume de código na amostra legada refatorada ($-36{,}1\%$). A mitigação de \textit{SQL Injection} decorreu da parametrização obrigatória dos valores e do bloqueio de \texttt{UPDATE} sem cláusula \texttt{WHERE}, eliminando ($-100\%$) as concatenações diretas nas rotinas avaliadas. A auditoria e a observabilidade, incorporadas pelo \texttt{OrmLogger}, levaram a $100\%$ a cobertura de registro de falhas e execuções lentas nos módulos analisados com a \texttt{v1.1.0}, e a \texttt{v1.2.0} estendeu o registro a todas as execuções. A esteira \textit{DevSecOps} foi estruturada com integração, qualidade, SAST, \textit{ChatOps} e entrega contínua, alcançando 90,3\% de cobertura de testes, aprovação no \textit{Quality Gate} e nenhum achado do Semgrep. A comparação com o Hibernate/JPA mostrou que, diante da exigência de manter conexões e transações sob controle da aplicação, a abordagem híbrida do SEOS é mais aderente ao cenário estudado. Adicionalmente, a avaliação frente ao OWASP \textit{Top} 10:2025 indicou duas categorias mitigadas (A05, quanto aos valores, e A09), seis parcialmente mitigadas e duas não aplicáveis a uma biblioteca de persistência (Apêndice~B), resultados reforçados pelo relato de uma pessoa desenvolvedora que utilizou a biblioteca em uma demanda real.
 
-Por fim, mantendo a proposta enxuta do \textit{microframework}, abrem-se caminhos claros para os próximos passos da ferramenta. Como trabalhos futuros, pretende-se expandir gradualmente seus recursos para suportar o reaproveitamento de mapeamentos por herança entre classes, permitir a gravação intencional de valores nulos em atualizações específicas, flexibilizar as inserções em lote para objetos com diferentes combinações de campos e oferecer suporte auxiliar à montagem de consultas com múltiplos relacionamentos, preservando a simplicidade e a previsibilidade que motivaram a sua criação. Também se pretende tratar a limitação identificada nas cláusulas de filtro: nos métodos \texttt{buildSelect}, \texttt{buildUpdate} e \texttt{where}, os valores são sempre enviados por \texttt{PreparedStatement}, mas a própria cláusula é recebida como texto, de modo que a proteção contra \textit{SQL Injection} depende de a aplicação utilizar marcadores \texttt{?} e não concatenar variáveis nessa cláusula, o que o SEOS atualmente não impede. Como mitigação, propõe-se validar a cláusula antes da execução, rejeitando literais e comentários SQL, ou oferecer um construtor de condições parametrizado, no qual a aplicação informa colunas e operadores e os valores ficam a cargo da biblioteca, complementado por uma regra de análise estática na esteira capaz de sinalizar concatenações em argumentos de cláusulas de filtro.
+Por fim, mantendo a proposta enxuta do \textit{microframework}, identificam-se possibilidades de evolução da ferramenta. Como trabalhos futuros, pretende-se expandir gradualmente seus recursos para suportar o reaproveitamento de mapeamentos por herança entre classes, permitir a gravação intencional de valores nulos em atualizações específicas, flexibilizar as inserções em lote para objetos com diferentes combinações de campos e oferecer suporte auxiliar à montagem de consultas com múltiplos relacionamentos, preservando a simplicidade e a previsibilidade que motivaram a sua criação. Também se pretende tratar a limitação identificada nas cláusulas de filtro: nos métodos \texttt{buildSelect}, \texttt{buildUpdate} e \texttt{where}, os valores são sempre enviados por \texttt{PreparedStatement}, mas a própria cláusula é recebida como texto, de modo que a proteção contra \textit{SQL Injection} depende de a aplicação utilizar marcadores \texttt{?} e não concatenar variáveis nessa cláusula, o que o SEOS atualmente não impede. Como mitigação, propõe-se validar a cláusula antes da execução, rejeitando literais e comentários SQL, ou oferecer um construtor de condições parametrizado, no qual a aplicação informa colunas e operadores e os valores ficam a cargo da biblioteca, complementado por uma regra de análise estática na esteira capaz de sinalizar concatenações em argumentos de cláusulas de filtro.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% APÊNDICE (após as Referências)
@@ -974,7 +1073,7 @@ Por fim, mantendo a proposta enxuta do \textit{microframework}, abrem-se caminho
 \section*{APÊNDICE A --- Questionário baseado no OWASP \textit{Top} 10 aplicado ao SEOS}
 \addcontentsline{toc}{section}{APÊNDICE A --- Questionário baseado no OWASP \textit{Top} 10 aplicado ao SEOS}
 
-Este questionário foi respondido pela autora a partir das evidências disponíveis no repositório do SEOS (código-fonte, testes, descritor Maven e \textit{workflows} do GitHub Actions). Como o SEOS é uma biblioteca de persistência e não uma aplicação \textit{web}, cada categoria do OWASP \textit{Top} 10:2021 é avaliada por três perguntas:
+Este questionário foi respondido pela autora a partir das evidências disponíveis no repositório do SEOS (código-fonte, testes, descritor Maven e \textit{workflows} do GitHub Actions). Como o SEOS é uma biblioteca de persistência e não uma aplicação \textit{web}, cada categoria do OWASP \textit{Top} 10:2025 é avaliada por três perguntas:
 
 \begin{enumerate}
     \item \textbf{Aplicabilidade:} o risco da categoria se aplica a uma biblioteca de persistência Java/JDBC?
@@ -982,17 +1081,35 @@ Este questionário foi respondido pela autora a partir das evidências disponív
     \item \textbf{Verificação:} como o controle foi confirmado?
 \end{enumerate}
 
-Os cenários comparados correspondem a pontos do histórico do repositório: \textbf{ANTES} é o \textit{commit} \texttt{6982a7d} (núcleo da biblioteca e testes unitários, sem esteira \textit{DevSecOps}) e \textbf{DEPOIS} é a \textit{tag} \texttt{v1.1.0} (com integração contínua, SAST, entrega contínua e alertas no Microsoft Teams). Após a análise deste questionário, a esteira recebeu melhorias que corrigem lacunas identificadas, e esse estado é tratado como \textbf{ESTEIRA EVOLUÍDA}, aplicado nas versões publicadas depois da \texttt{v1.1.0}: ambiente Python fixado e dependência do Semgrep corrigida no CI, regras \texttt{p/owasp-top-ten} no SAST, monitoramento de dependências pelo Dependabot, exigência de CI aprovado e execução dos testes na entrega contínua, e atestado de proveniência do \texttt{.jar}.
+As evidências foram levantadas inicialmente segundo a edição 2021 do OWASP \textit{Top} 10 e reorganizadas conforme a edição 2025. Nessa reorganização, a antiga categoria de componentes vulneráveis e desatualizados foi absorvida pela categoria de cadeia de suprimentos de \textit{software} (A03:2025), a falsificação de requisição do lado do servidor (SSRF) passou a integrar a categoria de controle de acesso (A01:2025), e a nova categoria de tratamento de condições excepcionais (A10:2025) foi avaliada a partir do código-fonte e dos testes.
 
-\subsection*{A01:2021 --- Quebra de Controle de Acesso (\textit{Broken Access Control})}
+Os cenários comparados correspondem a pontos do histórico do repositório atual do SEOS, criado em 22/10/2026 a partir do código do repositório original do projeto, no qual a esteira havia sido iniciada em setembro de 2026: \textbf{ANTES} é o \textit{commit} \texttt{6982a7d} (núcleo da biblioteca e testes unitários, anterior à incorporação dos \textit{workflows} da esteira \textit{DevSecOps} a este repositório) e \textbf{DEPOIS} é a \textit{tag} \texttt{v1.1.0} (com integração contínua, SAST, entrega contínua e alertas no Microsoft Teams). Após a análise deste questionário, a esteira recebeu melhorias que corrigem lacunas identificadas, e esse estado é tratado como \textbf{ESTEIRA EVOLUÍDA}, incorporado à versão \texttt{v1.2.0}: Semgrep executado em imagem fixada por \textit{digest}, regras \texttt{p/owasp-top-ten} no SAST, correção da injeção de comandos nos alertas do Microsoft Teams, monitoramento de dependências pelo Dependabot, exigência de CI aprovado e execução dos testes na entrega contínua, e atestado de proveniência do \texttt{.jar}.
+
+\subsection*{A01:2025 --- Quebra de Controle de Acesso (\textit{Broken Access Control})}
 
 \begin{itemize}
-    \item \textbf{Aplicabilidade:} não se aplica. O SEOS não expõe rotas, perfis ou funções de usuário; a autorização permanece na aplicação que o importa.
+    \item \textbf{Aplicabilidade:} não se aplica. O SEOS não expõe rotas, perfis ou funções de usuário, e a autorização permanece na aplicação que o importa. A biblioteca também não realiza requisições HTTP nem consome URLs informadas por usuários, o que afasta o risco de SSRF, incorporado a esta categoria na edição 2025.
     \item \textbf{Controle:} não aplicável.
     \item \textbf{Verificação:} não aplicável.
 \end{itemize}
 
-\subsection*{A02:2021 --- Falhas Criptográficas (\textit{Cryptographic Failures})}
+\subsection*{A02:2025 --- Configuração Incorreta de Segurança (\textit{Security Misconfiguration})}
+
+\begin{itemize}
+    \item \textbf{Aplicabilidade:} parcial. A biblioteca não configura servidores; o risco está na configuração da esteira.
+    \item \textbf{Controle:} os \textit{workflows} declaram \texttt{permissions: contents: read} e elevam o escopo apenas nos \textit{jobs} que precisam (\texttt{security-events: write} no SAST e \texttt{packages: write} na publicação).
+    \item \textbf{Verificação:} leitura dos arquivos \texttt{ci\_integracao\_\allowbreak e\_qualidade.yml} e \texttt{cd\_entrega\_\allowbreak continua.yml}.
+\end{itemize}
+
+\subsection*{A03:2025 --- Falhas na Cadeia de Suprimentos de \textit{Software} (\textit{Software Supply Chain Failures})}
+
+\begin{itemize}
+    \item \textbf{Aplicabilidade:} sim, pois o SEOS depende de ferramentas de \textit{build} e de \textit{actions} de terceiros e é distribuído como dependência para outros sistemas.
+    \item \textbf{Controle:} o \texttt{pom.xml} não declara nenhuma dependência de \textit{runtime}: Lombok tem escopo \texttt{provided} e JUnit e Mockito têm escopo \texttt{test}, de modo que o pacote publicado não carrega bibliotecas de terceiros para as aplicações consumidoras. No DEPOIS, as \textit{actions} externas são fixadas pelo \textit{hash} completo do \textit{commit}, e o Semgrep é instalado em versão fixa e apenas a partir de pacotes pré-compilados (\texttt{-{}-only-binary}). Na esteira evoluída, o Semgrep passou a ser executado a partir da imagem oficial fixada por \textit{digest}, e o arquivo \texttt{.github/dependabot.yml} configura verificações semanais de atualização das dependências Maven e das \textit{actions} do GitHub Actions.
+    \item \textbf{Verificação:} leitura do \texttt{pom.xml}, dos \textit{workflows} e do \texttt{dependabot.yml}.
+\end{itemize}
+
+\subsection*{A04:2025 --- Falhas Criptográficas (\textit{Cryptographic Failures})}
 
 \begin{itemize}
     \item \textbf{Aplicabilidade:} parcial. A biblioteca não implementa criptografia, nem armazena ou transmite dados sensíveis; as credenciais e a conexão com o banco são fornecidas pela aplicação. O risco recai sobre o código da esteira e sobre o registro de parâmetros em \textit{logs}.
@@ -1000,15 +1117,15 @@ Os cenários comparados correspondem a pontos do histórico do repositório: \te
     \item \textbf{Verificação:} leitura do código e dos \textit{workflows}.
 \end{itemize}
 
-\subsection*{A03:2021 --- Injeção (\textit{Injection})}
+\subsection*{A05:2025 --- Injeção (\textit{Injection})}
 
 \begin{itemize}
     \item \textbf{Aplicabilidade:} sim. É o principal risco da camada de persistência e o motivador do trabalho (Tabelas~\ref{tab:resultados_automacoes} e~\ref{tab:resultados_ecommerce}).
-    \item \textbf{Controle:} todos os valores são enviados por \texttt{PreparedStatement} com \texttt{setObject} (\texttt{SQLResult.java:455-458}), o \texttt{SQLBuilder} gera apenas marcadores \texttt{?} e recusa \texttt{UPDATE} sem cláusula \texttt{WHERE} (\texttt{SQLBuilder.java:386}). Os nomes de tabela e coluna vêm das anotações \texttt{@TableDB} e \texttt{@ColumnDB}, e não de entrada do usuário.
+    \item \textbf{Controle:} todos os valores são enviados por \texttt{PreparedStatement} com \texttt{setObject} (\texttt{SQLResult.java:455-458}), o \texttt{SQLBuilder} gera marcadores \texttt{?} para todos os valores que monta e recusa \texttt{UPDATE} sem cláusula \texttt{WHERE} (\texttt{SQLBuilder.java:386}). Os nomes de tabela e coluna vêm das anotações \texttt{@TableDB} e \texttt{@ColumnDB}, e não de entrada do usuário. A cláusula \texttt{WHERE}, por sua vez, é fornecida pela aplicação como texto e incorporada à instrução sem alteração, de modo que sua segurança depende de a aplicação utilizar marcadores \texttt{?} em vez de concatenar variáveis (Seção~\ref{sec:conclusao}). Na esteira evoluída, a interpolação de dados do contexto do GitHub nos comandos de alerta ao Microsoft Teams, apontada pelo Semgrep como risco de injeção de comandos, foi substituída pelo uso de variáveis de ambiente.
     \item \textbf{Verificação:} varredura com o Semgrep 1.90.0 (regras \texttt{p/owasp-top-ten} e \texttt{p/java}) sobre \texttt{src/main}, resultando em \textbf{0 achados nos dois cenários} (6 arquivos no ANTES e 7 no DEPOIS), executada pelo \textit{workflow} auxiliar \texttt{comparativo\_owasp\_semgrep.yml}. Na esteira evoluída, o CI passou a aplicar também o conjunto \texttt{p/owasp-top-ten} a cada \textit{push} e \textit{Pull Request}.
 \end{itemize}
 
-\subsection*{A04:2021 --- Design Inseguro (\textit{Insecure Design})}
+\subsection*{A06:2025 --- Design Inseguro (\textit{Insecure Design})}
 
 \begin{itemize}
     \item \textbf{Aplicabilidade:} sim.
@@ -1016,23 +1133,7 @@ Os cenários comparados correspondem a pontos do histórico do repositório: \te
     \item \textbf{Verificação:} testes unitários (JUnit 5 e Mockito) e \textit{Quality Gate} do SonarCloud na esteira.
 \end{itemize}
 
-\subsection*{A05:2021 --- Configuração Incorreta de Segurança (\textit{Security Misconfiguration})}
-
-\begin{itemize}
-    \item \textbf{Aplicabilidade:} parcial. A biblioteca não configura servidores; o risco está na configuração da esteira.
-    \item \textbf{Controle:} os \textit{workflows} declaram \texttt{permissions: contents: read} e elevam o escopo apenas nos \textit{jobs} que precisam (\texttt{security-events: write} no SAST e \texttt{packages: write} na publicação).
-    \item \textbf{Verificação:} leitura dos arquivos \texttt{ci\_integracao\_e\_qualidade.yml} e \texttt{cd\_entrega\_continua.yml}.
-\end{itemize}
-
-\subsection*{A06:2021 --- Componentes Vulneráveis e Desatualizados (\textit{Vulnerable and Outdated Components})}
-
-\begin{itemize}
-    \item \textbf{Aplicabilidade:} sim.
-    \item \textbf{Controle:} o \texttt{pom.xml} não declara nenhuma dependência de \textit{runtime}: Lombok tem escopo \texttt{provided} e JUnit e Mockito têm escopo \texttt{test}. O pacote publicado não carrega bibliotecas de terceiros para as aplicações consumidoras. Na esteira evoluída, o arquivo \texttt{.github/dependabot.yml} configura verificações semanais de atualização das dependências Maven e das \textit{actions} do GitHub Actions.
-    \item \textbf{Verificação:} leitura do \texttt{pom.xml} e do \texttt{dependabot.yml}.
-\end{itemize}
-
-\subsection*{A07:2021 --- Falhas de Identificação e Autenticação (\textit{Identification and Authentication Failures})}
+\subsection*{A07:2025 --- Falhas de Autenticação (\textit{Authentication Failures})}
 
 \begin{itemize}
     \item \textbf{Aplicabilidade:} não se aplica. A biblioteca não autentica usuários nem gerencia sessões.
@@ -1040,39 +1141,39 @@ Os cenários comparados correspondem a pontos do histórico do repositório: \te
     \item \textbf{Verificação:} não aplicável.
 \end{itemize}
 
-\subsection*{A08:2021 --- Falhas de Integridade de Dados e Software (\textit{Software and Data Integrity Failures})}
+\subsection*{A08:2025 --- Falhas de Integridade de \textit{Software} ou de Dados (\textit{Software or Data Integrity Failures})}
 
 \begin{itemize}
-    \item \textbf{Aplicabilidade:} sim, pois o SEOS é distribuído como dependência para outros sistemas.
-    \item \textbf{Controle:} no DEPOIS, as \textit{actions} externas são fixadas por \textit{hash} de \textit{commit}, a versão do Semgrep é fixada, a instalação usa \texttt{--only-binary}, e a publicação ocorre somente por \textit{tag} semântica (\texttt{v*.*.*}) via GitHub Packages, com histórico rastreável no repositório. No ANTES, o empacotamento dependia de execução local. Na esteira evoluída, o fluxo de entrega contínua passou a exigir, por meio do \textit{job} \texttt{verificar\_ci}, uma execução aprovada do CI para o \textit{commit} da \textit{tag}, executa os testes durante o \texttt{mvn deploy} (sem \texttt{-DskipTests}) e gera, ao final, um atestado de proveniência do \texttt{.jar} com a \textit{action} \texttt{actions/attest-build-provenance}, verificável com \texttt{gh attestation verify}.
-    \item \textbf{Verificação:} leitura dos \textit{workflows} e da \textit{tag} \texttt{v1.1.0}.
+    \item \textbf{Aplicabilidade:} sim, pois o SEOS é distribuído como dependência para outros sistemas, e a integridade do artefato publicado precisa ser verificável.
+    \item \textbf{Controle:} no DEPOIS, a publicação ocorre somente por \textit{tag} semântica (\texttt{v*.*.*}) via GitHub Packages, com histórico rastreável no repositório. No ANTES, o empacotamento dependia de execução local. Na esteira evoluída, o fluxo de entrega contínua passou a exigir, por meio do \textit{job} \texttt{verificar\_ci}, uma execução aprovada do CI para o \textit{commit} da \textit{tag}, executa os testes durante o \texttt{mvn deploy} (sem \texttt{-DskipTests}) e gera, ao final, um atestado de proveniência do \texttt{.jar} com a \textit{action} \texttt{actions/attest-build-provenance}, verificável com \texttt{gh attestation verify}.
+    \item \textbf{Verificação:} leitura dos \textit{workflows} e das \textit{tags} \texttt{v1.1.0} e \texttt{v1.2.0}.
 \end{itemize}
 
-\subsection*{A09:2021 --- Falhas de Log e Monitoramento (\textit{Security Logging and Monitoring Failures})}
+\subsection*{A09:2025 --- Falhas de Registro e Alerta de Segurança (\textit{Security Logging and Alerting Failures})}
 
 \begin{itemize}
     \item \textbf{Aplicabilidade:} sim. Foi a lacuna mais grave encontrada nos sistemas legados: 34,9\% e 94,4\% dos métodos sem registro de \textit{log} (Tabelas~\ref{tab:resultados_automacoes} e~\ref{tab:resultados_ecommerce}).
-    \item \textbf{Controle:} os executores do \texttt{SQLResult} e do \texttt{SQLCall} registram o sucesso, a lentidão e as falhas de cada operação, inclusive em lote, por meio do método \texttt{auditarPerformance}. Como cada execução gera um evento, o volume de registros aumenta, cabendo à aplicação filtrá-los por nível em seu \textit{logger}. O \texttt{OrmLogger} pode ser substituído pela aplicação via \texttt{OrmConfig.setLogger}, permitindo integrar o registro ao mecanismo de \textit{logs} da empresa. Nos módulos avaliados, a cobertura de auditoria foi de 100\% (Seção~\ref{sec:resultados}). Na esteira, qualquer falha de \textit{build}, teste, qualidade ou SAST dispara um alerta no Microsoft Teams com o \textit{link} para os \textit{logs} da execução.
+    \item \textbf{Controle:} na \texttt{v1.1.0}, os executores do \texttt{SQLResult} e do \texttt{SQLCall} registram as falhas e as execuções lentas por meio do método \texttt{auditarPerformance}; a partir da \texttt{v1.2.0}, registram também as execuções bem-sucedidas e as operações em lote. Como cada execução passa a gerar um evento, o volume de registros aumenta, cabendo à aplicação filtrá-los por nível em seu \textit{logger}. O \texttt{OrmLogger} pode ser substituído pela aplicação via \texttt{OrmConfig.setLogger}, permitindo integrar o registro ao mecanismo de \textit{logs} da empresa. Nos módulos avaliados, a cobertura de auditoria de falhas e lentidão foi de 100\% (Seção~\ref{sec:resultados}). Na esteira, qualquer falha de \textit{build}, teste, qualidade ou SAST dispara um alerta no Microsoft Teams com o \textit{link} para os \textit{logs} da execução.
     \item \textbf{Verificação:} leitura do código, testes unitários e as Tabelas~\ref{tab:comparacao-modulos-ecommerce} e~\ref{tab:comparativo-amostra-refatorada}.
 \end{itemize}
 
-\subsection*{A10:2021 --- Falsificação de Requisição do Lado do Servidor (\textit{Server-Side Request Forgery})}
+\subsection*{A10:2025 --- Tratamento Inadequado de Condições Excepcionais (\textit{Mishandling of Exceptional Conditions})}
 
 \begin{itemize}
-    \item \textbf{Aplicabilidade:} não se aplica. A biblioteca não realiza requisições HTTP nem consome URLs informadas por usuários.
-    \item \textbf{Controle:} não aplicável.
-    \item \textbf{Verificação:} não aplicável.
+    \item \textbf{Aplicabilidade:} sim. A camada de persistência lida com falhas de conexão, de execução SQL e de mapeamento, e o tratamento inadequado dessas condições foi observado nos sistemas legados, com uso de \texttt{printStackTrace} e blocos \texttt{try/catch} sem registro (Seção~\ref{sec:situacao-atual}).
+    \item \textbf{Controle:} a biblioteca aplica falha rápida, lançando \texttt{IllegalArgumentException} e \texttt{IllegalStateException} antes de qualquer acesso ao banco quando a operação é inconsistente. Nos executores do \texttt{SQLResult} e do \texttt{SQLCall}, toda exceção é registrada pelo \texttt{OrmLogger} e relançada à aplicação, sem ser suprimida; os recursos JDBC são fechados por \texttt{try-with-\allowbreak resources}, e o controle transacional (\texttt{commit} e \texttt{rollback}) permanece com a aplicação. Na esteira evoluída, as operações em lote passaram a ter as falhas registradas. Permanecem como pontos de atenção as exceções de validação, lançadas antes da execução sem registro pela biblioteca, e o encapsulamento de erros de \textit{reflection} em \texttt{RuntimeException} genérica.
+    \item \textbf{Verificação:} leitura do código e testes unitários dos cenários de erro (\texttt{assertThrows} em \texttt{SQLBuilderTest}, \texttt{SQLResultTest} e \texttt{SQLCallTest}).
 \end{itemize}
 
 \clearpage
 \section*{APÊNDICE B --- Matriz comparativa de evidências (antes e depois da esteira \textit{DevSecOps})}
 \addcontentsline{toc}{section}{APÊNDICE B --- Matriz comparativa de evidências (antes e depois da esteira \textit{DevSecOps})}
 
-A Tabela~\ref{tab:matriz-owasp} resume as respostas do Apêndice A. As colunas \textit{ANTES} e \textit{DEPOIS} correspondem ao \textit{commit} \texttt{6982a7d} e à \textit{tag} \texttt{v1.1.0} do repositório do SEOS, respectivamente, e a coluna \textit{ESTEIRA EVOLUÍDA} apresenta as melhorias aplicadas depois da análise do questionário. A coluna \textit{Situação} refere-se ao estado mais recente.
+A Tabela~\ref{tab:matriz-owasp} resume as respostas do Apêndice A. As colunas \textit{ANTES} e \textit{DEPOIS} correspondem ao \textit{commit} \texttt{6982a7d} e à \textit{tag} \texttt{v1.1.0} do repositório do SEOS, respectivamente, e a coluna \textit{ESTEIRA EVOLUÍDA} apresenta as melhorias incorporadas à \texttt{v1.2.0} depois da análise do questionário. A coluna \textit{Situação} refere-se ao estado mais recente.
 
 \begin{table}[H]
     \centering
-    \caption{Matriz comparativa do SEOS frente ao OWASP \textit{Top} 10:2021}
+    \caption{Matriz comparativa do SEOS frente ao OWASP \textit{Top} 10:2025}
     \label{tab:matriz-owasp}
     \vspace{0.15cm}
     \begingroup
@@ -1081,36 +1182,41 @@ A Tabela~\ref{tab:matriz-owasp} resume as respostas do Apêndice A. As colunas \
     \scriptsize
     \begin{tabular}{|>{\raggedright\arraybackslash}p{2.0cm}|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}p{1.4cm}|}
     \hline
-    \textbf{Categoria OWASP} & \textbf{Cenário ANTES (\texttt{6982a7d})} & \textbf{Prática/Ferramenta \textit{DevSecOps} adotada} & \textbf{Cenário DEPOIS (\texttt{v1.1.0})} & \textbf{Esteira evoluída} & \textbf{Situação} \\ \hline
-    \textbf{A01: Quebra de Controle de Acesso} & Não se aplica & --- & Não se aplica & Não se aplica & Não aplicável \\ \hline
-    \textbf{A02: Falhas Criptográficas} & \textit{Logger} padrão sem valores de parâmetros; sem esteira & \texttt{secrets} do GitHub e variáveis de ambiente no Maven & Segredos fora do código; sem detecção dedicada de segredos & Sem alteração & Parcial \\ \hline
-    \textbf{A03: Injeção} & Valores parametrizados no código; sem varredura automática & Semgrep (\texttt{p/java}) a cada \textit{push} e \textit{Pull Request}, com laudo SARIF & 0 achados nos 7 arquivos varridos (\texttt{p/owasp-top-ten} e \texttt{p/java} no fluxo comparativo) e varredura repetida a cada alteração & CI com \texttt{p/java} e \texttt{p/owasp-top-ten} & Mitigado \\ \hline
-    \textbf{A04: Design Inseguro} & Falha rápida e validações no código & Testes unitários e \textit{Quality Gate} (SonarCloud) & Mesmos controles verificados automaticamente a cada integração & Testes também executados na entrega contínua & Parcial \\ \hline
-    \textbf{A05: Configuração Incorreta} & Sem esteira para configurar & Permissões mínimas por \textit{job} no GitHub Actions & \texttt{contents: read} como padrão e escopos elevados apenas onde necessário & Sem alteração & Parcial \\ \hline
-    \textbf{A06: Componentes Vulneráveis} & Sem dependências de \textit{runtime}; sem monitoramento & Dependabot (Maven e \textit{actions}) & Sem dependências de \textit{runtime}; \textbf{sem SCA} & Verificação semanal de dependências pelo Dependabot & Parcial \\ \hline
+    \textbf{Categoria OWASP} & \textbf{Cenário ANTES (\texttt{6982a7d})} & \textbf{Prática/Ferramenta \textit{DevSecOps} adotada} & \textbf{Cenário DEPOIS (\texttt{v1.1.0})} & \textbf{Esteira evoluída (\texttt{v1.2.0})} & \textbf{Situação} \\ \hline
+    \textbf{A01: Quebra de Controle de Acesso (inclui SSRF)} & Não se aplica & --- & Não se aplica & Não se aplica & Não aplicável \\ \hline
+    \textbf{A02: Configuração Incorreta} & Sem esteira para configurar & Permissões mínimas por \textit{job} no GitHub Actions & \texttt{contents: read} como padrão e escopos elevados apenas onde necessário & Sem alteração & Parcial \\ \hline
+    \textbf{A03: Cadeia de Suprimentos de \textit{Software}} & Sem dependências de \textit{runtime}; sem monitoramento nem fixação de ferramentas & \textit{Actions} fixadas por \textit{hash}; Dependabot (Maven e \textit{actions}) & Sem dependências de \textit{runtime}; \textit{actions} fixadas; Semgrep em versão fixa; \textbf{sem SCA} & Dependabot semanal; Semgrep em imagem fixada por \textit{digest} & Parcial \\ \hline
+    \textbf{A04: Falhas Criptográficas} & \textit{Logger} padrão sem valores de parâmetros; sem esteira & \texttt{secrets} do GitHub e variáveis de ambiente no Maven & Segredos fora do código; sem detecção dedicada de segredos & Sem alteração & Parcial \\ \hline
+    \textbf{A05: Injeção} & Valores parametrizados no código; sem varredura automática & Semgrep (\texttt{p/java}) a cada \textit{push} e \textit{Pull Request}, com laudo SARIF & 0 achados nos 7 arquivos varridos (\texttt{p/owasp-top-ten} e \texttt{p/java} no fluxo comparativo) e varredura repetida a cada alteração & CI com \texttt{p/java} e \texttt{p/owasp-top-ten}; injeção de comandos nos alertas corrigida & Mitigado nos valores\textsuperscript{*} \\ \hline
+    \textbf{A06: Design Inseguro} & Falha rápida e validações no código & Testes unitários e \textit{Quality Gate} (SonarCloud) & Mesmos controles verificados automaticamente a cada integração & Testes também executados na entrega contínua & Parcial \\ \hline
     \textbf{A07: Falhas de Autenticação} & Não se aplica & --- & Não se aplica & Não se aplica & Não aplicável \\ \hline
-    \textbf{A08: Integridade de Dados e Software} & Empacotamento local, sem rastreabilidade & \textit{Actions} fixadas por \textit{hash}, GitHub Packages por \textit{tag} & Publicação rastreável; CD sem dependência do CI e \texttt{.jar} não assinado & CD exige CI aprovado, executa testes e atesta o \texttt{.jar}; sem SBOM & Parcial \\ \hline
-    \textbf{A09: Falhas de Log/\allowbreak Monitoramento} & Auditoria no código, sem alerta de falhas de \textit{build} & \texttt{OrmLogger} plugável e alertas via \textit{Webhook} no Microsoft Teams & Auditoria nas operações e alerta em tempo real das falhas da esteira & Alerta do Teams passa a cobrir também a verificação do CI na entrega & Mitigado \\ \hline
-    \textbf{A10: SSRF} & Não se aplica & --- & Não se aplica & Não se aplica & Não aplicável \\ \hline
+    \textbf{A08: Integridade de \textit{Software} ou de Dados} & Empacotamento local, sem rastreabilidade & GitHub Packages por \textit{tag} & Publicação rastreável; CD sem dependência do CI e \texttt{.jar} não assinado & CD exige CI aprovado, executa testes e atesta o \texttt{.jar}; sem SBOM & Parcial \\ \hline
+    \textbf{A09: Falhas de Registro e Alerta} & Auditoria de falhas e lentidão no código, sem alerta de falhas de \textit{build} & \texttt{OrmLogger} plugável e alertas via \textit{Webhook} no Microsoft Teams & Auditoria de falhas e lentidão e alerta em tempo real das falhas da esteira & Registro também de sucessos e lotes; alerta cobre a verificação do CI na entrega & Mitigado \\ \hline
+    \textbf{A10: Condições Excepcionais} & Falha rápida; exceções registradas e relançadas; \texttt{try-with-\allowbreak resources} & Testes unitários dos cenários de erro & Mesmos controles verificados a cada integração & Falhas de operações em lote também registradas & Parcial \\ \hline
     \end{tabular}
     \endgroup
     \vspace{0.15cm}
 
+    \begin{minipage}{\linewidth}
+    {\footnotesize \textbf{Nota:} \textsuperscript{*} No A05, a mitigação abrange os valores montados pelo SEOS, que são sempre parametrizados. A cláusula de filtro (\texttt{WHERE}) é recebida como texto da aplicação, e sua segurança depende do uso de marcadores \texttt{?} pela aplicação; essa limitação e as formas de mitigá-la são discutidas na Seção~\ref{sec:conclusao}.\par}
+    \vspace{0.1cm}
     {\footnotesize \textbf{Fonte:} Elaborada pela autora (2026).}
+    \end{minipage}
 \end{table}
 
-Das dez categorias, três não se aplicam a uma biblioteca de persistência (A01, A07 e A10), duas são mitigadas diretamente (A03 e A09) e cinco são mitigadas parcialmente (A02, A04, A05, A06 e A08). A varredura do Semgrep não apresentou diferença entre os cenários ANTES e DEPOIS (0 achados em ambos), pois o código-fonte pouco mudou entre eles, e o ganho da esteira concentra-se na automação da verificação, na rastreabilidade da publicação e na resposta a falhas. As melhorias da esteira evoluída reduziram as lacunas identificadas em A06 (monitoramento de dependências) e A08 (dependência entre CI e CD, execução de testes na entrega e atestado de proveniência).
+Das dez categorias do OWASP \textit{Top} 10:2025, duas não se aplicam a uma biblioteca de persistência (A01, que passou a incluir o SSRF, e A07), duas são mitigadas diretamente (A05, quanto aos valores, e A09) e seis são mitigadas parcialmente (A02, A03, A04, A06, A08 e A10). A varredura do Semgrep não apresentou diferença entre os cenários ANTES e DEPOIS (0 achados em ambos), pois o código-fonte pouco mudou entre eles, e o ganho da esteira concentra-se na automação da verificação, na rastreabilidade da publicação e na resposta a falhas. As melhorias da esteira evoluída reduziram as lacunas identificadas em A03 (monitoramento de dependências e fixação da imagem do Semgrep), A08 (dependência entre CI e CD, execução de testes na entrega e atestado de proveniência) e A09 (registro de sucessos e de operações em lote).
 
 %% Referências bibliográficas (formato BibTeX)
 %% Só aparecem no documento as obras citadas no texto com \cite ou \citeonline.
 %% Dica: o Google Acadêmico e o Zotero exportam entradas neste formato.
 
-@misc{alura2024,
-  author        = {Alura},
-  title         = {Cibersegurança: um guia sobre a proteção contra ameaças virtuais e como começar na área},
-  year          = {2024},
-  url           = {https://www.alura.com.br/artigos/ciberseguranca},
-  urlaccessdate = {12 nov. 2026}
+@misc{brasil2018,
+  author        = {Brasil},
+  title         = {Lei nº 13.709, de 14 de agosto de 2018},
+  note          = {Lei Geral de Proteção de Dados Pessoais (LGPD). Brasília, DF: Presidência da República},
+  year          = {2018},
+  url           = {https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm},
+  urlaccessdate = {25 nov. 2026}
 }
 
 @book{ford2022,
@@ -1126,14 +1232,6 @@ Das dez categorias, três não se aplicam a uma biblioteca de persistência (A01
   title         = {Endurecimento de segurança para o GitHub Actions},
   year          = {2024},
   url           = {https://docs.github.com/pt/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions},
-  urlaccessdate = {12 nov. 2026}
-}
-
-@misc{leite2023,
-  author        = {Leite, Gabriel},
-  title         = {SQL Injection: o que é, como fazer e exemplos},
-  year          = {2023},
-  url           = {https://www.alura.com.br/artigos/sql-injection},
   urlaccessdate = {12 nov. 2026}
 }
 
@@ -1176,12 +1274,30 @@ Das dez categorias, três não se aplicam a uma biblioteca de persistência (A01
   urlaccessdate = {12 nov. 2026}
 }
 
-@misc{owasp2021,
+@misc{mitre-cwe89,
+  author        = {{MITRE Corporation}},
+  title         = {CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')},
+  note          = {Bedford: MITRE},
+  year          = {[s.d.]},
+  url           = {https://cwe.mitre.org/data/definitions/89.html},
+  urlaccessdate = {25 nov. 2026}
+}
+
+@misc{owasp2025,
   author        = {{OWASP Foundation}},
-  title         = {OWASP Top 10:2021: The Ten Most Critical Web Application Security Risks},
-  year          = {2021},
-  url           = {https://owasp.org/Top10/},
-  urlaccessdate = {12 nov. 2026}
+  title         = {OWASP Top 10:2025: The Ten Most Critical Web Application Security Risks},
+  year          = {2025},
+  url           = {https://owasp.org/Top10/2025/},
+  urlaccessdate = {25 nov. 2026}
+}
+
+@misc{owasp-sqli-cheatsheet,
+  author        = {{OWASP Foundation}},
+  title         = {SQL Injection Prevention Cheat Sheet},
+  note          = {OWASP Cheat Sheet Series},
+  year          = {[s.d.]},
+  url           = {https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html},
+  urlaccessdate = {25 nov. 2026}
 }
 
 @inproceedings{pimentel2025,
@@ -1203,10 +1319,14 @@ Das dez categorias, três não se aplicam a uma biblioteca de persistência (A01
   year      = {2020}
 }
 
-@misc{santos2024,
-  author        = {Santos, Victor Costa},
-  title         = {DevSecOps: como usar a abordagem que prioriza a segurança},
-  year          = {2024},
-  url           = {https://www.alura.com.br/artigos/devsecops},
-  urlaccessdate = {12 nov. 2026}
+@techreport{souppaya2022,
+  author        = {Souppaya, Murugiah and Scarfone, Karen and Dodson, Donna},
+  title         = {Secure Software Development Framework (SSDF) Version 1.1: recommendations for mitigating the risk of software vulnerabilities},
+  institution   = {National Institute of Standards and Technology},
+  address       = {Gaithersburg},
+  year          = {2022},
+  note          = {(NIST Special Publication 800-218)},
+  doi           = {10.6028/NIST.SP.800-218},
+  url           = {https://csrc.nist.gov/pubs/sp/800/218/final},
+  urlaccessdate = {25 nov. 2026}
 }
